@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Upload, Image, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -22,6 +23,8 @@ interface FormData {
   state: string
   postalCode: string
   country: string
+  images: File[]
+  imagePreviews: string[]
 }
 
 interface FormErrors {
@@ -98,6 +101,8 @@ function defaultForm(property?: PropertyRecord): FormData {
       state: property.address.state,
       postalCode: property.address.postalCode,
       country: property.address.country,
+      images: [],
+      imagePreviews: property.images ?? [],
     }
   }
   return {
@@ -111,6 +116,8 @@ function defaultForm(property?: PropertyRecord): FormData {
     state: '',
     postalCode: '',
     country: 'US',
+    images: [],
+    imagePreviews: [],
   }
 }
 
@@ -134,12 +141,49 @@ export function PropertyFormModal({
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState(false)
 
+  // Image upload handlers
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
+    const validFiles = files.filter(f => f.type.startsWith('image/') && f.size <= 5 * 1024 * 1024) // 5MB max
+    
+    if (validFiles.length !== files.length) {
+      toast.warning('Some files were skipped', { description: 'Only image files under 5MB are allowed.' })
+    }
+
+    const newPreviews = validFiles.map(f => URL.createObjectURL(f))
+    setForm(prev => ({
+      ...prev,
+      images: [...prev.images, ...validFiles],
+      imagePreviews: [...prev.imagePreviews, ...newPreviews],
+    }))
+  }
+
+  const removeImage = (index: number) => {
+    setForm(prev => {
+      // Revoke object URL to prevent memory leaks
+      if (prev.imagePreviews[index]?.startsWith('blob:')) {
+        URL.revokeObjectURL(prev.imagePreviews[index])
+      }
+      return {
+        ...prev,
+        images: prev.images.filter((_, i) => i !== index),
+        imagePreviews: prev.imagePreviews.filter((_, i) => i !== index),
+      }
+    })
+  }
+
   // Reset form when the modal opens / property changes
   useEffect(() => {
     if (open) {
       setForm(defaultForm(property))
       setErrors({})
       setTouched(false)
+    }
+    // Cleanup previews on unmount
+    return () => {
+      form.imagePreviews.forEach(preview => {
+        if (preview.startsWith('blob:')) URL.revokeObjectURL(preview)
+      })
     }
   }, [open, property])
 
@@ -311,6 +355,74 @@ export function PropertyFormModal({
                 className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-muted outline-none transition focus:border-primary focus:ring-2 focus:ring-focus/30 disabled:cursor-not-allowed disabled:opacity-60"
               />
             </div>
+          </fieldset>
+
+          {/* Property Images */}
+          <fieldset className="flex flex-col gap-4 border-t border-border pt-4">
+            <legend className="mb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
+              Property Images
+            </legend>
+            
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-medium text-text2">
+                Upload Photos <span className="text-muted">(max 10, 5MB each)</span>
+              </label>
+              <input
+                type="file"
+                id="property-images"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+                disabled={isPending}
+                className="sr-only"
+                aria-label="Upload property images"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => document.getElementById('property-images')?.click()}
+                disabled={isPending}
+                className="w-fit"
+              >
+                <Upload className="h-4 w-4" aria-hidden="true" />
+                Select Images
+              </Button>
+            </div>
+
+            {form.imagePreviews.length > 0 && (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+                {form.imagePreviews.map((preview, index) => (
+                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-surface2 border border-border">
+                    <img
+                      src={preview}
+                      alt={`Property image ${index + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                      aria-label="Remove image"
+                    >
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
+                    </button>
+                    {index === 0 && (
+                      <span className="absolute bottom-1 left-1 px-1.5 py-0.5 text-[10px] font-semibold bg-primary text-white rounded">
+                        Cover
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {form.imagePreviews.length === 0 && (
+              <div className="text-center py-8 border-2 border-dashed border-border/50 rounded-xl">
+                <Image className="h-10 w-10 mx-auto text-muted/50 mb-2" aria-hidden="true" />
+                <p className="text-sm text-muted">No images uploaded yet</p>
+                <p className="text-xs text-muted/70 mt-1">Add photos to make your property more attractive</p>
+              </div>
+            )}
           </fieldset>
 
           {/* Address */}

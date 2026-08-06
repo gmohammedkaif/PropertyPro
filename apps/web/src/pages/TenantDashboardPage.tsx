@@ -1,4 +1,4 @@
-import { Calendar, Clock, DollarSign, Home, ArrowRight, CheckCircle, AlertTriangle } from 'lucide-react'
+import { Calendar, Clock, DollarSign, Home, ArrowRight, CheckCircle, AlertTriangle, Building2, Key } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle, GlassCardDescription } from '@/components/ui/GlassCard'
@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useTenanciesStore } from '@/stores/tenanciesStore'
 import { usePaymentsStore } from '@/stores/paymentsStore'
 import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
+import { useListingsStore } from '@/stores/listingsStore'
 
 function formatDate(s: string) {
   return new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -26,6 +27,7 @@ export function TenantDashboardPage() {
   const { items: tenancies } = useTenanciesStore()
   const { items: payments } = usePaymentsStore()
   const { items: properties } = useLocalPropertiesStore()
+  const { items: listings } = useListingsStore()
   const navigate = useNavigate()
 
   const firstName = user?.name.split(' ')[0] ?? 'there'
@@ -49,6 +51,16 @@ export function TenantDashboardPage() {
   const daysUntilEnd = myTenancy
     ? Math.ceil((new Date(myTenancy.leaseEnd).getTime() - Date.now()) / 86400000)
     : null
+
+  // Available properties for rent (from listings store - properties listed by owners)
+  const availableListings = listings.filter(
+    (l) => l.type === 'rent' && l.status === 'available'
+  )
+
+  // Also show local properties that have available units and aren't in listings yet
+  const availableLocalProperties = properties.filter(
+    (p) => p.occupiedUnits < p.totalUnits
+  ).filter(p => !listings.some(l => l.propertyName === p.name && l.status === 'available'))
 
   return (
     <div className="flex flex-col gap-6">
@@ -168,6 +180,65 @@ export function TenantDashboardPage() {
         </GlassCard>
       )}
 
+      {/* Available Properties for Rent */}
+      {(availableListings.length > 0 || availableLocalProperties.length > 0) && (
+        <GlassCard className="p-0">
+          <GlassCardHeader className="px-5 pt-5 pb-3 mb-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <GlassCardTitle>Available Properties for Rent</GlassCardTitle>
+                <GlassCardDescription>Properties listed by owners that are currently available</GlassCardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/app/properties')}
+                className="hidden sm:flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                View all <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </GlassCardHeader>
+          <GlassCardContent className="px-5 pb-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {availableListings.slice(0, 6).map((listing) => (
+                <PropertyCard
+                  key={listing.id}
+                  name={listing.propertyName}
+                  price={listing.price}
+                  bedrooms={listing.bedrooms}
+                  bathrooms={listing.bathrooms}
+                  areaSqFt={listing.areaSqFt}
+                  description={listing.description}
+                  onClick={() => navigate(`/app/property/${listing.id}`)}
+                />
+              ))}
+              {availableLocalProperties.slice(0, 6 - availableListings.length).map((property) => (
+                <PropertyCard
+                  key={property.id}
+                  name={property.name}
+                  price={0} // Will show as "Contact for price"
+                  bedrooms={property.type === 'apartment' ? 2 : property.type === 'house' ? 3 : undefined}
+                  bathrooms={property.type === 'apartment' ? 1 : property.type === 'house' ? 2 : undefined}
+                  areaSqFt={undefined}
+                  description={property.description}
+                  onClick={() => navigate(`/app/property/${property.id}`)}
+                />
+              ))}
+            </div>
+            {(availableListings.length > 6 || availableLocalProperties.length + availableListings.length > 6) && (
+              <Button
+                variant="ghost"
+                className="mt-4 w-full justify-center"
+                onClick={() => navigate('/app/properties')}
+              >
+                View All Properties <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
+          </GlassCardContent>
+        </GlassCard>
+      )}
+
       {/* Recent payments */}
       {myPayments.length > 0 && (
         <GlassCard className="p-0">
@@ -211,6 +282,88 @@ export function TenantDashboardPage() {
           </GlassCardContent>
         </GlassCard>
       )}
+    </div>
+  )
+}
+
+// Property Card Component for Available Listings
+function PropertyCard({
+  name,
+  price,
+  bedrooms,
+  bathrooms,
+  areaSqFt,
+  description,
+  onClick,
+}: {
+  name: string
+  price: number
+  bedrooms?: number
+  bathrooms?: number
+  areaSqFt?: number
+  description?: string
+  onClick: () => void
+}) {
+  const formatRupee = (n: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n)
+
+  return (
+    <div
+      className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface transition-all duration-300 hover:border-primary/20 hover:shadow-xl hover:-translate-y-1 cursor-pointer"
+      onClick={onClick}
+    >
+      {/* Property Image Header - placeholder */}
+      <div className="relative h-40 w-full overflow-hidden bg-surface2">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Building2 className="h-12 w-12 text-muted/30" aria-hidden="true" />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+      </div>
+
+      {/* Content */}
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="font-display text-lg font-bold text-text group-hover:text-primary transition-colors line-clamp-1">
+          {name}
+        </h3>
+        {description && (
+          <p className="mt-1 text-sm text-text2 line-clamp-2 flex-1">
+            {description}
+          </p>
+        )}
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted">
+          {bedrooms && (
+            <span className="flex items-center gap-1">
+              <Key className="h-3 w-3" aria-hidden="true" />
+              {bedrooms} BHK
+            </span>
+          )}
+          {bathrooms && (
+            <span className="flex items-center gap-1">
+              <span aria-hidden="true">🛁</span>
+              {bathrooms} Bath
+            </span>
+          )}
+          {areaSqFt && (
+            <span className="flex items-center gap-1">
+              <span aria-hidden="true">📐</span>
+              {areaSqFt.toLocaleString()} sq ft
+            </span>
+          )}
+        </div>
+
+        {/* Pricing */}
+        <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3">
+          <div className="flex flex-col">
+            <span className="text-[10px] uppercase tracking-wider text-muted">Monthly Rent</span>
+            <p className="text-lg font-bold text-text font-display">
+              {price > 0 ? formatRupee(price) : 'Contact for price'} <span className="text-xs font-normal text-muted">/month</span>
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" className="text-xs font-semibold">
+            View Details
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

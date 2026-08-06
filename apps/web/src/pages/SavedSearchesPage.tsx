@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { useToast } from '@/hooks/useToast'
+import { useConfirmStore } from '@/stores/confirmStore'
 
 interface SavedSearch {
   id: string
@@ -66,8 +67,12 @@ export function SavedSearchesPage() {
   const toast = useToast()
   const [searches, setSearches] = useState<SavedSearch[]>(INITIAL_SEARCHES)
 
-  const handleDelete = (id: string, title: string) => {
-    if (confirm(`Remove saved search "${title}"?`)) {
+  const handleDelete = async (id: string, title: string) => {
+    const confirmed = await useConfirmStore.getState().showConfirm({
+      title: 'Remove Saved Search',
+      message: `Remove saved search "${title}"?`
+    })
+    if (confirmed) {
       setSearches((prev) => prev.filter((s) => s.id !== id))
       toast.success('Saved search removed successfully')
     }

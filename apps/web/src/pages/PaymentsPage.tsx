@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/useToast'
 import { usePaymentsStore, type PaymentRecord, type PaymentStatus, type PaymentType } from '@/stores/paymentsStore'
 import { cn } from '@/lib/utils'
+import { useConfirmStore } from '@/stores/confirmStore'
 
 const formatCurrency = (val: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -92,8 +93,12 @@ export function PaymentsPage() {
     setModalOpen(true)
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to remove this payment record?')) {
+  const handleDelete = async (id: string) => {
+    const confirmed = await useConfirmStore.getState().showConfirm({
+      title: 'Remove Payment Record',
+      message: 'Are you sure you want to remove this payment record?'
+    })
+    if (confirmed) {
       remove(id)
       toast.success('Payment record removed')
     }

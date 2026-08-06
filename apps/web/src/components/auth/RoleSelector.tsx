@@ -3,7 +3,7 @@ import type { ChangeEvent } from 'react'
 import { cn } from '@/lib/utils'
 
 const ROLES = [
-  { value: 'buyer', label: 'Buyer', description: 'Search, save, and book viewings' },
+  { value: 'tenant', label: 'Tenant', description: 'Rent a property, pay rent, report issues' },
   { value: 'owner', label: 'Owner', description: 'Manage properties and units' },
   { value: 'agent', label: 'Agent', description: 'List and sell on behalf of owners' },
 ] as const

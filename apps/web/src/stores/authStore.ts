@@ -29,6 +29,14 @@ export const demoUser: DemoUser = {
   roles: ['owner', 'agent'],
 }
 
+export const demoTenant: DemoUser = {
+  id: 'usr_tenant',
+  name: 'John Tenant',
+  email: 'tenant@propertypro.app',
+  roles: ['tenant'],
+  tenancyId: 'tnc_001',
+}
+
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated'
 
 interface AuthState {

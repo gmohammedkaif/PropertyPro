@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/useToast'
 import { useTenanciesStore, type TenancyRecord, type TenancyStatus } from '@/stores/tenanciesStore'
 import { useLocalPropertiesStore, availableUnits, isUnitBased } from '@/stores/localPropertiesStore'
 import { cn } from '@/lib/utils'
+import { useConfirmStore } from '@/stores/confirmStore'
 
 const formatCurrency = (val: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -93,8 +94,12 @@ export function TenanciesPage() {
     setModalOpen(true)
   }
 
-  const handleDelete = (id: string, name: string, propertyId: string, units: number) => {
-    if (confirm(`Are you sure you want to end & remove lease for "${name}"?`)) {
+  const handleDelete = async (id: string, name: string, propertyId: string, units: number) => {
+    const confirmed = await useConfirmStore.getState().showConfirm({
+      title: 'End & Remove Lease',
+      message: `Are you sure you want to end & remove lease for "${name}"?`
+    })
+    if (confirmed) {
       remove(id)
       freeUnits(propertyId, units)
       toast.success('Lease record removed')

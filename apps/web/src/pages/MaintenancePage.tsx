@@ -26,6 +26,7 @@ import {
   type MaintenancePriority,
   type MaintenanceStatus,
 } from '@/stores/maintenanceStore'
+import { useConfirmStore } from '@/stores/confirmStore'
 
 export function MaintenancePage() {
   const toast = useToast()
@@ -73,8 +74,12 @@ export function MaintenancePage() {
     setModalOpen(true)
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm('Delete this maintenance request ticket?')) {
+  const handleDelete = async (id: string) => {
+    const confirmed = await useConfirmStore.getState().showConfirm({
+      title: 'Delete Ticket',
+      message: 'Are you sure you want to delete this maintenance request ticket?'
+    })
+    if (confirmed) {
       remove(id)
       toast.success('Ticket deleted successfully')
     }

@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils'
 import { Drawer } from '@/components/ui/Drawer'
 import { Navbar } from '@/components/layout/Navbar'
 import { Sidebar, SidebarContent } from '@/components/layout/Sidebar'
-import { ToastContainer } from '@/components/ui/Toast'
 import { useUiStore } from '@/stores/uiStore'
 
 export function DashboardLayout() {
@@ -44,8 +43,6 @@ export function DashboardLayout() {
           <Outlet />
         </main>
       </div>
-
-      <ToastContainer />
     </div>
   )
 }

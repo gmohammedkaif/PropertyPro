@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 
 import { Layers } from 'lucide-react'
 
@@ -14,6 +14,7 @@ function humanize(value: string): string {
 
 export function PlaceholderPage() {
   const { feature } = useParams()
+  const navigate = useNavigate()
   const title = feature ? humanize(feature) : 'Coming soon'
 
   return (
@@ -23,7 +24,7 @@ export function PlaceholderPage() {
         title={`${title} is on the way`}
         description={`This is a planned PropertyPro module. It ships in an upcoming Phase milestone — the foundation is ready for it.`}
         action={
-          <Button variant="secondary" onClick={() => history.back()}>
+          <Button variant="secondary" onClick={() => navigate(-1)}>
             Go back
           </Button>
         }

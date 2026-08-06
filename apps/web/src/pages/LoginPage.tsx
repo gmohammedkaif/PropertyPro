@@ -1,12 +1,15 @@
 import { useState, type FormEvent, useEffect } from 'react'
-import { Lock, Mail, Eye, EyeOff } from 'lucide-react'
+import { Lock, Mail, Eye, EyeOff, User, Key } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { EnhancedButton } from '@/components/ui/EnhancedButton'
 import { EnhancedInput } from '@/components/ui/EnhancedInput'
+import { Button } from '@/components/ui/Button'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { useLogin } from '@/hooks/useAuth'
 import { loginSchema } from '@/lib/authValidators'
+import { useAuthStore, demoTenant } from '@/stores/authStore'
+import { useToast } from '@/hooks/useToast'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -22,6 +25,14 @@ export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from ?? '/app'
+  const { signIn } = useAuthStore()
+  const toast = useToast()
+
+  const handleDemoSignIn = (user: typeof demoTenant) => {
+    signIn(user, 'demo-token')
+    toast.success(`Signed in as ${user.name}`)
+    navigate(from, { replace: true })
+  }
 
   // Live validation logic
   useEffect(() => {
@@ -181,6 +192,44 @@ export function LoginPage() {
           {login.isPending ? 'Signing in…' : 'Sign in'}
         </EnhancedButton>
       </form>
+
+      {/* Quick Demo Sign In */}
+      <div className="flex flex-col gap-2">
+        <p className="text-center text-xs text-muted">Or continue with demo account:</p>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => handleDemoSignIn({ id: 'usr_demo', name: 'Alex Morgan', email: 'alex@propertypro.app', roles: ['owner', 'agent'] })}
+            leftIcon={<User className="h-4 w-4" />}
+          >
+            Owner Demo
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => handleDemoSignIn(demoTenant)}
+            leftIcon={<Key className="h-4 w-4" />}
+          >
+            Tenant Demo
+          </Button>
+        </div>
+      </div>
+
+      {/* Switch Account / Sign Out */}
+      <div className="flex flex-col gap-2 pt-4 border-t border-border/50">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full text-danger hover:text-danger/80"
+          onClick={() => {
+            useAuthStore.getState().signOut()
+            window.location.reload()
+          }}
+        >
+          Sign out / Switch account
+        </Button>
+      </div>
       
       <p className="mt-8 text-center text-xs text-muted">
         By signing in, you agree to our{' '}

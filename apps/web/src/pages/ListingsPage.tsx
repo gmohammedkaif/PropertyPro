@@ -20,6 +20,7 @@ import { ActionsMenu } from '@/components/ui/ActionsMenu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import { useToast } from '@/hooks/useToast'
 import { useListingsStore, type ListingRecord, type ListingType, type ListingStatus } from '@/stores/listingsStore'
+import { useConfirmStore } from '@/stores/confirmStore'
 
 // Formatting helper
 const formatPrice = (price: number) => {
@@ -79,8 +80,12 @@ export function ListingsPage() {
     setModalOpen(true)
   }
 
-  const handleDelete = (id: string, name: string) => {
-    if (confirm(`Are you sure you want to remove the listing for "${name}"?`)) {
+  const handleDelete = async (id: string, name: string) => {
+    const confirmed = await useConfirmStore.getState().showConfirm({
+      title: 'Remove Listing',
+      message: `Are you sure you want to remove the listing for "${name}"?`
+    })
+    if (confirmed) {
       remove(id)
       toast.success('Listing removed successfully')
     }

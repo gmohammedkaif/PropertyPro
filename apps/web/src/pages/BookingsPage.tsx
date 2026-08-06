@@ -21,6 +21,7 @@ import { ActionsMenu } from '@/components/ui/ActionsMenu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import { useToast } from '@/hooks/useToast'
 import { useBookingsStore, type BookingRecord, type BookingStatus } from '@/stores/bookingsStore'
+import { useConfirmStore } from '@/stores/confirmStore'
 
 export function BookingsPage() {
   const toast = useToast()
@@ -70,8 +71,12 @@ export function BookingsPage() {
     setModalOpen(true)
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm('Cancel and delete this viewing session booking?')) {
+  const handleDelete = async (id: string) => {
+    const confirmed = await useConfirmStore.getState().showConfirm({
+      title: 'Cancel Booking',
+      message: 'Cancel and delete this viewing session booking?'
+    })
+    if (confirmed) {
       remove(id)
       toast.success('Booking cancelled successfully')
     }

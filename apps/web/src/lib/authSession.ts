@@ -18,11 +18,15 @@ async function rawRefresh(): Promise<RefreshResponseData | null> {
       {
         withCredentials: true,
         headers: { 'Content-Type': 'application/json' },
-        timeout: 10_000,
+        timeout: 5_000, // Reduced timeout
       },
     )
     return data.data
   } catch {
+    // If there's no persisted user, mark as unauthenticated immediately
+    if (!useAuthStore.getState().user) {
+      useAuthStore.getState().signOut()
+    }
     return null
   }
 }
@@ -40,7 +44,7 @@ export async function refreshAccessToken(): Promise<string | null> {
       useAuthStore.getState().signIn(res.user, res.accessToken)
       return res.accessToken
     } else {
-      useAuthStore.getState().signOut()
+      // Don't sign out automatically - keep local session
       return null
     }
   } finally {
@@ -48,9 +52,18 @@ export async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
-export async function restoreSession(): Promise<boolean> {
-  const token = await refreshAccessToken()
-  return !!token
+// Non-blocking restore - checks localStorage immediately, tries API in background
+export function restoreSession(): Promise<boolean> {
+  // Immediately return true if we have a persisted user
+  const storedUser = useAuthStore.getState().user
+  if (storedUser) {
+    // Fire and forget API refresh in background
+    refreshAccessToken().catch(() => {})
+    return Promise.resolve(true)
+  }
+  
+  // No local session - try API but with short timeout
+  return refreshAccessToken().then(token => !!token).catch(() => false)
 }
 
 export async function logout(): Promise<void> {

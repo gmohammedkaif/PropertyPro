@@ -23,6 +23,8 @@ import { PaymentsPage } from '@/pages/PaymentsPage'
 import { MaintenancePage } from '@/pages/MaintenancePage'
 import { AnalyticsPage } from '@/pages/AnalyticsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { TenantLeasePage } from '@/pages/TenantLeasePage'
+import { TenantPropertyDetailPage } from '@/pages/TenantPropertyDetailPage'
 import { isAdmin } from '@/stores/authStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -81,6 +83,7 @@ export const router = createBrowserRouter([
       // Shared — both roles can access
       { path: 'properties', element: <PropertyListPage /> },
       { path: 'properties/:id', element: <PropertyDetailPage /> },
+      { path: 'property/:id', element: <TenantPropertyDetailPage /> },
       { path: 'settings', element: <SettingsPage /> },
 
       // ── Admin-only routes ─────────────────────────────────────────────────
@@ -138,7 +141,7 @@ export const router = createBrowserRouter([
         path: 'my-lease',
         element: (
           <TenantGuard>
-            <PlaceholderPage />
+            <TenantLeasePage />
           </TenantGuard>
         ),
       },

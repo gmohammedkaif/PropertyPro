@@ -3,22 +3,24 @@ import { useEffect } from 'react'
 import { restoreSession } from '@/lib/authSession'
 import { useAuthStore } from '@/stores/authStore'
 
+/**
+ * Runs once on mount. If onRehydrateStorage already set a non-loading status
+ * (user found or not found in localStorage), we do nothing.
+ * Only when status is still 'loading' (rare: storage read not yet finished) do
+ * we try the API refresh to determine the session state.
+ */
 export function SessionRestore() {
-  const { user, status } = useAuthStore()
+  const status = useAuthStore((state) => state.status)
 
   useEffect(() => {
-    // If we already have a user from localStorage (persisted), mark as authenticated
-    if (user) {
-      useAuthStore.getState().signIn(user, useAuthStore.getState().accessToken ?? 'local')
-      return
-    }
-
-    // No persisted user — if status is still 'loading', try API restore.
-    // On failure, rawRefresh() will call signOut() which sets status = 'unauthenticated'.
+    // onRehydrateStorage in authStore handles the common case:
+    // - user in localStorage → status = 'authenticated'
+    // - no user in localStorage → status = 'unauthenticated'
+    // We only need to call the API if somehow status is still 'loading'
     if (status === 'loading') {
       void restoreSession()
     }
-  }, [user, status])
+  }, [status])
 
   return null
 }

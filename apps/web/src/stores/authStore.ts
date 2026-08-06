@@ -90,6 +90,12 @@ export const useAuthStore = create<AuthState>()(
     {
       name: AUTH_STORAGE_KEY,
       partialize: (state) => ({ user: state.user }),
+      onRehydrateStorage: () => (state) => {
+        // After localStorage is read, set status based on whether a user was found
+        if (state) {
+          state.status = state.user ? 'authenticated' : 'unauthenticated'
+        }
+      },
     },
   ),
 )

@@ -9,23 +9,27 @@ const dbReady = await connectDatabase()
 
 const app = createApp()
 
-const server = app.listen(env.PORT, env.HOST, () => {
-  logger.info({ host: env.HOST, port: env.PORT, db: dbReady ? 'mongodb' : 'memory' }, 'PropertyPro API listening')
-})
-
-function shutdown(signal: NodeJS.Signals): void {
-  logger.info({ signal }, 'Shutting down gracefully')
-
-  server.close(() => {
-    void disconnectDatabase().finally(() => {
-      logger.info('HTTP server closed')
-      process.exit(0)
-    })
+if (!process.env.VERCEL) {
+  const server = app.listen(env.PORT, env.HOST, () => {
+    logger.info({ host: env.HOST, port: env.PORT, db: dbReady ? 'mongodb' : 'memory' }, 'PropertyPro API listening')
   })
 
-  // Force-exit if graceful shutdown takes too long.
-  setTimeout(() => process.exit(1), 10_000).unref()
+  const shutdown = (signal: NodeJS.Signals): void => {
+    logger.info({ signal }, 'Shutting down gracefully')
+
+    server.close(() => {
+      void disconnectDatabase().finally(() => {
+        logger.info('HTTP server closed')
+        process.exit(0)
+      })
+    })
+
+    // Force-exit if graceful shutdown takes too long.
+    setTimeout(() => process.exit(1), 10_000).unref()
+  }
+
+  process.on('SIGINT', () => shutdown('SIGINT'))
+  process.on('SIGTERM', () => shutdown('SIGTERM'))
 }
 
-process.on('SIGINT', () => shutdown('SIGINT'))
-process.on('SIGTERM', () => shutdown('SIGTERM'))
+export default app

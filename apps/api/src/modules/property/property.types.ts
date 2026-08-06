@@ -21,7 +21,7 @@ export interface PropertyRecord {
   occupiedUnits: number
   status: PropertyStatus
   images: string[]
-  deletedAt: string | null
+  deletedAt?: string | null
   createdAt: string
   updatedAt: string
 }

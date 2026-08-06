@@ -1,0 +1,31 @@
+{
+  "name": "propertypro",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.8.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "predev": "pnpm --filter @propertypro/shared build",
+    "dev": "pnpm -r --parallel dev",
+    "dev:web": "pnpm --filter @propertypro/web dev",
+    "dev:api": "pnpm --filter @propertypro/api dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "eslint": "^9.13.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "globals": "^15.11.0",
+    "prettier": "^3.3.3",
+    "typescript": "~5.6.2",
+    "typescript-eslint": "^8.11.0"
+  }
+}

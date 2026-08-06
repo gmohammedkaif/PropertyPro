@@ -1,0 +1,1026 @@
+{
+  "users": [
+    [
+      "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+      {
+        "id": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "email": "zaid@gmail.com",
+        "passwordHash": "$2b$12$D792/h8MVv93WG.to1gHPuSHEdxHwiSQqaXJTG7W5v.GYQOvXuc6O",
+        "roles": [
+          "buyer"
+        ],
+        "firstName": "zaid",
+        "lastName": "zaid",
+        "status": "active",
+        "emailVerifiedAt": null,
+        "createdAt": "2026-08-05T11:31:13.595Z",
+        "updatedAt": "2026-08-05T11:31:13.595Z"
+      }
+    ],
+    [
+      "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+      {
+        "id": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "email": "alex2@propertypro.app",
+        "passwordHash": "$2b$12$ZiT262ncbpFqMu7IsDC0uu//nKnA0uqpBWYFfyInCCU2vWPELpDKi",
+        "roles": [
+          "owner"
+        ],
+        "firstName": "Alex",
+        "lastName": "Morgan",
+        "status": "active",
+        "emailVerifiedAt": null,
+        "createdAt": "2026-08-06T03:44:47.300Z",
+        "updatedAt": "2026-08-06T03:44:47.300Z"
+      }
+    ],
+    [
+      "c3d7d62e-8fc4-4e5d-b49f-b49734972552",
+      {
+        "id": "c3d7d62e-8fc4-4e5d-b49f-b49734972552",
+        "email": "imaz@gmail.com",
+        "passwordHash": "$2b$12$HBOkNqXtQVlg.60wL1A9fegb6f32Et/dLhgt7WEyleUq.ytp0H8pa",
+        "roles": [
+          "buyer"
+        ],
+        "firstName": "imaz",
+        "lastName": "imaz",
+        "status": "active",
+        "emailVerifiedAt": null,
+        "createdAt": "2026-08-06T05:56:16.958Z",
+        "updatedAt": "2026-08-06T05:56:16.958Z"
+      }
+    ]
+  ],
+  "usersByEmail": [
+    [
+      "zaid@gmail.com",
+      "92e9f5f2-5ef7-4626-8653-bf0b52880716"
+    ],
+    [
+      "alex2@propertypro.app",
+      "1b1dea9c-cf94-4ebb-9e49-ec589c798b61"
+    ],
+    [
+      "imaz@gmail.com",
+      "c3d7d62e-8fc4-4e5d-b49f-b49734972552"
+    ]
+  ],
+  "refreshTokens": [
+    [
+      "ae32bd77-ea96-4eef-95f3-4719c8bfaf6d",
+      {
+        "id": "ae32bd77-ea96-4eef-95f3-4719c8bfaf6d",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "a8cb010d-2d4d-4bb5-b858-ce7baca3ac55",
+        "tokenHash": "b00a842f81859759f4c5ece6806497aea792ff63860c0cc92a30de3157d9db71",
+        "expiresAt": "2026-09-04T11:31:13.596Z",
+        "revokedAt": "2026-08-06T05:31:51.417Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "e0603b7e-d98e-4c42-8afb-9622d6c2cc9a",
+      {
+        "id": "e0603b7e-d98e-4c42-8afb-9622d6c2cc9a",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "c69321c08e4f8979eef1d98d5ceb913be3a3cb0f2fe98494cb560b662f88e735",
+        "expiresAt": "2026-09-04T12:30:42.669Z",
+        "revokedAt": "2026-08-05T12:47:55.827Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "3ab21ebc-f46f-45b8-94f2-f3b21bcf0573",
+      {
+        "id": "3ab21ebc-f46f-45b8-94f2-f3b21bcf0573",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "28a031222e68445335747a36ce28d1e06846ec3be67c41c4786b22d2816277f3",
+        "expiresAt": "2026-09-04T12:47:55.829Z",
+        "revokedAt": "2026-08-05T14:01:24.579Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "73a67dfc-88f6-4303-92c4-93d4fb09523b",
+      {
+        "id": "73a67dfc-88f6-4303-92c4-93d4fb09523b",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "dc5d12baa562f97a9fdb042cb13485e27672adda3bc6e527f689cfab89b37832",
+        "expiresAt": "2026-09-04T14:01:24.583Z",
+        "revokedAt": "2026-08-05T14:09:33.344Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "94196d2d-1c29-408a-adfb-4877beef34e6",
+      {
+        "id": "94196d2d-1c29-408a-adfb-4877beef34e6",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "c2d1a4cbb71b542eaca0aa2bc7bc23ea6a8a63c463c6907f789b99da274a2423",
+        "expiresAt": "2026-09-04T14:09:33.346Z",
+        "revokedAt": "2026-08-05T14:10:16.705Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "64957c39-c5cb-4c3f-884f-652d1f69a3b4",
+      {
+        "id": "64957c39-c5cb-4c3f-884f-652d1f69a3b4",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "cf6ee59b8ce991b85dc31cf65487dd5b73bc2193ef2b8b0026525d37ba4af0ee",
+        "expiresAt": "2026-09-04T14:10:16.707Z",
+        "revokedAt": "2026-08-05T14:10:20.470Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "b7eaf392-ff05-46f1-8f54-1b53bb18577d",
+      {
+        "id": "b7eaf392-ff05-46f1-8f54-1b53bb18577d",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "81d886256c35f4a48425ea69aacae4955f9d40fed24f9e4dcea9413f0b5229e0",
+        "expiresAt": "2026-09-04T14:10:20.472Z",
+        "revokedAt": "2026-08-06T03:36:56.912Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "06136fde-9619-4a19-b2d1-c2a237617035",
+      {
+        "id": "06136fde-9619-4a19-b2d1-c2a237617035",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "bfa29c938c4b855b62866ab2eb2e9e22c44a0b2147f1e670dbd2c1179479369e",
+        "expiresAt": "2026-09-05T03:36:56.914Z",
+        "revokedAt": "2026-08-06T03:37:22.641Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "69b968d3-441c-4b67-a179-4de5cb84d211",
+      {
+        "id": "69b968d3-441c-4b67-a179-4de5cb84d211",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "430e49ef6ece5c28f2a9ef37734690ded70bb0d6270c56b07881837915a369e3",
+        "expiresAt": "2026-09-05T03:37:22.643Z",
+        "revokedAt": "2026-08-06T03:37:22.845Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "121c56f5-d2c3-41da-bba5-7edcf6334027",
+      {
+        "id": "121c56f5-d2c3-41da-bba5-7edcf6334027",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "2b2835a004ad5743c941700710499182b99f032303cac527d6187a8131000cf9",
+        "expiresAt": "2026-09-05T03:37:22.846Z",
+        "revokedAt": "2026-08-06T03:37:23.105Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "fecd0295-9c88-45db-9f5a-26f3b49be48f",
+      {
+        "id": "fecd0295-9c88-45db-9f5a-26f3b49be48f",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "c11c424da575747a44471b1c725cee1e2a7e127c02b42e6b9e14b853c6768f2b",
+        "expiresAt": "2026-09-05T03:37:23.107Z",
+        "revokedAt": "2026-08-06T03:37:23.380Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "a09642bf-056f-45bf-8357-cc79edcd4e3e",
+      {
+        "id": "a09642bf-056f-45bf-8357-cc79edcd4e3e",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "6c7f3cc808cdd4fb99d8b22a5d06d8eb9d3936bd120d4368318925994e63582b",
+        "expiresAt": "2026-09-05T03:37:23.384Z",
+        "revokedAt": "2026-08-06T04:13:15.195Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "14661e98-9a42-46ef-9b84-2edff011e043",
+      {
+        "id": "14661e98-9a42-46ef-9b84-2edff011e043",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "266bbd11-f674-4ac7-855d-561bb7e1ddd7",
+        "tokenHash": "66ddb20efbb6c8c3deeec2cd9a348cf39133b5e33ac42e4d4ec4191a0754b850",
+        "expiresAt": "2026-09-05T03:44:47.303Z",
+        "revokedAt": "2026-08-06T03:47:23.897Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "f407e054-c842-4f30-b77b-8c4c92086b8c",
+      {
+        "id": "f407e054-c842-4f30-b77b-8c4c92086b8c",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "266bbd11-f674-4ac7-855d-561bb7e1ddd7",
+        "tokenHash": "595c8f9ea890cc2df00ec3feeca4ed36d3ea00734701f27eadb9a37e3b2d7cb3",
+        "expiresAt": "2026-09-05T03:47:23.900Z",
+        "revokedAt": "2026-08-06T03:47:34.656Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "0c41ddc7-4940-4331-9970-b28788d86cd6",
+      {
+        "id": "0c41ddc7-4940-4331-9970-b28788d86cd6",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "266bbd11-f674-4ac7-855d-561bb7e1ddd7",
+        "tokenHash": "a94795f7a040f4e843702046a7f2ba4289561ae70b2f276e7e19cfec87dadfef",
+        "expiresAt": "2026-09-05T03:47:34.658Z",
+        "revokedAt": "2026-08-06T03:47:45.976Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "28fb91af-e0ea-42ca-8810-8ef7cdb89921",
+      {
+        "id": "28fb91af-e0ea-42ca-8810-8ef7cdb89921",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "266bbd11-f674-4ac7-855d-561bb7e1ddd7",
+        "tokenHash": "a39db851f2b1e18a27c63839fd89f206fcdb384c165818cbf43b25be42d24896",
+        "expiresAt": "2026-09-05T03:47:45.978Z",
+        "revokedAt": "2026-08-06T03:47:57.699Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "d7cc83d3-3f7e-48cc-bd5a-2442b74f5a70",
+      {
+        "id": "d7cc83d3-3f7e-48cc-bd5a-2442b74f5a70",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "266bbd11-f674-4ac7-855d-561bb7e1ddd7",
+        "tokenHash": "9a542e1be773b9cdddea42e02ca7286a9332663db70343e13416304a9ed41f6b",
+        "expiresAt": "2026-09-05T03:47:57.702Z",
+        "revokedAt": "2026-08-06T03:54:04.965Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "9f01a5c6-0019-45b2-b280-fa922729f931",
+      {
+        "id": "9f01a5c6-0019-45b2-b280-fa922729f931",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "266bbd11-f674-4ac7-855d-561bb7e1ddd7",
+        "tokenHash": "79978034eeee331bfc5f73fd1681405bc320fb7803c044d93b7eee9bc9e81c25",
+        "expiresAt": "2026-09-05T03:54:04.968Z",
+        "revokedAt": "2026-08-06T03:54:17.377Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "07781e46-2232-4a75-8dcd-c14fd6b64666",
+      {
+        "id": "07781e46-2232-4a75-8dcd-c14fd6b64666",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "b54f2674-d5ab-4166-a2ce-c0998adb1c8f",
+        "tokenHash": "5976bc4cff15f0a2e0d2b9ac15938fd51837c15fc89a14f14353c1a76a263492",
+        "expiresAt": "2026-09-05T03:54:28.670Z",
+        "revokedAt": "2026-08-06T03:56:18.753Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "5fcde795-bab6-4742-b8ea-1675b4c7ce4d",
+      {
+        "id": "5fcde795-bab6-4742-b8ea-1675b4c7ce4d",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "b54f2674-d5ab-4166-a2ce-c0998adb1c8f",
+        "tokenHash": "a29f49433aa4f79fb5e066f995c2ced86f9bb82d998389b26c2009d8a7fd35ae",
+        "expiresAt": "2026-09-05T03:56:18.754Z",
+        "revokedAt": "2026-08-06T03:56:28.223Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "4c9f1ef5-acfa-406e-9227-a505c37fa47f",
+      {
+        "id": "4c9f1ef5-acfa-406e-9227-a505c37fa47f",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "b54f2674-d5ab-4166-a2ce-c0998adb1c8f",
+        "tokenHash": "ec5f944b3c9cf4d16ed8527b629837eb3f50e475869bb2e4b73e4b22f8a07d03",
+        "expiresAt": "2026-09-05T03:56:28.225Z",
+        "revokedAt": "2026-08-06T03:56:39.518Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "ac3d1bd3-66c6-4c85-b470-9e43a439e69d",
+      {
+        "id": "ac3d1bd3-66c6-4c85-b470-9e43a439e69d",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "b54f2674-d5ab-4166-a2ce-c0998adb1c8f",
+        "tokenHash": "7665e6149995c43ff4d33acb8b4d18e2117816f1b37f0e5ba255e09170957993",
+        "expiresAt": "2026-09-05T03:56:39.520Z",
+        "revokedAt": "2026-08-06T03:57:39.452Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "106008b8-98bd-410c-b1bb-64e226c72178",
+      {
+        "id": "106008b8-98bd-410c-b1bb-64e226c72178",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "b54f2674-d5ab-4166-a2ce-c0998adb1c8f",
+        "tokenHash": "ca0879e9098eda34916c0817bb4c5dd75a0cafc6e7076f1d9d496d94bcd61c7a",
+        "expiresAt": "2026-09-05T03:57:39.454Z",
+        "revokedAt": "2026-08-06T03:57:52.289Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "eca60ec7-3372-4b26-bec4-5805fd967b91",
+      {
+        "id": "eca60ec7-3372-4b26-bec4-5805fd967b91",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "50099d70-ff12-4c95-88b6-d55e37e92268",
+        "tokenHash": "aecf547abae4a993d76ae3068aa18be9267a9492b31e918b83d4456f25bb61db",
+        "expiresAt": "2026-09-05T03:58:11.431Z",
+        "revokedAt": "2026-08-06T04:24:11.374Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "1ed826eb-5e1a-4400-a0cb-0b8d0df002a0",
+      {
+        "id": "1ed826eb-5e1a-4400-a0cb-0b8d0df002a0",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "b6db8a105dc5c70d643d43b8e8b4a9deeeade117b582773c08c0339ee7dc0bc5",
+        "expiresAt": "2026-09-05T04:13:15.197Z",
+        "revokedAt": "2026-08-06T04:14:01.174Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "afa17893-92f8-4f04-a781-aa1360517b29",
+      {
+        "id": "afa17893-92f8-4f04-a781-aa1360517b29",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "c15fc3b6a1511a44e6e6768d3544c8c3506b980421eac379ea7cee0c27641ea5",
+        "expiresAt": "2026-09-05T04:14:01.176Z",
+        "revokedAt": "2026-08-06T04:22:55.193Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "623bce06-aa93-48a3-adcb-c7b8c3cd41dd",
+      {
+        "id": "623bce06-aa93-48a3-adcb-c7b8c3cd41dd",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "5073aa6f22f35226c96aadf2935b0222a22d1ae03cac341c92b54eb92f19b5fe",
+        "expiresAt": "2026-09-05T04:22:55.196Z",
+        "revokedAt": "2026-08-06T04:23:01.018Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "9c34712c-ac48-46e1-b0bc-52e1866efbf6",
+      {
+        "id": "9c34712c-ac48-46e1-b0bc-52e1866efbf6",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "0944b2cd4be1385f0f653c67c000cbce533ff3a9945c06ccf495218ccafd957e",
+        "expiresAt": "2026-09-05T04:23:01.020Z",
+        "revokedAt": "2026-08-06T04:25:58.301Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "097f3df7-33ba-4baf-810d-0e616dca85ba",
+      {
+        "id": "097f3df7-33ba-4baf-810d-0e616dca85ba",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "50099d70-ff12-4c95-88b6-d55e37e92268",
+        "tokenHash": "02d15f0ae25f8c84417bcdbbb61957da63f9b8b76f503ed4782cfb464f4832fb",
+        "expiresAt": "2026-09-05T04:24:11.376Z",
+        "revokedAt": "2026-08-06T04:25:57.168Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "b561b24c-f260-40aa-8acf-db520c2456c3",
+      {
+        "id": "b561b24c-f260-40aa-8acf-db520c2456c3",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "50099d70-ff12-4c95-88b6-d55e37e92268",
+        "tokenHash": "dd7f25a91d1f64f42930ad20da76e89d964cc3f8c965d783cc4d69c16a0c95f7",
+        "expiresAt": "2026-09-05T04:25:57.170Z",
+        "revokedAt": "2026-08-06T06:24:02.389Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "20ffac20-2864-4e23-81e8-edac3e944c8b",
+      {
+        "id": "20ffac20-2864-4e23-81e8-edac3e944c8b",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "d70d144d76ce314c37e78ee21e1eca98b67e431ccd80ce40d98952f1cbf3b221",
+        "expiresAt": "2026-09-05T04:25:58.304Z",
+        "revokedAt": "2026-08-06T04:26:00.026Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "cb9e9383-e60c-446e-ab4d-eb76fa577c85",
+      {
+        "id": "cb9e9383-e60c-446e-ab4d-eb76fa577c85",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "3eadc39d46a7f412159a9eb7c9ee467e180faf12d00b3f20125d42883713b03d",
+        "expiresAt": "2026-09-05T04:26:00.028Z",
+        "revokedAt": "2026-08-06T04:33:22.891Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "4ffa8b19-9fde-45ae-a2ad-01ff15f85bb0",
+      {
+        "id": "4ffa8b19-9fde-45ae-a2ad-01ff15f85bb0",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "eb495b14cd34178c49eb9cea681f9c717b0861c6a5b374234520cc0ccad617af",
+        "expiresAt": "2026-09-05T04:33:22.894Z",
+        "revokedAt": "2026-08-06T04:33:23.706Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "b498408c-ae69-4fb2-97ac-3c3d10e77f8b",
+      {
+        "id": "b498408c-ae69-4fb2-97ac-3c3d10e77f8b",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "93b9704db43898c9901e0fd18c423dc8421ebe1fed35dbec782310bab283bb95",
+        "expiresAt": "2026-09-05T04:33:23.709Z",
+        "revokedAt": "2026-08-06T04:33:23.945Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "1aa55eee-b6ec-4756-b4ff-f1a65d06e1be",
+      {
+        "id": "1aa55eee-b6ec-4756-b4ff-f1a65d06e1be",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "9844b6015f646773f2f244754978f7a6d0007c7dab84bdcd81bcfba1e120547d",
+        "expiresAt": "2026-09-05T04:33:23.947Z",
+        "revokedAt": "2026-08-06T05:13:16.584Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "32399ec6-1250-4b5f-94e2-606f351a3ad6",
+      {
+        "id": "32399ec6-1250-4b5f-94e2-606f351a3ad6",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "207a7e23ff06f9f353530a30ea8f036f83eaf0e8b37172f7e4a3e3793d29cbd6",
+        "expiresAt": "2026-09-05T05:13:16.587Z",
+        "revokedAt": "2026-08-06T05:13:17.742Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "b875a362-c0ba-49f2-94c7-cad5d2f6047b",
+      {
+        "id": "b875a362-c0ba-49f2-94c7-cad5d2f6047b",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "8c6c3bc6c8879b6cfb45fb667d315e982f01487574e4bb23041639bfb6a6a7d5",
+        "expiresAt": "2026-09-05T05:13:17.744Z",
+        "revokedAt": "2026-08-06T05:13:18.304Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "749d6b97-28f6-47cd-8a25-24c368551708",
+      {
+        "id": "749d6b97-28f6-47cd-8a25-24c368551708",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "80808500a612eba094883075531b166b9be5054785e0cfcb5d54b55e82b1cd36",
+        "expiresAt": "2026-09-05T05:13:18.308Z",
+        "revokedAt": "2026-08-06T05:13:19.178Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "c6ee4028-d658-4d2c-9ef8-06decc1718e7",
+      {
+        "id": "c6ee4028-d658-4d2c-9ef8-06decc1718e7",
+        "userId": "92e9f5f2-5ef7-4626-8653-bf0b52880716",
+        "familyId": "6d918a33-3bc3-4f7c-9721-9877b4e5515b",
+        "tokenHash": "55ded835759318f0c053d0de1df778db52a8504412f8fb330d48c428a7aec5a2",
+        "expiresAt": "2026-09-05T05:13:19.180Z",
+        "revokedAt": "2026-08-06T05:31:51.417Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "18e7798d-76d5-4d56-853b-33a66f6b4f1b",
+      {
+        "id": "18e7798d-76d5-4d56-853b-33a66f6b4f1b",
+        "userId": "c3d7d62e-8fc4-4e5d-b49f-b49734972552",
+        "familyId": "851f8ed0-051f-442f-a255-05a3ac9b2474",
+        "tokenHash": "4b5c0a6537503e74f20c3b9a969e223cc2ca83c9d6a8a23d3c30e8711d32c867",
+        "expiresAt": "2026-09-05T05:56:16.961Z",
+        "revokedAt": "2026-08-06T06:24:02.518Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "13651e8b-bf5b-44db-952e-4d00aa37ec7b",
+      {
+        "id": "13651e8b-bf5b-44db-952e-4d00aa37ec7b",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "50099d70-ff12-4c95-88b6-d55e37e92268",
+        "tokenHash": "387de91e8722eb5943f2ec12531c259dc4082bc51aee7a744ab11a2f0ff937b7",
+        "expiresAt": "2026-09-05T06:24:02.392Z",
+        "revokedAt": "2026-08-06T06:28:41.290Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "4785a1a7-31a3-4131-a57a-3ec5cd0d57e4",
+      {
+        "id": "4785a1a7-31a3-4131-a57a-3ec5cd0d57e4",
+        "userId": "c3d7d62e-8fc4-4e5d-b49f-b49734972552",
+        "familyId": "851f8ed0-051f-442f-a255-05a3ac9b2474",
+        "tokenHash": "5778bbe1c8ff09cec010d6698acdeb9aecc420b297c2d9a74ce2d37ad3f3294c",
+        "expiresAt": "2026-09-05T06:24:02.520Z",
+        "revokedAt": "2026-08-06T06:28:41.450Z",
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "c2e37649-6125-428c-bd01-f86c6d2683d9",
+      {
+        "id": "c2e37649-6125-428c-bd01-f86c6d2683d9",
+        "userId": "1b1dea9c-cf94-4ebb-9e49-ec589c798b61",
+        "familyId": "50099d70-ff12-4c95-88b6-d55e37e92268",
+        "tokenHash": "44b03a3e2c2e259cc0ac2100a8c92fcb7573829e659e767dd1cd642566f4b1b9",
+        "expiresAt": "2026-09-05T06:28:41.293Z",
+        "revokedAt": null,
+        "replacedByTokenId": null
+      }
+    ],
+    [
+      "55d5fe0a-9690-4351-9f08-93b04e92ccd2",
+      {
+        "id": "55d5fe0a-9690-4351-9f08-93b04e92ccd2",
+        "userId": "c3d7d62e-8fc4-4e5d-b49f-b49734972552",
+        "familyId": "851f8ed0-051f-442f-a255-05a3ac9b2474",
+        "tokenHash": "27f4d64fd22993f8952c8e7d2700b6ee0020dbb59fe6c0f86cd83c0607cb85d2",
+        "expiresAt": "2026-09-05T06:28:41.454Z",
+        "revokedAt": null,
+        "replacedByTokenId": null
+      }
+    ]
+  ],
+  "refreshTokensByHash": [
+    [
+      "b00a842f81859759f4c5ece6806497aea792ff63860c0cc92a30de3157d9db71",
+      "ae32bd77-ea96-4eef-95f3-4719c8bfaf6d"
+    ],
+    [
+      "c69321c08e4f8979eef1d98d5ceb913be3a3cb0f2fe98494cb560b662f88e735",
+      "e0603b7e-d98e-4c42-8afb-9622d6c2cc9a"
+    ],
+    [
+      "28a031222e68445335747a36ce28d1e06846ec3be67c41c4786b22d2816277f3",
+      "3ab21ebc-f46f-45b8-94f2-f3b21bcf0573"
+    ],
+    [
+      "dc5d12baa562f97a9fdb042cb13485e27672adda3bc6e527f689cfab89b37832",
+      "73a67dfc-88f6-4303-92c4-93d4fb09523b"
+    ],
+    [
+      "c2d1a4cbb71b542eaca0aa2bc7bc23ea6a8a63c463c6907f789b99da274a2423",
+      "94196d2d-1c29-408a-adfb-4877beef34e6"
+    ],
+    [
+      "cf6ee59b8ce991b85dc31cf65487dd5b73bc2193ef2b8b0026525d37ba4af0ee",
+      "64957c39-c5cb-4c3f-884f-652d1f69a3b4"
+    ],
+    [
+      "81d886256c35f4a48425ea69aacae4955f9d40fed24f9e4dcea9413f0b5229e0",
+      "b7eaf392-ff05-46f1-8f54-1b53bb18577d"
+    ],
+    [
+      "bfa29c938c4b855b62866ab2eb2e9e22c44a0b2147f1e670dbd2c1179479369e",
+      "06136fde-9619-4a19-b2d1-c2a237617035"
+    ],
+    [
+      "430e49ef6ece5c28f2a9ef37734690ded70bb0d6270c56b07881837915a369e3",
+      "69b968d3-441c-4b67-a179-4de5cb84d211"
+    ],
+    [
+      "2b2835a004ad5743c941700710499182b99f032303cac527d6187a8131000cf9",
+      "121c56f5-d2c3-41da-bba5-7edcf6334027"
+    ],
+    [
+      "c11c424da575747a44471b1c725cee1e2a7e127c02b42e6b9e14b853c6768f2b",
+      "fecd0295-9c88-45db-9f5a-26f3b49be48f"
+    ],
+    [
+      "6c7f3cc808cdd4fb99d8b22a5d06d8eb9d3936bd120d4368318925994e63582b",
+      "a09642bf-056f-45bf-8357-cc79edcd4e3e"
+    ],
+    [
+      "66ddb20efbb6c8c3deeec2cd9a348cf39133b5e33ac42e4d4ec4191a0754b850",
+      "14661e98-9a42-46ef-9b84-2edff011e043"
+    ],
+    [
+      "595c8f9ea890cc2df00ec3feeca4ed36d3ea00734701f27eadb9a37e3b2d7cb3",
+      "f407e054-c842-4f30-b77b-8c4c92086b8c"
+    ],
+    [
+      "a94795f7a040f4e843702046a7f2ba4289561ae70b2f276e7e19cfec87dadfef",
+      "0c41ddc7-4940-4331-9970-b28788d86cd6"
+    ],
+    [
+      "a39db851f2b1e18a27c63839fd89f206fcdb384c165818cbf43b25be42d24896",
+      "28fb91af-e0ea-42ca-8810-8ef7cdb89921"
+    ],
+    [
+      "9a542e1be773b9cdddea42e02ca7286a9332663db70343e13416304a9ed41f6b",
+      "d7cc83d3-3f7e-48cc-bd5a-2442b74f5a70"
+    ],
+    [
+      "79978034eeee331bfc5f73fd1681405bc320fb7803c044d93b7eee9bc9e81c25",
+      "9f01a5c6-0019-45b2-b280-fa922729f931"
+    ],
+    [
+      "5976bc4cff15f0a2e0d2b9ac15938fd51837c15fc89a14f14353c1a76a263492",
+      "07781e46-2232-4a75-8dcd-c14fd6b64666"
+    ],
+    [
+      "a29f49433aa4f79fb5e066f995c2ced86f9bb82d998389b26c2009d8a7fd35ae",
+      "5fcde795-bab6-4742-b8ea-1675b4c7ce4d"
+    ],
+    [
+      "ec5f944b3c9cf4d16ed8527b629837eb3f50e475869bb2e4b73e4b22f8a07d03",
+      "4c9f1ef5-acfa-406e-9227-a505c37fa47f"
+    ],
+    [
+      "7665e6149995c43ff4d33acb8b4d18e2117816f1b37f0e5ba255e09170957993",
+      "ac3d1bd3-66c6-4c85-b470-9e43a439e69d"
+    ],
+    [
+      "ca0879e9098eda34916c0817bb4c5dd75a0cafc6e7076f1d9d496d94bcd61c7a",
+      "106008b8-98bd-410c-b1bb-64e226c72178"
+    ],
+    [
+      "aecf547abae4a993d76ae3068aa18be9267a9492b31e918b83d4456f25bb61db",
+      "eca60ec7-3372-4b26-bec4-5805fd967b91"
+    ],
+    [
+      "b6db8a105dc5c70d643d43b8e8b4a9deeeade117b582773c08c0339ee7dc0bc5",
+      "1ed826eb-5e1a-4400-a0cb-0b8d0df002a0"
+    ],
+    [
+      "c15fc3b6a1511a44e6e6768d3544c8c3506b980421eac379ea7cee0c27641ea5",
+      "afa17893-92f8-4f04-a781-aa1360517b29"
+    ],
+    [
+      "5073aa6f22f35226c96aadf2935b0222a22d1ae03cac341c92b54eb92f19b5fe",
+      "623bce06-aa93-48a3-adcb-c7b8c3cd41dd"
+    ],
+    [
+      "0944b2cd4be1385f0f653c67c000cbce533ff3a9945c06ccf495218ccafd957e",
+      "9c34712c-ac48-46e1-b0bc-52e1866efbf6"
+    ],
+    [
+      "02d15f0ae25f8c84417bcdbbb61957da63f9b8b76f503ed4782cfb464f4832fb",
+      "097f3df7-33ba-4baf-810d-0e616dca85ba"
+    ],
+    [
+      "dd7f25a91d1f64f42930ad20da76e89d964cc3f8c965d783cc4d69c16a0c95f7",
+      "b561b24c-f260-40aa-8acf-db520c2456c3"
+    ],
+    [
+      "d70d144d76ce314c37e78ee21e1eca98b67e431ccd80ce40d98952f1cbf3b221",
+      "20ffac20-2864-4e23-81e8-edac3e944c8b"
+    ],
+    [
+      "3eadc39d46a7f412159a9eb7c9ee467e180faf12d00b3f20125d42883713b03d",
+      "cb9e9383-e60c-446e-ab4d-eb76fa577c85"
+    ],
+    [
+      "eb495b14cd34178c49eb9cea681f9c717b0861c6a5b374234520cc0ccad617af",
+      "4ffa8b19-9fde-45ae-a2ad-01ff15f85bb0"
+    ],
+    [
+      "93b9704db43898c9901e0fd18c423dc8421ebe1fed35dbec782310bab283bb95",
+      "b498408c-ae69-4fb2-97ac-3c3d10e77f8b"
+    ],
+    [
+      "9844b6015f646773f2f244754978f7a6d0007c7dab84bdcd81bcfba1e120547d",
+      "1aa55eee-b6ec-4756-b4ff-f1a65d06e1be"
+    ],
+    [
+      "207a7e23ff06f9f353530a30ea8f036f83eaf0e8b37172f7e4a3e3793d29cbd6",
+      "32399ec6-1250-4b5f-94e2-606f351a3ad6"
+    ],
+    [
+      "8c6c3bc6c8879b6cfb45fb667d315e982f01487574e4bb23041639bfb6a6a7d5",
+      "b875a362-c0ba-49f2-94c7-cad5d2f6047b"
+    ],
+    [
+      "80808500a612eba094883075531b166b9be5054785e0cfcb5d54b55e82b1cd36",
+      "749d6b97-28f6-47cd-8a25-24c368551708"
+    ],
+    [
+      "55ded835759318f0c053d0de1df778db52a8504412f8fb330d48c428a7aec5a2",
+      "c6ee4028-d658-4d2c-9ef8-06decc1718e7"
+    ],
+    [
+      "4b5c0a6537503e74f20c3b9a969e223cc2ca83c9d6a8a23d3c30e8711d32c867",
+      "18e7798d-76d5-4d56-853b-33a66f6b4f1b"
+    ],
+    [
+      "387de91e8722eb5943f2ec12531c259dc4082bc51aee7a744ab11a2f0ff937b7",
+      "13651e8b-bf5b-44db-952e-4d00aa37ec7b"
+    ],
+    [
+      "5778bbe1c8ff09cec010d6698acdeb9aecc420b297c2d9a74ce2d37ad3f3294c",
+      "4785a1a7-31a3-4131-a57a-3ec5cd0d57e4"
+    ],
+    [
+      "44b03a3e2c2e259cc0ac2100a8c92fcb7573829e659e767dd1cd642566f4b1b9",
+      "c2e37649-6125-428c-bd01-f86c6d2683d9"
+    ],
+    [
+      "27f4d64fd22993f8952c8e7d2700b6ee0020dbb59fe6c0f86cd83c0607cb85d2",
+      "55d5fe0a-9690-4351-9f08-93b04e92ccd2"
+    ]
+  ],
+  "passwordResetTokens": [],
+  "properties": [
+    [
+      "f8a612de-a1e9-429d-9b62-4f0e7fa53df1",
+      {
+        "ownerId": "usr_demo",
+        "name": "Zaid Manzil",
+        "type": "house",
+        "address": {
+          "line1": "Yerthangal hakeem",
+          "line2": null,
+          "city": "Pernambut",
+          "state": "Tamil Nadu",
+          "postalCode": "635810",
+          "country": "India"
+        },
+        "location": null,
+        "description": "Spacious family house with private compound.",
+        "amenities": [
+          "Parking",
+          "Water Supply"
+        ],
+        "totalUnits": 18,
+        "occupiedUnits": 18,
+        "status": "active",
+        "images": [],
+        "id": "f8a612de-a1e9-429d-9b62-4f0e7fa53df1",
+        "createdAt": "2026-08-06T04:24:28.548Z",
+        "updatedAt": "2026-08-06T04:24:28.548Z",
+        "deletedAt": null
+      }
+    ],
+    [
+      "adbbe795-fd99-4499-a8ff-7633b6130ede",
+      {
+        "ownerId": "usr_demo",
+        "name": "Urban Nest Apartments",
+        "type": "apartment",
+        "address": {
+          "line1": "OMR Road, Navalur",
+          "line2": null,
+          "city": "Chennai",
+          "state": "Tamil Nadu",
+          "postalCode": "603103",
+          "country": "India"
+        },
+        "location": null,
+        "description": "Modern luxury studio apartments.",
+        "amenities": [
+          "Gym",
+          "Pool",
+          "Elevator",
+          "Security"
+        ],
+        "totalUnits": 402,
+        "occupiedUnits": 0,
+        "status": "active",
+        "images": [],
+        "id": "adbbe795-fd99-4499-a8ff-7633b6130ede",
+        "createdAt": "2026-08-06T04:24:28.548Z",
+        "updatedAt": "2026-08-06T04:24:28.548Z",
+        "deletedAt": null
+      }
+    ],
+    [
+      "d09c39f0-1b0b-4117-b76d-e9da52c4d70e",
+      {
+        "ownerId": "usr_demo",
+        "name": "Sai Enclave",
+        "type": "house",
+        "address": {
+          "line1": "Gandhi Nagar, Near CMC Hospital",
+          "line2": null,
+          "city": "Vellore",
+          "state": "Tamil Nadu",
+          "postalCode": "632006",
+          "country": "India"
+        },
+        "location": null,
+        "description": "Cozy standalone residential house.",
+        "amenities": [
+          "Garden",
+          "Power Backup"
+        ],
+        "totalUnits": 65,
+        "occupiedUnits": 65,
+        "status": "active",
+        "images": [],
+        "id": "d09c39f0-1b0b-4117-b76d-e9da52c4d70e",
+        "createdAt": "2026-08-06T04:24:28.548Z",
+        "updatedAt": "2026-08-06T04:24:28.548Z",
+        "deletedAt": null
+      }
+    ],
+    [
+      "1a193ce0-545e-4453-b299-3648693976a1",
+      {
+        "ownerId": "usr_demo",
+        "name": "BlueStone Heights",
+        "type": "apartment",
+        "address": {
+          "line1": "Madhapur IT Park Road",
+          "line2": null,
+          "city": "Hyderabad",
+          "state": "Telangana",
+          "postalCode": "500081",
+          "country": "India"
+        },
+        "location": null,
+        "description": "Premium flat block in the heart of tech corridor.",
+        "amenities": [
+          "High-speed Wifi",
+          "Gym",
+          "Clubhouse"
+        ],
+        "totalUnits": 345,
+        "occupiedUnits": 0,
+        "status": "active",
+        "images": [],
+        "id": "1a193ce0-545e-4453-b299-3648693976a1",
+        "createdAt": "2026-08-06T04:24:28.548Z",
+        "updatedAt": "2026-08-06T04:24:28.548Z",
+        "deletedAt": null
+      }
+    ],
+    [
+      "3609631e-ca90-486a-bb6f-abfc42be524a",
+      {
+        "ownerId": "usr_demo",
+        "name": "Green Valley Homes",
+        "type": "mixed",
+        "address": {
+          "line1": "45, RS Puram, Near Bus Stand",
+          "line2": null,
+          "city": "Coimbatore",
+          "state": "Tamil Nadu",
+          "postalCode": "641002",
+          "country": "India"
+        },
+        "location": null,
+        "description": "Beautiful gated villa community.",
+        "amenities": [
+          "Park",
+          "Security",
+          "Water Harvesting"
+        ],
+        "totalUnits": 234,
+        "occupiedUnits": 234,
+        "status": "active",
+        "images": [],
+        "id": "3609631e-ca90-486a-bb6f-abfc42be524a",
+        "createdAt": "2026-08-06T04:24:28.548Z",
+        "updatedAt": "2026-08-06T04:24:28.548Z",
+        "deletedAt": null
+      }
+    ],
+    [
+      "396cec34-3ff4-4f5e-95dd-78b79ed9cad0",
+      {
+        "ownerId": "usr_demo",
+        "name": "Sunrise Residency",
+        "type": "apartment",
+        "address": {
+          "line1": "12, Anna Nagar Main Road, Near VR Mall",
+          "line2": null,
+          "city": "Chennai",
+          "state": "Tamil Nadu",
+          "postalCode": "600040",
+          "country": "India"
+        },
+        "location": null,
+        "description": "Spacious flats with excellent connectivity.",
+        "amenities": [
+          "Balcony",
+          "Lift",
+          "Parking"
+        ],
+        "totalUnits": 204,
+        "occupiedUnits": 0,
+        "status": "active",
+        "images": [],
+        "id": "396cec34-3ff4-4f5e-95dd-78b79ed9cad0",
+        "createdAt": "2026-08-06T04:24:28.548Z",
+        "updatedAt": "2026-08-06T04:24:28.548Z",
+        "deletedAt": null
+      }
+    ],
+    [
+      "54345d70-86e1-4ce8-a267-bad41a521f86",
+      {
+        "ownerId": "usr_demo",
+        "name": "Oakwood Manor",
+        "type": "house",
+        "address": {
+          "line1": "Unit 3, MG Road",
+          "line2": null,
+          "city": "Bangalore",
+          "state": "Karnataka",
+          "postalCode": "560001",
+          "country": "India"
+        },
+        "location": null,
+        "description": "Elegant colonial-style manor.",
+        "amenities": [
+          "Fireplace",
+          "Garden"
+        ],
+        "totalUnits": 3,
+        "occupiedUnits": 0,
+        "status": "active",
+        "images": [],
+        "id": "54345d70-86e1-4ce8-a267-bad41a521f86",
+        "createdAt": "2026-08-06T04:24:28.548Z",
+        "updatedAt": "2026-08-06T04:24:28.548Z",
+        "deletedAt": null
+      }
+    ],
+    [
+      "69b8267d-15ab-4b34-9c2b-2af2b613df06",
+      {
+        "ownerId": "usr_demo",
+        "name": "Silicon Towers",
+        "type": "commercial",
+        "address": {
+          "line1": "9th Floor, Tech Park",
+          "line2": null,
+          "city": "Bangalore",
+          "state": "Karnataka",
+          "postalCode": "560048",
+          "country": "India"
+        },
+        "location": null,
+        "description": "Corporate office suites.",
+        "amenities": [
+          "Meeting Rooms",
+          "Fiber Internet",
+          "Cafe"
+        ],
+        "totalUnits": 15,
+        "occupiedUnits": 0,
+        "status": "active",
+        "images": [],
+        "id": "69b8267d-15ab-4b34-9c2b-2af2b613df06",
+        "createdAt": "2026-08-06T04:24:28.548Z",
+        "updatedAt": "2026-08-06T04:24:28.548Z",
+        "deletedAt": null
+      }
+    ]
+  ]
+}

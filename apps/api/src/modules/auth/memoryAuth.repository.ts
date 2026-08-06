@@ -1,0 +1,176 @@
+import { randomUUID } from 'node:crypto'
+
+import { ConflictError } from '../../core/errors.js'
+import { persistentDb } from '../../core/persistentDb.js'
+import type { AuthRepository } from './auth.repository.js'
+import type {
+  CreateUserInput,
+  PasswordResetTokenRecord,
+  RefreshTokenRecord,
+  UserRecord,
+} from './auth.types.js'
+
+/**
+ * Development-only implementation that persists data to a local JSON file
+ * so that sessions and users survive tsx/nodemon restarts during dev.
+ */
+export class InMemoryAuthRepository implements AuthRepository {
+  private users: Map<string, UserRecord>
+  private usersByEmail: Map<string, string>
+  private refreshTokens: Map<string, RefreshTokenRecord>
+  private refreshTokensByHash: Map<string, string>
+  private passwordResetTokens: Map<string, PasswordResetTokenRecord>
+
+  constructor() {
+    const loaded = persistentDb.loadAuth()
+    this.users = loaded.users
+    this.usersByEmail = loaded.usersByEmail
+    this.refreshTokens = loaded.refreshTokens
+    this.refreshTokensByHash = loaded.refreshTokensByHash
+    this.passwordResetTokens = loaded.passwordResetTokens
+  }
+
+  private save() {
+    persistentDb.saveAuth({
+      users: this.users,
+      usersByEmail: this.usersByEmail,
+      refreshTokens: this.refreshTokens,
+      refreshTokensByHash: this.refreshTokensByHash,
+      passwordResetTokens: this.passwordResetTokens,
+    })
+  }
+
+  async findByEmail(email: string): Promise<UserRecord | null> {
+    const id = this.usersByEmail.get(email.toLowerCase())
+    return id ? (this.users.get(id) ?? null) : null
+  }
+
+  async findById(id: string): Promise<UserRecord | null> {
+    return this.users.get(id) ?? null
+  }
+
+  async createUser(input: CreateUserInput): Promise<UserRecord> {
+    const email = input.email.toLowerCase()
+    if (this.usersByEmail.has(email)) {
+      throw new ConflictError('An account with this email already exists.')
+    }
+    const now = new Date().toISOString()
+    const record: UserRecord = {
+      id: randomUUID(),
+      email,
+      passwordHash: input.passwordHash,
+      roles: input.roles,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      status: 'active',
+      emailVerifiedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    }
+    this.users.set(record.id, record)
+    this.usersByEmail.set(email, record.id)
+    this.save()
+    return record
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    const user = this.users.get(userId)
+    if (!user) return
+    this.users.set(userId, { ...user, passwordHash, updatedAt: new Date().toISOString() })
+    this.save()
+  }
+
+  async createRefreshToken(input: {
+    userId: string
+    familyId: string
+    tokenHash: string
+    expiresAt: Date
+  }): Promise<RefreshTokenRecord> {
+    const record: RefreshTokenRecord = {
+      id: randomUUID(),
+      userId: input.userId,
+      familyId: input.familyId,
+      tokenHash: input.tokenHash,
+      expiresAt: input.expiresAt,
+      revokedAt: null,
+      replacedByTokenId: null,
+    }
+    this.refreshTokens.set(record.id, record)
+    this.refreshTokensByHash.set(record.tokenHash, record.id)
+    this.save()
+    return record
+  }
+
+  async findRefreshTokenByHash(tokenHash: string): Promise<RefreshTokenRecord | null> {
+    const id = this.refreshTokensByHash.get(tokenHash)
+    const record = id ? (this.refreshTokens.get(id) ?? null) : null
+    if (record) {
+      // Ensure expiresAt and revokedAt are Date objects (deserialized from JSON strings)
+      if (typeof record.expiresAt === 'string') record.expiresAt = new Date(record.expiresAt)
+      if (typeof record.revokedAt === 'string') record.revokedAt = new Date(record.revokedAt)
+    }
+    return record
+  }
+
+  async revokeRefreshToken(id: string): Promise<void> {
+    const record = this.refreshTokens.get(id)
+    if (!record || record.revokedAt) return
+    this.refreshTokens.set(id, { ...record, revokedAt: new Date() })
+    this.save()
+  }
+
+  async revokeFamily(familyId: string, exceptId?: string): Promise<void> {
+    let updated = false
+    for (const [id, record] of this.refreshTokens) {
+      if (record.familyId === familyId && record.revokedAt === null && id !== exceptId) {
+        this.refreshTokens.set(id, { ...record, revokedAt: new Date() })
+        updated = true
+      }
+    }
+    if (updated) this.save()
+  }
+
+  async revokeAllForUser(userId: string): Promise<void> {
+    let updated = false
+    for (const [id, record] of this.refreshTokens) {
+      if (record.userId === userId && record.revokedAt === null) {
+        this.refreshTokens.set(id, { ...record, revokedAt: new Date() })
+        updated = true
+      }
+    }
+    if (updated) this.save()
+  }
+
+  async createPasswordResetToken(input: {
+    userId: string
+    tokenHash: string
+    expiresAt: Date
+  }): Promise<PasswordResetTokenRecord> {
+    const record: PasswordResetTokenRecord = {
+      id: randomUUID(),
+      userId: input.userId,
+      tokenHash: input.tokenHash,
+      expiresAt: input.expiresAt,
+    }
+    this.passwordResetTokens.set(record.id, record)
+    this.save()
+    return record
+  }
+
+  async findPasswordResetTokenByHash(
+    tokenHash: string,
+  ): Promise<PasswordResetTokenRecord | null> {
+    for (const record of this.passwordResetTokens.values()) {
+      if (record.tokenHash === tokenHash) {
+        if (typeof record.expiresAt === 'string') record.expiresAt = new Date(record.expiresAt)
+        return record
+      }
+    }
+    return null
+  }
+
+  async deletePasswordResetToken(id: string): Promise<void> {
+    this.passwordResetTokens.delete(id)
+    this.save()
+  }
+}

@@ -57,8 +57,7 @@ export function LoginPage() {
           type="email"
           label="Email address"
           placeholder="name@propertypro.app"
-          className="placeholder:text-text2/30 bg-surface/30 backdrop-blur-md border-border/50 hover:bg-surface/50 transition-all duration-300"
-          leftIcon={<Mail className="h-4 w-4 text-text2/60 group-focus-within:text-primary" aria-hidden="true" />}
+          leftIcon={<Mail className="h-4 w-4" aria-hidden="true" />}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           error={fieldErrors.email}
@@ -71,8 +70,7 @@ export function LoginPage() {
           type={showPassword ? 'text' : 'password'}
           label="Password"
           placeholder="••••••••"
-          className="placeholder:text-text2/30 bg-surface/30 backdrop-blur-md border-border/50 hover:bg-surface/50 transition-all duration-300"
-          leftIcon={<Lock className="h-4 w-4 text-text2/60 group-focus-within:text-primary" aria-hidden="true" />}
+          leftIcon={<Lock className="h-4 w-4" aria-hidden="true" />}
           rightIcon={
             <button
               type="button"

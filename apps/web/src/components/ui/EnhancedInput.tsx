@@ -66,12 +66,12 @@ export const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(
     
     const getFocusColor = () => {
       switch (focusColor) {
-        case 'primary': return 'focus:ring-primary/30 focus:border-primary/60'
-        case 'success': return 'focus:ring-success/25 focus:border-success'
-        case 'warning': return 'focus:ring-warning/25 focus:border-warning'
-        case 'danger': return 'focus:ring-danger/25 focus:border-danger'
-        case 'secondary': return 'focus:ring-secondary/30 focus:border-secondary'
-        default: return 'focus:ring-primary/30 focus:border-primary/60'
+        case 'primary': return 'focus:ring-primary/20 focus:border-primary/70'
+        case 'success': return 'focus:ring-success/20 focus:border-success'
+        case 'warning': return 'focus:ring-warning/20 focus:border-warning'
+        case 'danger': return 'focus:ring-danger/20 focus:border-danger'
+        case 'secondary': return 'focus:ring-secondary/20 focus:border-secondary'
+        default: return 'focus:ring-primary/20 focus:border-primary/70'
       }
     }
 
@@ -80,14 +80,14 @@ export const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(
     return (
       <div className={cn('flex flex-col gap-1.5', containerClassName)}>
         {label ? (
-          <label htmlFor={inputId} className="text-xs font-medium text-text2">
+          <label htmlFor={inputId} className="text-xs font-semibold text-text/80 tracking-wide">
             {label}
           </label>
         ) : null}
 
         <div className="relative group">
           {leftIcon ? (
-            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted transition-colors group-focus-within:text-primary">
+            <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-text2/50 transition-colors group-focus-within:text-primary">
               {leftIcon}
             </span>
           ) : null}
@@ -97,10 +97,11 @@ export const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(
             id={inputId}
             className={cn(
               enhancedInputVariants({ intent: intentClass, size, withIcon, className: getFocusColor() }),
-              leftIcon && 'pl-9',
+              leftIcon && 'pl-10',
               rightIcon && 'pr-10',
-              'hover:bg-surface/70',
-              'focus:shadow-lg',
+              'bg-surface/20 border-border/50 text-text placeholder:text-text2/40 hover:bg-surface/30 focus:bg-surface/40',
+              'focus:ring-2 focus:shadow-md transition-all duration-200',
+              className,
             )}
             aria-invalid={!!error}
             aria-describedby={error ? `${inputId}-error` : helper ? `${inputId}-helper` : undefined}
@@ -108,20 +109,18 @@ export const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(
           />
 
           {rightIcon ? (
-            <span className="absolute inset-y-0 right-3 flex items-center text-muted transition-colors group-focus-within:text-primary">
+            <span className="absolute inset-y-0 right-3.5 flex items-center text-text2/50 transition-colors group-focus-within:text-primary">
               {rightIcon}
             </span>
           ) : null}
-          
-          <div className="absolute inset-0 rounded-md bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity group-focus-within:opacity-100 pointer-events-none" />
         </div>
 
         {error ? (
-          <p id={`${inputId}-error`} role="alert" className="text-xs text-danger animate-in fade-in-0">
+          <p id={`${inputId}-error`} role="alert" className="text-xs text-danger font-medium animate-in fade-in-0 mt-0.5">
             {error}
           </p>
         ) : helper ? (
-          <p id={`${inputId}-helper`} className="text-xs text-muted">
+          <p id={`${inputId}-helper`} className="text-xs text-muted mt-0.5">
             {helper}
           </p>
         ) : null}

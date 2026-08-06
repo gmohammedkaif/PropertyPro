@@ -33,7 +33,7 @@ export const EnhancedButton = forwardRef<HTMLButtonElement, EnhancedButtonProps>
     }
     
     const baseClasses = cn(
-      'relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium',
+      'relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium overflow-hidden',
       'transition-all duration-300 ease-[var(--ease-out)]',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
       'disabled:pointer-events-none disabled:opacity-50 select-none',

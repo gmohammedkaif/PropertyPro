@@ -74,8 +74,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             className={cn(
               inputVariants({ intent: error ? 'error' : intent, size }),
-              leftIcon && 'pl-9',
+              leftIcon && 'pl-10',
               rightSlot && 'pr-10',
+              'bg-surface/20 border-border/50 text-text placeholder:text-violet-400/50 hover:bg-surface/30 focus:bg-surface/40',
+              'focus:ring-2 focus:shadow-md transition-all duration-200',
               className,
             )}
             aria-invalid={!!error}

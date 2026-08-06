@@ -24,14 +24,27 @@ export function LoginPage() {
     setFieldErrors({})
     setApiError(null)
 
+    const errors: Record<string, string> = {}
+    if (!email.trim()) {
+      errors.email = 'Please enter your email.'
+    }
+    if (!password) {
+      errors.password = 'Please enter your password.'
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
+
     const parsed = loginSchema.safeParse({ email, password })
     if (!parsed.success) {
-      const errors: Record<string, string> = {}
+      const fieldErrors: Record<string, string> = {}
       for (const issue of parsed.error.issues) {
         const key = issue.path[0] as string
-        errors[key] = issue.message
+        fieldErrors[key] = issue.message
       }
-      setFieldErrors(errors)
+      setFieldErrors(fieldErrors)
       return
     }
 
@@ -41,8 +54,12 @@ export function LoginPage() {
       },
       onError: (err: unknown) => {
         const message = err instanceof Error ? err.message : 'Something went wrong'
-        if (message.includes('email or password')) {
-          setApiError('Invalid email or password.')
+        if (message.includes('429') || message.toLowerCase().includes('too many requests')) {
+          setApiError('Too many requests. Please wait a moment before trying again.')
+        } else if (message.includes('404') || message.toLowerCase().includes('user not found') || message.toLowerCase().includes('not registered')) {
+          setApiError('This email is not registered. Please create an account.')
+        } else if (message.includes('401') || message.toLowerCase().includes('invalid') || message.toLowerCase().includes('email or password')) {
+          setApiError('Invalid email or password. Please verify your credentials.')
         } else {
           setApiError(message)
         }
@@ -52,7 +69,7 @@ export function LoginPage() {
 
   return (
     <AuthLayout variant="split" title="Welcome back" description="Sign in to your PropertyPro workspace.">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-5">
         <EnhancedInput
           type="email"
           label="Email address"

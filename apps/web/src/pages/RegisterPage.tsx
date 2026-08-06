@@ -26,14 +26,33 @@ export function RegisterPage() {
     setFieldErrors({})
     setApiError(null)
 
+    const errors: Record<string, string> = {}
+    if (!firstName.trim()) {
+      errors.firstName = 'First name is required.'
+    }
+    if (!lastName.trim()) {
+      errors.lastName = 'Last name is required.'
+    }
+    if (!email.trim()) {
+      errors.email = 'Please enter your email.'
+    }
+    if (!password) {
+      errors.password = 'Please enter your password.'
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
+
     const parsed = registerSchema.safeParse({ email, password, firstName, lastName, role })
     if (!parsed.success) {
-      const errors: Record<string, string> = {}
+      const fieldErrors: Record<string, string> = {}
       for (const issue of parsed.error.issues) {
         const key = issue.path[0] as string
-        errors[key] = issue.message
+        fieldErrors[key] = issue.message
       }
-      setFieldErrors(errors)
+      setFieldErrors(fieldErrors)
       return
     }
 
@@ -43,8 +62,8 @@ export function RegisterPage() {
       },
       onError: (err: unknown) => {
         const message = err instanceof Error ? err.message : 'Something went wrong'
-        if (message.includes('already exists')) {
-          setApiError('An account with this email already exists.')
+        if (message.toLowerCase().includes('already exists') || message.includes('409') || message.toLowerCase().includes('duplicate')) {
+          setFieldErrors({ email: 'An account with this email already exists.' })
         } else {
           setApiError(message)
         }
@@ -54,7 +73,7 @@ export function RegisterPage() {
 
   return (
     <AuthLayout variant="centered" title="Create your account" description="Start managing property in minutes.">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
           <Input
             label="First name"

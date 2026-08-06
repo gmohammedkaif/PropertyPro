@@ -99,7 +99,7 @@ export const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(
               enhancedInputVariants({ intent: intentClass, size, withIcon, className: getFocusColor() }),
               leftIcon && 'pl-10',
               rightIcon && 'pr-10',
-              'bg-surface/20 border-border/50 text-text placeholder:text-text2/40 hover:bg-surface/30 focus:bg-surface/40',
+              'bg-black/20 border-border/40 text-text placeholder:text-text/30 hover:bg-black/30 focus:bg-black/40',
               'focus:ring-2 focus:shadow-md transition-all duration-200',
               className,
             )}

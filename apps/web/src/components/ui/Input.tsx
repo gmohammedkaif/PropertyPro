@@ -76,7 +76,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               inputVariants({ intent: error ? 'error' : intent, size }),
               leftIcon && 'pl-10',
               rightSlot && 'pr-10',
-              'bg-surface/20 border-border/50 text-text placeholder:text-violet-400/50 hover:bg-surface/30 focus:bg-surface/40',
+              'bg-black/20 border-border/40 text-text placeholder:text-text/30 hover:bg-black/30 focus:bg-black/40',
               'focus:ring-2 focus:shadow-md transition-all duration-200',
               className,
             )}

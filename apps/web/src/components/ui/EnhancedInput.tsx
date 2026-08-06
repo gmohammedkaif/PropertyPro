@@ -35,6 +35,7 @@ const enhancedInputVariants = cva(
 export interface EnhancedInputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>, VariantProps<typeof enhancedInputVariants> {
   label?: string
+  labelRight?: ReactNode
   error?: string
   helper?: string
   leftIcon?: ReactNode
@@ -52,6 +53,7 @@ export const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(
       size,
       withIcon,
       label,
+      labelRight,
       error,
       helper,
       leftIcon,
@@ -80,9 +82,12 @@ export const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(
     return (
       <div className={cn('flex flex-col gap-1.5', containerClassName)}>
         {label ? (
-          <label htmlFor={inputId} className="text-xs font-semibold text-text/80 tracking-wide">
-            {label}
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor={inputId} className="text-xs font-semibold text-text/80 tracking-wide">
+              {label}
+            </label>
+            {labelRight}
+          </div>
         ) : null}
 
         <div className="relative group">

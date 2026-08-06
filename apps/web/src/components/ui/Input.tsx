@@ -28,6 +28,7 @@ const inputVariants = cva(
 export interface InputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>, VariantProps<typeof inputVariants> {
   label?: string
+  labelRight?: ReactNode
   error?: string
   helper?: string
   leftIcon?: ReactNode
@@ -43,6 +44,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       intent,
       size,
       label,
+      labelRight,
       error,
       helper,
       leftIcon,
@@ -57,9 +59,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={cn('flex flex-col gap-1.5', containerClassName)}>
         {label ? (
-          <label htmlFor={inputId} className="text-xs font-medium text-text2">
-            {label}
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor={inputId} className="text-xs font-semibold text-text/80 tracking-wide">
+              {label}
+            </label>
+            {labelRight}
+          </div>
         ) : null}
 
         <div className="relative">

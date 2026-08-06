@@ -27,7 +27,7 @@ export function AuthLayout({
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }} className="relative z-10 mb-8 flex items-center gap-2.5">
           <Brand />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.08, ease: [0.22, 1, 0.36, 1] }} className="relative z-10 glass w-full max-w-sm rounded-2xl p-8">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.08, ease: [0.22, 1, 0.36, 1] }} className="relative z-10 glass w-full max-w-[520px] rounded-2xl p-8 sm:p-10 border border-border/40">
           <div className="mb-8 flex flex-col gap-1.5">
             <h1 className="text-2xl font-bold tracking-tight text-text">{title}</h1>
             <p className="text-sm text-muted">{description}</p>
@@ -46,19 +46,19 @@ export function AuthLayout({
         style={{ backgroundImage: "url('/login_house_bg.png')" }}
       >
         {/* Dark radial gradient overlay for text readability and aesthetic depth */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/50 z-0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/60 z-0" />
         
         {/* Floating Brand Section */}
         <div className="relative z-10 flex items-center gap-2.5">
           <Brand />
         </div>
-
+ 
         {/* Testimonial Glass Card */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} 
-          className="relative z-10 max-w-lg glass-dark border border-white/10 rounded-2xl p-8 backdrop-blur-md bg-black/40"
+          className="relative z-10 max-w-lg border border-white/10 rounded-2xl p-8 backdrop-blur-xl bg-black/50 shadow-2xl"
         >
           <p className="text-xl font-medium leading-relaxed tracking-tight text-white/90">
             “Running six units used to mean spreadsheets and missed calls. PropertyPro put the whole portfolio on one screen.”
@@ -73,7 +73,7 @@ export function AuthLayout({
             </div>
           </footer>
         </motion.div>
-
+ 
         {/* Feature List Overlay */}
         <ul className="relative z-10 flex flex-col gap-3.5 text-sm font-medium text-white/80">
           {[
@@ -90,7 +90,7 @@ export function AuthLayout({
           ))}
         </ul>
       </div>
-
+ 
       {/* Right side: Form Panel */}
       <div className="relative flex flex-col items-center justify-center px-4 py-12 sm:px-6">
         <div className="absolute right-4 top-4"><ThemeToggle /></div>
@@ -98,7 +98,7 @@ export function AuthLayout({
           initial={{ opacity: 0, y: 16 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }} 
-          className="glass w-full max-w-sm rounded-2xl p-8 border border-border/40"
+          className="glass w-full max-w-[520px] rounded-2xl p-8 sm:p-10 border border-border/40"
         >
           <div className="mb-8 flex flex-col gap-1.5">
             <h1 className="text-2xl font-bold tracking-tight text-text">{title}</h1>

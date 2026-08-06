@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Receipt,
   Settings,
+  UserCheck,
   Users,
   Wrench,
 } from 'lucide-react'
@@ -39,6 +40,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
   {
     label: 'Manage',
     items: [
+      { label: 'Owner Requests', href: '/app/owner-requests', icon: UserCheck, roles: ['admin'] },
       { label: 'Properties', href: '/app/properties', icon: Building2 },
       { label: 'Tenancies', href: '/app/tenancies', icon: Users },
       { label: 'Payments', href: '/app/payments', icon: Receipt },
@@ -98,7 +100,14 @@ export function hasAnyRole(roles: Role[] | undefined, userRoles: Role[] | undefi
 
 export function getNavGroups(userRoles: Role[] | undefined): NavGroup[] {
   const hasAdmin = userRoles?.some((r) => ['owner', 'agent', 'admin'].includes(r))
-  return hasAdmin ? ADMIN_NAV_GROUPS : TENANT_NAV_GROUPS
+  const baseGroups = hasAdmin ? ADMIN_NAV_GROUPS : TENANT_NAV_GROUPS
+
+  return baseGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => hasAnyRole(item.roles, userRoles)),
+    }))
+    .filter((group) => group.items.length > 0)
 }
 
 export function getPageTitle(pathname: string): string {

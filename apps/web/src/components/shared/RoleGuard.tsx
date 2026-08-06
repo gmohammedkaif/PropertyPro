@@ -12,7 +12,22 @@ export function AdminGuard({ children }: AdminGuardProps) {
   const user = useAuthStore((state) => state.user)
 
   if (!isAdmin(user)) {
-    // Tenant tried to access admin page → redirect to their home
+    // Tenant tried to access admin/owner page → redirect to tenant home
+    return <Navigate to="/app" replace />
+  }
+
+  return <>{children}</>
+}
+
+interface SuperAdminGuardProps {
+  children: ReactNode
+}
+
+/** Only allows Super Admin ('admin') users. Redirects owners and tenants. */
+export function SuperAdminGuard({ children }: SuperAdminGuardProps) {
+  const user = useAuthStore((state) => state.user)
+
+  if (!user?.roles.includes('admin')) {
     return <Navigate to="/app" replace />
   }
 
@@ -23,7 +38,7 @@ interface TenantGuardProps {
   children: ReactNode
 }
 
-/** Only allows tenant users. Redirects admins to their dashboard. */
+/** Only allows tenant users. Redirects admins/owners to their dashboard. */
 export function TenantGuard({ children }: TenantGuardProps) {
   const user = useAuthStore((state) => state.user)
 

@@ -38,28 +38,54 @@ export class AuthService {
   register = async (input: {
     email: string
     password: string
-    firstName: string
-    lastName: string
+    username?: string
+    firstName?: string
+    lastName?: string
     role?: Role
-  }): Promise<AuthSession> => {
+  }): Promise<AuthSession & { pendingApproval?: boolean }> => {
     const email = input.email.trim().toLowerCase()
-    const role = input.role ?? 'buyer'
+    const role = input.role ?? 'tenant'
+
+    // Prevent registering as admin from the public API
+    if (role === ('admin' as Role)) {
+      throw new ForbiddenError('Super Admin registration is not allowed.')
+    }
 
     const existing = await this.repository.findByEmail(email)
     if (existing) {
       throw new ConflictError('An account with this email already exists.')
     }
 
+    const name = input.username?.trim() || `${input.firstName ?? ''} ${input.lastName ?? ''}`.trim() || 'User'
+    const nameParts = name.split(' ')
+    const firstName = nameParts[0] || name
+    const lastName = nameParts.slice(1).join(' ') || ''
+
+    const isOwner = role === 'owner'
+    const status = isOwner ? 'pending_approval' : 'active'
+
     const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS)
     const user = await this.repository.createUser({
       email,
       passwordHash,
       roles: [role],
-      firstName: input.firstName,
-      lastName: input.lastName,
+      firstName,
+      lastName,
+      status,
     })
 
-    logger.info({ userId: user.id, roles: user.roles }, 'User registered')
+    logger.info({ userId: user.id, roles: user.roles, status: user.status }, 'User registered')
+
+    if (isOwner) {
+      // Owners require Super Admin approval before getting an active session
+      return {
+        user: toAuthUser(user),
+        accessToken: '',
+        refreshToken: '',
+        pendingApproval: true,
+      }
+    }
+
     return this.issueSession(user)
   }
 
@@ -74,6 +100,12 @@ export class AuthService {
     )
     if (!user || !passwordOk) {
       throw new UnauthorizedError('Invalid email or password.')
+    }
+    if (user.status === 'pending_approval') {
+      throw new ForbiddenError('Your owner account is currently pending Super Admin approval.')
+    }
+    if (user.status === 'rejected') {
+      throw new ForbiddenError('Your request has not yet been approved.')
     }
     if (user.status !== 'active') {
       throw new ForbiddenError('This account is not active. Contact support.')

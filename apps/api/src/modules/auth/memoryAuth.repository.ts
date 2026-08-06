@@ -62,7 +62,7 @@ export class InMemoryAuthRepository implements AuthRepository {
       roles: input.roles,
       firstName: input.firstName,
       lastName: input.lastName,
-      status: 'active',
+      status: input.status ?? 'active',
       emailVerifiedAt: null,
       createdAt: now,
       updatedAt: now,
@@ -78,6 +78,22 @@ export class InMemoryAuthRepository implements AuthRepository {
     if (!user) return
     this.users.set(userId, { ...user, passwordHash, updatedAt: new Date().toISOString() })
     this.save()
+  }
+
+  async updateUserStatus(userId: string, status: import('@propertypro/shared').UserStatus): Promise<UserRecord | null> {
+    const user = this.users.get(userId)
+    if (!user) return null
+    const updated = { ...user, status, updatedAt: new Date().toISOString() }
+    this.users.set(userId, updated)
+    this.save()
+    return updated
+  }
+
+  async listOwnerRequests(): Promise<UserRecord[]> {
+    const records = Array.from(this.users.values())
+      .filter((u) => u.roles.includes('owner'))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    return records
   }
 
   async createRefreshToken(input: {

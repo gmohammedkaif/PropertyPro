@@ -13,7 +13,7 @@ const userSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ['pending_verification', 'active', 'suspended'],
+      enum: ['pending_verification', 'pending_approval', 'active', 'suspended', 'rejected'],
       default: 'active',
       required: true,
     },

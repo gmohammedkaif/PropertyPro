@@ -20,6 +20,21 @@ const authService = new AuthService()
 export async function register(req: Request, res: Response): Promise<void> {
   const input = registerSchema.parse(req.body)
   const session = await authService.register(input)
+
+  if (session.pendingApproval) {
+    res.status(201).json({
+      data: {
+        user: session.user,
+        accessToken: null,
+        pendingApproval: true,
+        message: 'Your owner account is currently pending Super Admin approval.',
+      },
+      meta: {},
+      error: null,
+    })
+    return
+  }
+
   setRefreshCookie(res, session.refreshToken)
   res.status(201).json({
     data: { accessToken: session.accessToken, user: session.user },

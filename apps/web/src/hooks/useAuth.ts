@@ -23,7 +23,7 @@ function tryDemoLogin(input: { email: string; password: string }) {
   return null
 }
 
-function tryDemoRegister(input: { email: string; password: string; firstName: string; lastName: string; role?: string }) {
+function tryDemoRegister(input: { email: string; password: string; firstName: string; lastName: string; role?: string }): { user: AuthUser; accessToken: string | null; pendingApproval?: boolean; message?: string } {
   // Check if email already exists in demo
   if (DEMO_CREDENTIALS[input.email as keyof typeof DEMO_CREDENTIALS]) {
     throw new Error('An account with this email already exists.')
@@ -36,7 +36,7 @@ function tryDemoRegister(input: { email: string; password: string; firstName: st
     roles: [(input.role as AuthUser['roles'][0]) || 'tenant'],
     status: 'active',
   }
-  return { user: newUser, accessToken: 'demo-token' }
+  return { user: newUser, accessToken: 'demo-token', pendingApproval: false }
 }
 
 export function useLogin() {
@@ -60,19 +60,29 @@ export function useLogin() {
 
 export function useRegister() {
   return useMutation({
-    mutationFn: async (input: { email: string; password: string; firstName: string; lastName: string; role?: string }) => {
+    mutationFn: async (input: { email: string; password: string; username?: string; firstName?: string; lastName?: string; role?: string }) => {
       try {
-        const { data } = await apiClient.post<{ data: { accessToken: string; user: AuthUser } }>('/auth/register', input)
+        const { data } = await apiClient.post<{ data: { accessToken: string | null; user: AuthUser; pendingApproval?: boolean; message?: string } }>('/auth/register', input)
         return data.data
       } catch (err) {
-        // Fallback to demo register
-        const demoResult = tryDemoRegister(input)
+        // Fallback to demo register for offline/dev
+        if (input.role === 'owner') {
+          return {
+            user: { id: crypto.randomUUID(), email: input.email, name: input.username || 'Owner', roles: ['owner'], status: 'pending_approval' },
+            accessToken: null,
+            pendingApproval: true,
+            message: 'Your owner account is currently pending Super Admin approval.',
+          }
+        }
+        const demoResult = tryDemoRegister({ email: input.email, password: input.password, firstName: input.firstName || input.username || 'Tenant', lastName: input.lastName || '', role: input.role })
         if (demoResult) return demoResult
         throw err
       }
     },
     onSuccess: (data) => {
-      useAuthStore.getState().signIn(data.user, data.accessToken)
+      if (!data.pendingApproval && data.accessToken && data.user) {
+        useAuthStore.getState().signIn(data.user, data.accessToken)
+      }
     },
   })
 }

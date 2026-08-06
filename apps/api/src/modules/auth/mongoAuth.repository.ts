@@ -76,7 +76,7 @@ export class MongoAuthRepository implements AuthRepository {
         passwordHash: input.passwordHash,
         roles: input.roles,
         profile: { firstName: input.firstName, lastName: input.lastName },
-        status: 'active',
+        status: input.status ?? 'active',
       })
       return toUserRecord(doc as unknown as UserDocument)
     } catch (err) {
@@ -87,6 +87,16 @@ export class MongoAuthRepository implements AuthRepository {
 
   async updatePassword(userId: string, passwordHash: string): Promise<void> {
     await User.updateOne({ _id: userId }, { $set: { passwordHash } })
+  }
+
+  async updateUserStatus(userId: string, status: import('@propertypro/shared').UserStatus): Promise<UserRecord | null> {
+    const doc = await User.findByIdAndUpdate(userId, { $set: { status } }, { new: true }).lean()
+    return doc ? toUserRecord(doc as UserDocument) : null
+  }
+
+  async listOwnerRequests(): Promise<UserRecord[]> {
+    const docs = await User.find({ roles: 'owner' }).sort({ createdAt: -1 }).lean()
+    return docs.map((doc) => toUserRecord(doc as UserDocument))
   }
 
   async createRefreshToken(input: {

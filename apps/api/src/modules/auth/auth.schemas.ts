@@ -17,13 +17,14 @@ const nameField = z
   .max(60, 'Must be at most 60 characters')
   .regex(/^[\p{L}\p{N}' .-]+$/u, 'Contains invalid characters')
 
-const SELF_ASSIGNABLE_ROLES = ['buyer', 'owner', 'agent'] as const satisfies Role[]
+const SELF_ASSIGNABLE_ROLES = ['tenant', 'owner', 'buyer', 'agent'] as const satisfies Role[]
 
 export const registerSchema = z.object({
   email,
   password,
-  firstName: nameField,
-  lastName: nameField,
+  username: nameField.optional(),
+  firstName: nameField.optional(),
+  lastName: nameField.optional(),
   role: z.enum(SELF_ASSIGNABLE_ROLES).optional(),
 })
 export type RegisterInput = z.infer<typeof registerSchema>

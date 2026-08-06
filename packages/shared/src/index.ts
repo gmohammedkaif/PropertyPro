@@ -20,8 +20,8 @@ export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number]
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
-/** User lifecycle states. `pending_verification` → `active` after email verify. */
-export const USER_STATUS_LIST = ['pending_verification', 'active', 'suspended'] as const
+/** User lifecycle states. */
+export const USER_STATUS_LIST = ['pending_verification', 'pending_approval', 'active', 'suspended', 'rejected'] as const
 export type UserStatus = (typeof USER_STATUS_LIST)[number]
 
 /** Non-sensitive, serialized view of the authenticated user (safe for the client). */

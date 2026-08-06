@@ -10,6 +10,7 @@ import { env } from './config/env.js'
 import { logger } from './core/logger.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 import { requestId } from './middleware/requestId.js'
+import adminRoutes from './modules/admin/admin.routes.js'
 import authRoutes from './modules/auth/auth.routes.js'
 import healthRoutes from './modules/health/health.routes.js'
 import propertyRoutes from './modules/property/property.routes.js'
@@ -43,6 +44,7 @@ export function createApp(): express.Express {
   // Liveness probe for orchestrators / load balancers.
   app.get('/healthz', (_req, res) => res.status(200).send('ok'))
 
+  app.use(API_PREFIX, adminRoutes)
   app.use(API_PREFIX, authRoutes)
   app.use(API_PREFIX, healthRoutes)
   app.use(API_PREFIX, propertyRoutes)

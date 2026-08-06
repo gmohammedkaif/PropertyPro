@@ -37,4 +37,5 @@ export interface CreateUserInput {
   roles: Role[]
   firstName: string
   lastName: string
+  status?: UserStatus
 }

@@ -1,8 +1,8 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 
 import { AuthGuard } from '@/components/shared/AuthGuard'
 import { PublicOnlyGuard } from '@/components/shared/PublicOnlyGuard'
-import { AdminGuard, TenantGuard } from '@/components/shared/RoleGuard'
+import { AdminGuard, TenantGuard, SuperAdminGuard } from '@/components/shared/RoleGuard'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { BrowsePage } from '@/pages/BrowsePage'
 import { PropertyListPage } from '@/pages/PropertyListPage'
@@ -15,6 +15,7 @@ import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { LandingPage } from '@/pages/LandingPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { OwnerRequestsPage } from '@/pages/OwnerRequestsPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
@@ -69,6 +70,12 @@ export const router = createBrowserRouter([
     ),
   },
   { path: '/browse', element: <BrowsePage /> },
+
+  // Role shortcut path redirects -> send to authenticated dashboard app
+  { path: '/tenant', element: <Navigate to="/app" replace /> },
+  { path: '/owner', element: <Navigate to="/app" replace /> },
+  { path: '/admin', element: <Navigate to="/app" replace /> },
+
   {
     path: '/app',
     element: (
@@ -77,7 +84,7 @@ export const router = createBrowserRouter([
       </AuthGuard>
     ),
     children: [
-      // Smart dashboard — renders admin or tenant view automatically
+      // Smart dashboard — renders admin or tenant view automatically based on credentials
       { index: true, element: <SmartDashboard /> },
 
       // Shared — both roles can access
@@ -86,7 +93,17 @@ export const router = createBrowserRouter([
       { path: 'property/:id', element: <TenantPropertyDetailPage /> },
       { path: 'settings', element: <SettingsPage /> },
 
-      // ── Admin-only routes ─────────────────────────────────────────────────
+      // ── Super Admin Only routes ───────────────────────────────────────────
+      {
+        path: 'owner-requests',
+        element: (
+          <SuperAdminGuard>
+            <OwnerRequestsPage />
+          </SuperAdminGuard>
+        ),
+      },
+
+      // ── Admin/Owner routes ─────────────────────────────────────────────────
       {
         path: 'tenancies',
         element: (

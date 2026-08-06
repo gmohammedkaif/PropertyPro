@@ -14,6 +14,8 @@ export interface AuthRepository {
   findById(id: string): Promise<UserRecord | null>
   createUser(input: CreateUserInput): Promise<UserRecord>
   updatePassword(userId: string, passwordHash: string): Promise<void>
+  updateUserStatus(userId: string, status: import('@propertypro/shared').UserStatus): Promise<UserRecord | null>
+  listOwnerRequests(): Promise<UserRecord[]>
 
   createRefreshToken(input: {
     userId: string

@@ -78,7 +78,11 @@ export function LoginPage() {
       },
       onError: (err: unknown) => {
         const message = err instanceof Error ? err.message : 'Something went wrong'
-        if (message.includes('429') || message.toLowerCase().includes('too many requests')) {
+        if (message.toLowerCase().includes('pending') || message.toLowerCase().includes('approval')) {
+          setApiError('Your owner account is currently pending Super Admin approval.')
+        } else if (message.toLowerCase().includes('rejected') || message.toLowerCase().includes('not yet')) {
+          setApiError('Your request has not yet been approved.')
+        } else if (message.includes('429') || message.toLowerCase().includes('too many requests')) {
           setApiError('Too many attempts. Please try again after some time.')
         } else if (
           message.includes('404') ||

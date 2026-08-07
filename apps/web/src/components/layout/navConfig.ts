@@ -41,6 +41,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     label: 'Manage',
     items: [
       { label: 'Owner Requests', href: '/app/owner-requests', icon: UserCheck, roles: ['admin'] },
+      { label: 'Tenant Requests', href: '/app/tenant-requests', icon: ClipboardList },
       { label: 'Properties', href: '/app/properties', icon: Building2 },
       { label: 'Tenancies', href: '/app/tenancies', icon: Users },
       { label: 'Payments', href: '/app/payments', icon: Receipt },

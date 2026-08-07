@@ -19,8 +19,16 @@ export interface TenancyRecord {
   unitsOccupied: number
   leaseStart: string
   leaseEnd: string
+  /** Duration in months (e.g. 6, 12, 18, 24) */
+  leaseDurationMonths?: number
   monthlyRent: number
+  advanceAmount?: number
   securityDeposit: number
+  leaseNotes?: string
+  /** Email of the owner who approved the lease */
+  ownerEmail?: string
+  /** Original rental request ID that triggered this tenancy */
+  requestId?: string
   status: TenancyStatus
   createdAt: string
   updatedAt: string
@@ -40,7 +48,9 @@ const SEED: TenancyRecord[] = [
     unitsOccupied: 1,
     leaseStart: '2026-05-01',
     leaseEnd: '2027-04-30',
+    leaseDurationMonths: 12,
     monthlyRent: 8000,
+    advanceAmount: 16000,
     securityDeposit: 70000,
     status: 'active',
     createdAt: '2026-05-01T10:00:00.000Z',
@@ -57,7 +67,9 @@ const SEED: TenancyRecord[] = [
     unitsOccupied: 1,
     leaseStart: '2026-06-01',
     leaseEnd: '2027-05-31',
+    leaseDurationMonths: 12,
     monthlyRent: 8000,
+    advanceAmount: 16000,
     securityDeposit: 200000,
     status: 'active',
     createdAt: '2026-06-01T10:00:00.000Z',
@@ -74,7 +86,9 @@ const SEED: TenancyRecord[] = [
     unitsOccupied: 1,
     leaseStart: '2026-01-01',
     leaseEnd: '2026-12-31',
+    leaseDurationMonths: 12,
     monthlyRent: 9000,
+    advanceAmount: 18000,
     securityDeposit: 50000,
     status: 'active',
     createdAt: '2026-01-01T10:00:00.000Z',
@@ -91,7 +105,9 @@ const SEED: TenancyRecord[] = [
     unitsOccupied: 1,
     leaseStart: '2026-05-01',
     leaseEnd: '2027-04-30',
+    leaseDurationMonths: 12,
     monthlyRent: 5000,
+    advanceAmount: 10000,
     securityDeposit: 100000,
     status: 'active',
     createdAt: '2026-05-01T10:00:00.000Z',

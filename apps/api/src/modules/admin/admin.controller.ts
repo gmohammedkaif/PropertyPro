@@ -2,8 +2,6 @@ import type { Request, Response } from 'express'
 import { getAuthRepository } from '../auth/repository.js'
 import { NotFoundError } from '../../core/errors.js'
 
-const repository = getAuthRepository()
-
 export async function listOwnerRequests(_req: Request, res: Response): Promise<void> {
   const repo = getAuthRepository()
   const requests = await repo.listOwnerRequests()

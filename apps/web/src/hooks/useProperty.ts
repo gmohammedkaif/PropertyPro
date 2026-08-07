@@ -76,8 +76,9 @@ export function useCreateProperty() {
       return data.data!
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: propertyKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: propertyKeys.all })
     },
+    retry: false, // Do NOT retry on failure — prevents cascading 429s
   })
 }
 
@@ -93,6 +94,7 @@ export function useUpdateProperty() {
       queryClient.invalidateQueries({ queryKey: propertyKeys.detail(id) })
       queryClient.invalidateQueries({ queryKey: propertyKeys.lists() })
     },
+    retry: false,
   })
 }
 
@@ -107,6 +109,7 @@ export function useDeleteProperty() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: propertyKeys.lists() })
     },
+    retry: false,
   })
 }
 
@@ -121,5 +124,6 @@ export function useRestoreProperty() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: propertyKeys.lists() })
     },
+    retry: false,
   })
 }

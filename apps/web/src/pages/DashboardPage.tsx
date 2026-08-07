@@ -1,17 +1,19 @@
 import {
+  Activity,
   ArrowRight,
+  Bell,
   Building2,
-  CheckCircle,
   CheckCircle2,
+  ClipboardList,
   Clock,
   DollarSign,
   Home,
   Plus,
-  TrendingDown,
-  TrendingUp,
   Users,
+  Wrench,
+  ShoppingBag,
+  AlertTriangle,
   UserCheck,
-  UserX,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -21,6 +23,10 @@ import { StatCard } from '@/components/ui/StatCard'
 import { useAuthStore } from '@/stores/authStore'
 import { useTenanciesStore } from '@/stores/tenanciesStore'
 import { usePaymentsStore } from '@/stores/paymentsStore'
+import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
+import { useRentalRequestsStore } from '@/stores/rentalRequestsStore'
+import { useMaintenanceStore } from '@/stores/maintenanceStore'
+import { useNotificationsStore } from '@/stores/notificationsStore'
 
 function greeting(): string {
   const hour = new Date().getHours()
@@ -29,23 +35,99 @@ function greeting(): string {
   return 'Good evening'
 }
 
-function formatDate(dateStr: string): string {
+function fmtDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 }
+
+function fmtRelative(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
+}
+
+const fmtRupee = (n: number) =>
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n)
 
 export function DashboardPage() {
   const user = useAuthStore((state) => state.user)
   const navigate = useNavigate()
-  const { items: tenancies } = useTenanciesStore()
-  const { items: payments } = usePaymentsStore()
+
+  const { items: allTenancies } = useTenanciesStore()
+  const { items: allPayments } = usePaymentsStore()
+  const { items: allProperties } = useLocalPropertiesStore()
+  const { items: allRentalRequests } = useRentalRequestsStore()
+  const { items: allMaintenanceItems } = useMaintenanceStore()
+  const { items: allNotifications } = useNotificationsStore()
 
   const firstName = user?.name.split(' ')[0] ?? 'there'
+  const userEmail = user?.email?.toLowerCase() ?? ''
+  const userId = user?.id ?? ''
+  const isSuperAdmin = user?.roles.includes('admin') || userEmail === 'admin@propertypro.com'
 
-  // Computed stats
+  // ── Role Data Isolation ───────────────────────────────────────────────────────
+  const properties = isSuperAdmin
+    ? allProperties
+    : allProperties.filter((p) => p.ownerEmail?.toLowerCase() === userEmail || p.ownerId === userId)
+
+  const ownerPropertyIds = new Set(properties.map((p) => p.id))
+  const ownerPropertyNames = new Set(properties.map((p) => p.name.toLowerCase()))
+
+  const tenancies = isSuperAdmin
+    ? allTenancies
+    : allTenancies.filter(
+        (t) =>
+          t.ownerEmail?.toLowerCase() === userEmail ||
+          ownerPropertyIds.has(t.propertyId) ||
+          ownerPropertyNames.has(t.propertyName.toLowerCase()),
+      )
+
+  const rentalRequests = isSuperAdmin
+    ? allRentalRequests
+    : allRentalRequests.filter(
+        (r) =>
+          r.ownerEmail?.toLowerCase() === userEmail ||
+          r.ownerId === userId ||
+          ownerPropertyIds.has(r.propertyId) ||
+          ownerPropertyNames.has(r.propertyName.toLowerCase()),
+      )
+
+  const maintenanceItems = isSuperAdmin
+    ? allMaintenanceItems
+    : allMaintenanceItems.filter(
+        (m) =>
+          (m.propertyId && ownerPropertyIds.has(m.propertyId)) ||
+          ownerPropertyNames.has(m.propertyName.toLowerCase()),
+      )
+
+  const ownerTenantNames = new Set(tenancies.map((t) => t.tenantName.toLowerCase()))
+  const payments = isSuperAdmin
+    ? allPayments
+    : allPayments.filter(
+        (p) =>
+          ownerPropertyNames.has(p.propertyName.toLowerCase()) ||
+          ownerTenantNames.has(p.tenantName.toLowerCase()),
+      )
+
+  const notifications = isSuperAdmin
+    ? allNotifications
+    : allNotifications.filter((n) => n.userEmail.toLowerCase() === userEmail)
+
+  // ── Real Computed Stats ───────────────────────────────────────────────────────
+  const totalProperties = properties.length
+  const forRentCount = properties.filter((p) => p.listingStatus === 'for-rent').length
+  const forSaleCount = properties.filter((p) => p.listingStatus === 'for-sale').length
+  const occupiedCount = properties.filter((p) => p.listingStatus === 'occupied').length
+
   const activeTenants = tenancies.filter((t) => t.status === 'active').length
-  const recentPayments = [...payments]
-    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
-    .slice(0, 4)
+  const pendingRequests = rentalRequests.filter((r) => r.status === 'pending').length
+  const openMaintenance = maintenanceItems.filter((m) => m.status === 'open' || m.status === 'assigned' || m.status === 'in-progress').length
+
+  const monthlyIncome = tenancies
+    .filter((t) => t.status === 'active')
+    .reduce((sum, t) => sum + t.monthlyRent, 0)
 
   const totalCollected = payments.filter((p) => p.status === 'paid').reduce((s, p) => s + p.amount, 0)
   const totalPending = payments.filter((p) => p.status === 'pending').reduce((s, p) => s + p.amount, 0)
@@ -53,18 +135,66 @@ export function DashboardPage() {
     ? Math.round((totalCollected / (totalCollected + totalPending)) * 100)
     : 0
 
-  const formatRupee = (n: number) =>
-    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n)
+  const totalUnits = properties.reduce((s, p) => s + p.totalUnits, 0)
+  const occupiedUnits = properties.reduce((s, p) => s + p.occupiedUnits, 0)
+  const occupancyRate = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0
+
+  // ── Recent Activity Feed ──────────────────────────────────────────────────────
+  type Activity = { id: string; text: string; subtext: string; time: string; icon: typeof Building2; color: string }
+  const recentActivity: Activity[] = [
+    ...rentalRequests.slice(0, 3).map((r) => ({
+      id: `req_${r.id}`,
+      text: r.status === 'pending'
+        ? `${r.fullName} requested ${r.propertyName}`
+        : r.status === 'approved'
+        ? `Approved: ${r.fullName} for ${r.propertyName}`
+        : `Rejected: ${r.fullName} for ${r.propertyName}`,
+      subtext: r.city,
+      time: r.createdAt,
+      icon: UserCheck,
+      color: r.status === 'pending' ? 'text-amber-400 bg-amber-500/10' : r.status === 'approved' ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10',
+    })),
+    ...maintenanceItems.filter(m => m.status === 'open').slice(0, 2).map((m) => ({
+      id: `mnt_${m.id}`,
+      text: `Maintenance: ${m.title}`,
+      subtext: m.propertyName,
+      time: m.createdAt,
+      icon: Wrench,
+      color: 'text-orange-400 bg-orange-500/10',
+    })),
+    ...tenancies.slice(0, 2).map((t) => ({
+      id: `tnc_${t.id}`,
+      text: `Lease active: ${t.tenantName}`,
+      subtext: t.propertyName,
+      time: t.createdAt,
+      icon: CheckCircle2,
+      color: 'text-emerald-400 bg-emerald-500/10',
+    })),
+  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 6)
+
+  // Recent payments
+  const recentPayments = [...payments]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 4)
+
+  // Owner notifications
+  const myNotifications = notifications
+    .filter((n) => n.userEmail.toLowerCase() === userEmail.toLowerCase())
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 4)
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Greeting header */}
+    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+      {/* ── Header ─────────────────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-text">
             {greeting()}, {firstName} 👋
           </h1>
-          <p className="text-sm text-muted">Here is what's happening across your portfolio today.</p>
+          <p className="text-sm text-muted">
+            Here is what's happening across your portfolio today ·{' '}
+            <span className="text-text font-medium">{fmtDate(new Date().toISOString())}</span>
+          </p>
         </div>
         <Button
           variant="primary"
@@ -76,28 +206,27 @@ export function DashboardPage() {
         </Button>
       </div>
 
-      {/* Stats grid */}
+      {/* ── Stats Grid ─────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Properties" value="8" icon={Building2} variant="primary" />
-        <StatCard title="Rented" value="3" icon={CheckCircle2} variant="success" />
-        <StatCard title="Vacant" value="5" icon={Home} variant="warning" />
-        <StatCard title="Total Tenants" value={String(activeTenants || 4)} icon={Users} variant="secondary" />
-        <StatCard title="Monthly Rent Expected" value="₹30,000" icon={DollarSign} variant="primary" />
-        <StatCard title="Rent Collected" value="₹25,000" icon={TrendingUp} variant="success" />
-        <StatCard title="Pending Rent" value="₹5,000" icon={TrendingDown} variant="danger" />
-        <StatCard title="Collection Rate" value={`${collectionRate || 83}%`} icon={CheckCircle} variant="success" />
+        <StatCard title="Total Properties" value={String(totalProperties)} icon={Building2} variant="primary" />
+        <StatCard title="For Rent" value={String(forRentCount)} icon={Home} variant="secondary" />
+        <StatCard title="For Sale" value={String(forSaleCount)} icon={ShoppingBag} variant="warning" />
+        <StatCard title="Occupied" value={String(occupiedCount)} icon={UserCheck} variant="success" />
+        <StatCard title="Pending Requests" value={String(pendingRequests)} icon={ClipboardList} variant={pendingRequests > 0 ? 'danger' : 'default'} />
+        <StatCard title="Active Tenants" value={String(activeTenants)} icon={Users} variant="secondary" />
+        <StatCard title="Open Maintenance" value={String(openMaintenance)} icon={Wrench} variant={openMaintenance > 0 ? 'warning' : 'default'} />
+        <StatCard title="Monthly Income" value={fmtRupee(monthlyIncome)} icon={DollarSign} variant="success" />
       </div>
 
-      {/* Middle row: Portfolio overview + Quick actions */}
+      {/* ── Middle Row: Portfolio Overview + Quick Actions ──────────────────────── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-
-        {/* Portfolio progress card */}
+        {/* Portfolio Overview */}
         <GlassCard variant="primary" className="lg:col-span-2 p-0">
-          <GlassCardHeader className="px-5 pt-5 mb-0 pb-3">
+          <GlassCardHeader className="px-5 pt-5 pb-3 mb-0">
             <div className="flex items-center justify-between">
               <div>
                 <GlassCardTitle>Portfolio Overview</GlassCardTitle>
-                <GlassCardDescription>Occupancy and collection performance</GlassCardDescription>
+                <GlassCardDescription>Occupancy and rent collection performance</GlassCardDescription>
               </div>
               <button
                 onClick={() => navigate('/app/properties')}
@@ -107,112 +236,118 @@ export function DashboardPage() {
               </button>
             </div>
           </GlassCardHeader>
-          <GlassCardContent className="px-5 pb-5 flex flex-col gap-4">
-
+          <GlassCardContent className="px-5 pb-5 flex flex-col gap-5">
             {/* Occupancy bar */}
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between text-xs">
                 <span className="font-medium text-text">Occupancy Rate</span>
-                <span className="text-muted">3 of 8 units</span>
+                <span className="text-muted">{occupiedUnits} of {totalUnits} units</span>
               </div>
               <div className="h-2.5 w-full rounded-full bg-surface2">
-                <div className="h-2.5 rounded-full bg-gradient-to-r from-sky-500 to-sky-400 transition-all duration-500" style={{ width: '37.5%' }} />
+                <div
+                  className="h-2.5 rounded-full bg-gradient-to-r from-sky-500 to-sky-400 transition-all duration-700"
+                  style={{ width: `${occupancyRate}%` }}
+                />
               </div>
-              <span className="text-[11px] text-muted">37.5% occupied</span>
+              <span className="text-[11px] text-muted">{occupancyRate}% occupied · {totalUnits - occupiedUnits} units available</span>
             </div>
 
             {/* Collection bar */}
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between text-xs">
                 <span className="font-medium text-text">Rent Collection</span>
-                <span className="text-muted">₹25,000 of ₹30,000</span>
+                <span className="text-muted">{fmtRupee(totalCollected)} of {fmtRupee(totalCollected + totalPending)}</span>
               </div>
               <div className="h-2.5 w-full rounded-full bg-surface2">
-                <div className="h-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500" style={{ width: '83%' }} />
+                <div
+                  className="h-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-700"
+                  style={{ width: `${collectionRate}%` }}
+                />
               </div>
-              <span className="text-[11px] text-muted">83% collected this month</span>
+              <span className="text-[11px] text-muted">{collectionRate}% collected this month</span>
             </div>
 
             {/* Pending bar */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="font-medium text-text">Pending Amount</span>
-                <span className="text-amber-400">₹5,000</span>
+            {totalPending > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium text-text">Pending Amount</span>
+                  <span className="text-amber-400 font-semibold">{fmtRupee(totalPending)}</span>
+                </div>
+                <div className="h-2.5 w-full rounded-full bg-surface2">
+                  <div
+                    className="h-2.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-700"
+                    style={{ width: `${Math.round((totalPending / (totalCollected + totalPending)) * 100)}%` }}
+                  />
+                </div>
+                <span className="text-[11px] text-muted">
+                  {Math.round((totalPending / (totalCollected + totalPending)) * 100)}% outstanding
+                </span>
               </div>
-              <div className="h-2.5 w-full rounded-full bg-surface2">
-                <div className="h-2.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-500" style={{ width: '17%' }} />
-              </div>
-              <span className="text-[11px] text-muted">17% outstanding – 2 tenants pending</span>
-            </div>
+            )}
 
+            {/* Property Status Breakdown */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-border/40">
+              {[
+                { label: 'For Rent', val: forRentCount, color: 'text-sky-400 bg-sky-500/10 border-sky-500/20' },
+                { label: 'For Sale', val: forSaleCount, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+                { label: 'Occupied', val: occupiedCount, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+                { label: 'Inactive', val: properties.filter(p => p.listingStatus === 'inactive').length, color: 'text-muted bg-surface2/50 border-border/30' },
+              ].map(({ label, val, color }) => (
+                <div key={label} className={`rounded-xl border px-3 py-2 text-center ${color}`}>
+                  <p className="text-xl font-bold">{val}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider mt-0.5 opacity-80">{label}</p>
+                </div>
+              ))}
+            </div>
           </GlassCardContent>
         </GlassCard>
 
-        {/* Quick actions */}
+        {/* Quick Actions */}
         <GlassCard className="flex flex-col">
           <GlassCardHeader className="mb-0">
             <GlassCardTitle>Quick Actions</GlassCardTitle>
             <GlassCardDescription>Jump into the most common workflows.</GlassCardDescription>
           </GlassCardHeader>
           <GlassCardContent className="mt-3 flex flex-col gap-2 flex-1">
-            <button
-              onClick={() => navigate('/app/properties')}
-              className="flex items-center gap-3 rounded-xl border border-border bg-surface2/40 px-4 py-3 text-sm font-medium text-text transition-all hover:border-primary/30 hover:bg-primary/8 hover:text-primary group"
-            >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-400 group-hover:bg-sky-500/20 transition-colors">
-                <Building2 className="h-4 w-4" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-medium">Add Property</p>
-                <p className="text-[11px] text-muted">Register a new property</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted group-hover:text-primary transition-colors" />
-            </button>
-
-            <button
-              onClick={() => navigate('/app/tenancies')}
-              className="flex items-center gap-3 rounded-xl border border-border bg-surface2/40 px-4 py-3 text-sm font-medium text-text transition-all hover:border-primary/30 hover:bg-primary/8 hover:text-primary group"
-            >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 transition-colors">
-                <Users className="h-4 w-4" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-medium">Manage Tenants</p>
-                <p className="text-[11px] text-muted">{activeTenants || 4} active tenancies</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted group-hover:text-primary transition-colors" />
-            </button>
-
-            <button
-              onClick={() => navigate('/app/payments')}
-              className="flex items-center gap-3 rounded-xl border border-border bg-surface2/40 px-4 py-3 text-sm font-medium text-text transition-all hover:border-primary/30 hover:bg-primary/8 hover:text-primary group"
-            >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 transition-colors">
-                <DollarSign className="h-4 w-4" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-medium">Record Payment</p>
-                <p className="text-[11px] text-muted">₹5,000 still pending</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted group-hover:text-primary transition-colors" />
-            </button>
+            {[
+              { label: 'Add Property', sub: 'Register a new property', icon: Building2, color: 'bg-sky-500/10 text-sky-400 group-hover:bg-sky-500/20', path: '/app/properties' },
+              { label: 'Tenant Requests', sub: `${pendingRequests} pending review`, icon: ClipboardList, color: 'bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20', path: '/app/tenant-requests' },
+              { label: 'Manage Tenants', sub: `${activeTenants} active tenancies`, icon: Users, color: 'bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20', path: '/app/tenancies' },
+              { label: 'Maintenance', sub: `${openMaintenance} open requests`, icon: Wrench, color: 'bg-orange-500/10 text-orange-400 group-hover:bg-orange-500/20', path: '/app/maintenance' },
+              { label: 'Payments', sub: `${fmtRupee(totalPending)} pending`, icon: DollarSign, color: 'bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20', path: '/app/payments' },
+            ].map(({ label, sub, icon: Icon, color, path }) => (
+              <button
+                key={label}
+                onClick={() => navigate(path)}
+                className="flex items-center gap-3 rounded-xl border border-border bg-surface2/40 px-4 py-2.5 text-sm font-medium text-text transition-all hover:border-primary/30 hover:bg-primary/8 hover:text-primary group"
+              >
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${color}`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium">{label}</p>
+                  <p className="text-[11px] text-muted">{sub}</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted group-hover:text-primary transition-colors" />
+              </button>
+            ))}
           </GlassCardContent>
           <GlassCardFooter className="mt-4">
-            <p className="text-xs text-muted w-full text-center">PropManager Pro · Manage smarter</p>
+            <p className="text-xs text-muted w-full text-center">PropertyPro · Manage smarter</p>
           </GlassCardFooter>
         </GlassCard>
       </div>
 
-      {/* Bottom row: Recent payments + Active Tenants */}
+      {/* ── Bottom Row: Recent Payments + Activity ──────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-
-        {/* Recent payments */}
+        {/* Recent Payments */}
         <GlassCard className="lg:col-span-2 p-0">
           <GlassCardHeader className="px-5 pt-5 pb-3 mb-0">
             <div className="flex items-center justify-between">
               <div>
                 <GlassCardTitle>Recent Payments</GlassCardTitle>
-                <GlassCardDescription>Latest rent transactions</GlassCardDescription>
+                <GlassCardDescription>Latest rent transactions across your portfolio</GlassCardDescription>
               </div>
               <button
                 onClick={() => navigate('/app/payments')}
@@ -227,22 +362,22 @@ export function DashboardPage() {
               {recentPayments.length > 0 ? recentPayments.map((p) => (
                 <div key={p.id} className="flex items-center justify-between py-3 gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface2 text-sm font-semibold text-text uppercase">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface2 text-sm font-bold text-text uppercase">
                       {p.tenantName.charAt(0)}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-text truncate">{p.tenantName}</p>
-                      <p className="text-[11px] text-muted truncate">{p.propertyName} · Due {formatDate(p.dueDate)}</p>
+                      <p className="text-[11px] text-muted truncate">{p.propertyName} · Due {fmtDate(p.dueDate)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-sm font-semibold text-text tabular-nums">{formatRupee(p.amount)}</span>
+                    <span className="text-sm font-bold text-text tabular-nums">{fmtRupee(p.amount)}</span>
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
                       p.status === 'paid' ? 'bg-emerald-500/10 text-emerald-400' :
                       p.status === 'pending' ? 'bg-amber-500/10 text-amber-400' :
                       'bg-red-500/10 text-red-400'
                     }`}>
-                      {p.status === 'paid' ? <CheckCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                      {p.status === 'paid' ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
                       {p.status}
                     </span>
                   </div>
@@ -254,56 +389,88 @@ export function DashboardPage() {
           </GlassCardContent>
         </GlassCard>
 
-        {/* Active Tenants */}
-        <GlassCard variant="primary" className="flex flex-col">
-          <GlassCardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <GlassCardTitle>Active Tenants</GlassCardTitle>
-                <GlassCardDescription>Current tenancy status</GlassCardDescription>
+        {/* Right Column: Recent Activity + Notifications */}
+        <div className="flex flex-col gap-4">
+          {/* Recent Activity */}
+          <GlassCard variant="primary" className="p-0 flex-1">
+            <GlassCardHeader className="px-5 pt-5 pb-3 mb-0">
+              <div className="flex items-center justify-between">
+                <GlassCardTitle className="text-base flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-primary" /> Recent Activity
+                </GlassCardTitle>
               </div>
-              <button
-                onClick={() => navigate('/app/tenancies')}
-                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
-              >
-                View all <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </GlassCardHeader>
-          <GlassCardContent className="mt-2 flex flex-col gap-3 flex-1">
-            {tenancies.slice(0, 4).map((t) => (
-              <div key={t.id} className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface2 text-xs font-bold text-text uppercase">
-                    {t.tenantName.charAt(0)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-text truncate">{t.tenantName}</p>
-                    <p className="text-[11px] text-muted truncate">{t.propertyName}</p>
-                  </div>
+            </GlassCardHeader>
+            <GlassCardContent className="px-5 pb-5">
+              {recentActivity.length === 0 ? (
+                <p className="text-xs text-muted text-center py-4">No recent activity.</p>
+              ) : (
+                <div className="relative flex flex-col gap-0">
+                  {/* Timeline line */}
+                  <div className="absolute left-[18px] top-4 bottom-4 w-px bg-border/40" />
+                  {recentActivity.map((event) => (
+                    <div key={event.id} className="flex items-start gap-3 py-2.5 relative">
+                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full z-10 ${event.color}`}>
+                        <event.icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1 pt-1">
+                        <p className="text-xs font-medium text-text leading-tight">{event.text}</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <span className="text-[10px] text-muted">{event.subtext}</span>
+                          <span className="text-muted">·</span>
+                          <span className="text-[10px] text-muted">{fmtRelative(event.time)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase shrink-0 ${
-                  t.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-500/10 text-slate-400'
-                }`}>
-                  {t.status === 'active' ? <UserCheck className="h-3 w-3" /> : <UserX className="h-3 w-3" />}
-                  {t.status}
-                </span>
+              )}
+            </GlassCardContent>
+          </GlassCard>
+
+          {/* Notifications */}
+          {myNotifications.length > 0 && (
+            <GlassCard className="p-0">
+              <GlassCardHeader className="px-4 pt-4 pb-2 mb-0">
+                <GlassCardTitle className="text-sm flex items-center gap-2">
+                  <Bell className="h-3.5 w-3.5 text-primary" /> Notifications
+                </GlassCardTitle>
+              </GlassCardHeader>
+              <GlassCardContent className="px-4 pb-4">
+                <div className="flex flex-col gap-2">
+                  {myNotifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className={`rounded-lg px-3 py-2 text-xs border ${
+                        n.type === 'success' ? 'bg-emerald-500/8 border-emerald-500/20 text-emerald-400' :
+                        n.type === 'danger' ? 'bg-red-500/8 border-red-500/20 text-red-400' :
+                        n.type === 'warning' ? 'bg-amber-500/8 border-amber-500/20 text-amber-400' :
+                        'bg-sky-500/8 border-sky-500/20 text-sky-400'
+                      }`}
+                    >
+                      <p className="font-semibold">{n.title}</p>
+                      <p className="text-muted mt-0.5 line-clamp-2">{n.message}</p>
+                    </div>
+                  ))}
+                </div>
+              </GlassCardContent>
+            </GlassCard>
+          )}
+
+          {/* Pending Alerts */}
+          {pendingRequests > 0 && (
+            <GlassCard variant="warning" className="p-4 cursor-pointer hover:-translate-y-0.5 transition-transform" onClick={() => navigate('/app/tenant-requests')}>
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-text">
+                    {pendingRequests} request{pendingRequests > 1 ? 's' : ''} awaiting review
+                  </p>
+                  <p className="text-xs text-muted mt-0.5">Tap to review tenant rental requests</p>
+                </div>
               </div>
-            ))}
-            {tenancies.length === 0 && (
-              <p className="text-sm text-muted text-center py-4">No tenants yet.</p>
-            )}
-          </GlassCardContent>
-          <GlassCardFooter className="mt-3">
-            <Button
-              variant="secondary"
-              className="w-full justify-center"
-              onClick={() => navigate('/app/tenancies')}
-            >
-              Manage Tenants
-            </Button>
-          </GlassCardFooter>
-        </GlassCard>
+            </GlassCard>
+          )}
+        </div>
       </div>
     </div>
   )

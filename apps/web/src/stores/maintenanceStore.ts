@@ -4,16 +4,21 @@ import { persist } from 'zustand/middleware'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type MaintenancePriority = 'low' | 'medium' | 'high' | 'urgent'
-export type MaintenanceStatus = 'open' | 'in-progress' | 'resolved' | 'closed'
+export type MaintenanceStatus = 'open' | 'assigned' | 'in-progress' | 'resolved' | 'closed' | 'rejected'
 
 export interface MaintenanceRecord {
   id: string
   title: string
   description?: string
   propertyName: string
+  propertyId?: string
+  /** Issue category (e.g. Electrical, Water, Cleaning) */
+  category?: string
   priority: MaintenancePriority
   status: MaintenanceStatus
   reportedBy?: string
+  /** Email of the tenant who reported — used to send status update notifications */
+  tenantEmail?: string
   assignedTo?: string
   resolvedAt?: string
   createdAt: string
@@ -29,6 +34,7 @@ const SEED: MaintenanceRecord[] = [
     description:
       'The central air conditioning unit in the master bedroom stopped cooling. Tenant reports warm air blowing out.',
     propertyName: 'Hassan Villa',
+    category: 'Electrical',
     priority: 'urgent',
     status: 'open',
     reportedBy: 'Rajesh Kumar',
@@ -40,6 +46,7 @@ const SEED: MaintenanceRecord[] = [
     title: 'Leaking Kitchen Faucet',
     description: 'Kitchen tap is dripping continuously. Tenant estimates ~5L water waste per day.',
     propertyName: 'Green Park Residency',
+    category: 'Water',
     priority: 'medium',
     status: 'in-progress',
     reportedBy: 'Priya Sharma',
@@ -52,6 +59,7 @@ const SEED: MaintenanceRecord[] = [
     title: 'Exterior Paint Touch-up',
     description: 'Paint peeling on the south-facing exterior wall. Needs repainting before monsoon.',
     propertyName: 'Sunrise Heights Studio',
+    category: 'Painting',
     priority: 'low',
     status: 'resolved',
     reportedBy: 'Building Inspector',
@@ -66,6 +74,7 @@ const SEED: MaintenanceRecord[] = [
     description:
       'Automated gate motor is not responding. Manual override is being used as a temporary fix.',
     propertyName: 'Hassan Villa',
+    category: 'Security',
     priority: 'high',
     status: 'open',
     reportedBy: 'Security Guard',
@@ -77,6 +86,7 @@ const SEED: MaintenanceRecord[] = [
     title: 'Internet Router Replacement',
     description: 'Common area WiFi router has failed. Tenants require connectivity.',
     propertyName: 'Green Park Residency',
+    category: 'Internet',
     priority: 'medium',
     status: 'closed',
     reportedBy: 'Arjun Nair',

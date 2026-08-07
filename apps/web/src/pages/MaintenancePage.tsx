@@ -8,6 +8,8 @@ import {
   AlertOctagon,
   Hammer,
   ClipboardCheck,
+  XCircle,
+  UserCheck,
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/Badge'
@@ -26,11 +28,56 @@ import {
   type MaintenancePriority,
   type MaintenanceStatus,
 } from '@/stores/maintenanceStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
 import { useConfirmStore } from '@/stores/confirmStore'
+import { useNotificationsStore } from '@/stores/notificationsStore'
+
+// Status labels & visual mapping helper
+const STATUS_CONFIG: Record<
+  MaintenanceStatus,
+  { label: string; intent: 'primary' | 'warning' | 'success' | 'neutral' | 'danger' }
+> = {
+  open: { label: 'Pending', intent: 'warning' },
+  assigned: { label: 'Assigned', intent: 'primary' },
+  'in-progress': { label: 'In Progress', intent: 'warning' },
+  resolved: { label: 'Completed', intent: 'success' },
+  closed: { label: 'Closed', intent: 'neutral' },
+  rejected: { label: 'Rejected', intent: 'danger' },
+}
 
 export function MaintenancePage() {
+  const user = useAuthStore((state) => state.user)
   const toast = useToast()
-  const { items, add, update, remove } = useMaintenanceStore()
+  const { items: allMaintenance, add, update, remove } = useMaintenanceStore()
+  const { items: properties } = useLocalPropertiesStore()
+  const { addNotification } = useNotificationsStore()
+
+  const userEmail = user?.email?.toLowerCase() ?? ''
+  const userId = user?.id ?? ''
+  const userName = user?.name?.toLowerCase() ?? ''
+  const isSuperAdmin = user?.roles.includes('admin') || userEmail === 'admin@propertypro.com'
+  const isOwner = user?.roles.includes('owner') || user?.roles.includes('agent')
+
+  const myOwnerProperties = properties.filter(
+    (p) => p.ownerEmail?.toLowerCase() === userEmail || p.ownerId === userId,
+  )
+  const myPropertyIds = new Set(myOwnerProperties.map((p) => p.id))
+  const myPropertyNames = new Set(myOwnerProperties.map((p) => p.name.toLowerCase()))
+
+  const items = isSuperAdmin
+    ? allMaintenance
+    : isOwner
+    ? allMaintenance.filter(
+        (m) =>
+          (m.propertyId && myPropertyIds.has(m.propertyId)) ||
+          myPropertyNames.has(m.propertyName.toLowerCase()),
+      )
+    : allMaintenance.filter(
+        (m) =>
+          m.tenantEmail?.toLowerCase() === userEmail ||
+          m.reportedBy?.toLowerCase() === userName,
+      )
 
   // State
   const [search, setSearch] = useState('')
@@ -45,9 +92,11 @@ export function MaintenancePage() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [propertyName, setPropertyName] = useState('')
+  const [category, setCategory] = useState('Other')
   const [priority, setPriority] = useState<MaintenancePriority>('medium')
   const [status, setStatus] = useState<MaintenanceStatus>('open')
   const [reportedBy, setReportedBy] = useState('')
+  const [tenantEmail, setTenantEmail] = useState('')
   const [assignedTo, setAssignedTo] = useState('')
 
   const handleOpenAdd = () => {
@@ -55,9 +104,11 @@ export function MaintenancePage() {
     setTitle('')
     setDescription('')
     setPropertyName('')
+    setCategory('Other')
     setPriority('medium')
     setStatus('open')
     setReportedBy('')
+    setTenantEmail('')
     setAssignedTo('')
     setModalOpen(true)
   }
@@ -67,9 +118,11 @@ export function MaintenancePage() {
     setTitle(item.title)
     setDescription(item.description ?? '')
     setPropertyName(item.propertyName)
+    setCategory(item.category ?? 'Other')
     setPriority(item.priority)
     setStatus(item.status)
     setReportedBy(item.reportedBy ?? '')
+    setTenantEmail(item.tenantEmail ?? '')
     setAssignedTo(item.assignedTo ?? '')
     setModalOpen(true)
   }
@@ -77,12 +130,23 @@ export function MaintenancePage() {
   const handleDelete = async (id: string) => {
     const confirmed = await useConfirmStore.getState().showConfirm({
       title: 'Delete Ticket',
-      message: 'Are you sure you want to delete this maintenance request ticket?'
+      message: 'Are you sure you want to delete this maintenance request ticket?',
     })
     if (confirmed) {
       remove(id)
       toast.success('Ticket deleted successfully')
     }
+  }
+
+  const handleNotifyTenant = (propertyName: string, issueTitle: string, email: string, newStatus: MaintenanceStatus) => {
+    if (!email) return
+    const statusLabel = STATUS_CONFIG[newStatus]?.label ?? newStatus
+    addNotification({
+      userEmail: email,
+      title: `🛠️ Maintenance Request Status Update`,
+      message: `Your request "${issueTitle}" for property ${propertyName} has been updated to "${statusLabel}".`,
+      type: newStatus === 'resolved' ? 'success' : newStatus === 'rejected' ? 'danger' : 'info',
+    })
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -96,49 +160,62 @@ export function MaintenancePage() {
       title: title.trim(),
       description: description.trim() || undefined,
       propertyName: propertyName.trim(),
+      category: category.trim(),
       priority,
       status,
       reportedBy: reportedBy.trim() || undefined,
+      tenantEmail: tenantEmail.trim() || undefined,
       assignedTo: assignedTo.trim() || undefined,
       resolvedAt: status === 'resolved' || status === 'closed' ? new Date().toISOString() : undefined,
     }
 
     if (editingItem) {
+      const oldStatus = editingItem.status
       update(editingItem.id, payload)
+      if (oldStatus !== status && payload.tenantEmail) {
+        handleNotifyTenant(payload.propertyName, payload.title, payload.tenantEmail, status)
+      }
       toast.success('Ticket updated successfully')
     } else {
       add(payload)
+      if (payload.tenantEmail) {
+        handleNotifyTenant(payload.propertyName, payload.title, payload.tenantEmail, status)
+      }
       toast.success('Maintenance ticket filed')
     }
     setModalOpen(false)
   }
 
-  const handleUpdateStatus = (id: string, newStatus: MaintenanceStatus) => {
-    update(id, {
+  const handleUpdateStatus = (item: MaintenanceRecord, newStatus: MaintenanceStatus) => {
+    update(item.id, {
       status: newStatus,
       resolvedAt: newStatus === 'resolved' || newStatus === 'closed' ? new Date().toISOString() : undefined,
     })
-    toast.success(`Ticket status marked as ${newStatus}`)
+    if (item.tenantEmail) {
+      handleNotifyTenant(item.propertyName, item.title, item.tenantEmail, newStatus)
+    }
+    toast.success(`Ticket status marked as ${STATUS_CONFIG[newStatus]?.label ?? newStatus}`)
   }
 
   // Filters
   const filtered = items.filter((item) => {
     const matchesSearch =
       item.title.toLowerCase().includes(search.toLowerCase()) ||
-      item.propertyName.toLowerCase().includes(search.toLowerCase())
+      item.propertyName.toLowerCase().includes(search.toLowerCase()) ||
+      (item.category ?? '').toLowerCase().includes(search.toLowerCase())
     const matchesPriority = priorityFilter === 'all' || item.priority === priorityFilter
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter
     return matchesSearch && matchesPriority && matchesStatus
   })
 
   // Stats
-  const urgentTickets = items.filter((item) => item.priority === 'urgent' && item.status !== 'closed').length
+  const urgentTickets = items.filter((item) => item.priority === 'urgent' && item.status !== 'closed' && item.status !== 'resolved').length
   const openTickets = items.filter((item) => item.status === 'open').length
   const inProgressTickets = items.filter((item) => item.status === 'in-progress').length
   const resolvedTickets = items.filter((item) => item.status === 'resolved' || item.status === 'closed').length
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       {/* Top Header Section */}
       <div className="flex items-end justify-between">
         <div className="flex flex-col gap-1">
@@ -164,7 +241,7 @@ export function MaintenancePage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 max-w-md">
           <Input
-            placeholder="Search issue or property..."
+            placeholder="Search issue, category, or property..."
             value={search}
             leftIcon={<Search className="h-4 w-4" />}
             onChange={(e) => setSearch(e.target.value)}
@@ -185,10 +262,12 @@ export function MaintenancePage() {
           <Select
             options={[
               { value: 'all', label: 'All Status' },
-              { value: 'open', label: 'Open' },
+              { value: 'open', label: 'Pending' },
+              { value: 'assigned', label: 'Assigned' },
               { value: 'in-progress', label: 'In Progress' },
-              { value: 'resolved', label: 'Resolved' },
+              { value: 'resolved', label: 'Completed' },
               { value: 'closed', label: 'Closed' },
+              { value: 'rejected', label: 'Rejected' },
             ]}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -202,6 +281,7 @@ export function MaintenancePage() {
           <TableHeader>
             <TableRow>
               <TableHead>Issue & Property</TableHead>
+              <TableHead>Category</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Reporter / Assignee</TableHead>
               <TableHead>Last Updated</TableHead>
@@ -212,7 +292,7 @@ export function MaintenancePage() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-muted">
+                <TableCell colSpan={7} className="h-32 text-center text-muted">
                   No maintenance requests logged. File a request to populate this list.
                 </TableCell>
               </TableRow>
@@ -222,8 +302,15 @@ export function MaintenancePage() {
                   <TableCell>
                     <div className="flex flex-col max-w-sm">
                       <span className="font-semibold text-text">{item.title}</span>
-                      <span className="text-xs text-muted truncate">{item.propertyName} {item.description ? `• ${item.description}` : ''}</span>
+                      <span className="text-xs text-muted truncate">
+                        {item.propertyName} {item.description ? `• ${item.description}` : ''}
+                      </span>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-surface2 text-text">
+                      {item.category ?? 'Other'}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -244,6 +331,7 @@ export function MaintenancePage() {
                   <TableCell>
                     <div className="flex flex-col text-xs">
                       {item.reportedBy && <span>Reported: {item.reportedBy}</span>}
+                      {item.tenantEmail && <span className="text-[10px] text-muted font-mono">{item.tenantEmail}</span>}
                       {item.assignedTo ? (
                         <span className="text-muted">Assigned: {item.assignedTo}</span>
                       ) : (
@@ -256,16 +344,10 @@ export function MaintenancePage() {
                   </TableCell>
                   <TableCell>
                     <Badge
-                      intent={
-                        item.status === 'resolved' || item.status === 'closed'
-                          ? 'success'
-                          : item.status === 'in-progress'
-                            ? 'warning'
-                            : 'info'
-                      }
+                      intent={STATUS_CONFIG[item.status]?.intent ?? 'neutral'}
                       size="sm"
                     >
-                      {item.status.toUpperCase()}
+                      {STATUS_CONFIG[item.status]?.label.toUpperCase() ?? item.status.toUpperCase()}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -274,16 +356,44 @@ export function MaintenancePage() {
                         ...(item.status === 'open'
                           ? [
                               {
+                                label: 'Mark Assigned',
+                                icon: UserCheck,
+                                onClick: () => handleUpdateStatus(item, 'assigned'),
+                              },
+                              {
                                 label: 'Start Repair',
-                                onClick: () => handleUpdateStatus(item.id, 'in-progress'),
+                                icon: Hammer,
+                                onClick: () => handleUpdateStatus(item, 'in-progress'),
+                              },
+                              {
+                                label: 'Reject Request',
+                                icon: XCircle,
+                                destructive: true,
+                                onClick: () => handleUpdateStatus(item, 'rejected'),
+                              },
+                            ]
+                          : []),
+                        ...(item.status === 'assigned'
+                          ? [
+                              {
+                                label: 'Start Repair',
+                                icon: Hammer,
+                                onClick: () => handleUpdateStatus(item, 'in-progress'),
+                              },
+                              {
+                                label: 'Reject Request',
+                                icon: XCircle,
+                                destructive: true,
+                                onClick: () => handleUpdateStatus(item, 'rejected'),
                               },
                             ]
                           : []),
                         ...(item.status === 'in-progress'
                           ? [
                               {
-                                label: 'Mark Resolved',
-                                onClick: () => handleUpdateStatus(item.id, 'resolved'),
+                                label: 'Mark Completed',
+                                icon: ClipboardCheck,
+                                onClick: () => handleUpdateStatus(item, 'resolved'),
                               },
                             ]
                           : []),
@@ -340,6 +450,20 @@ export function MaintenancePage() {
           />
           <div className="grid grid-cols-2 gap-4">
             <Select
+              label="Issue Category"
+              options={[
+                { value: 'Electrical', label: 'Electrical' },
+                { value: 'Water', label: 'Water / Plumbing' },
+                { value: 'Cleaning', label: 'Cleaning' },
+                { value: 'Internet', label: 'Internet / Wifi' },
+                { value: 'Painting', label: 'Painting' },
+                { value: 'Security', label: 'Security' },
+                { value: 'Other', label: 'Other' },
+              ]}
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            />
+            <Select
               label="Priority Level"
               options={[
                 { value: 'low', label: 'Low' },
@@ -350,24 +474,34 @@ export function MaintenancePage() {
               value={priority}
               onChange={(e) => setPriority(e.target.value as MaintenancePriority)}
             />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <Select
               label="Status"
               options={[
-                { value: 'open', label: 'Open' },
+                { value: 'open', label: 'Pending' },
+                { value: 'assigned', label: 'Assigned' },
                 { value: 'in-progress', label: 'In Progress' },
-                { value: 'resolved', label: 'Resolved' },
+                { value: 'resolved', label: 'Completed' },
                 { value: 'closed', label: 'Closed' },
+                { value: 'rejected', label: 'Rejected' },
               ]}
               value={status}
               onChange={(e) => setStatus(e.target.value as MaintenanceStatus)}
             />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Reported By"
+              label="Reporter Name"
               value={reportedBy}
               onChange={(e) => setReportedBy(e.target.value)}
               placeholder="e.g. Rajesh Kumar"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Tenant Email (for notifications)"
+              value={tenantEmail}
+              onChange={(e) => setTenantEmail(e.target.value)}
+              placeholder="e.g. tenant@domain.com"
             />
             <Input
               label="Assignee/Vendor"

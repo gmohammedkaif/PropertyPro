@@ -140,6 +140,7 @@ export class MongoPropertyRepository implements PropertyRepository {
     if (filter.status) query.status = filter.status
     if (filter.city) query['address.city'] = filter.city
     if (filter.state) query['address.state'] = filter.state
+    if (filter.ownerId) query.ownerId = filter.ownerId
   }
 
   private buildSort(filter: PropertyFilter): Record<string, 1 | -1> {

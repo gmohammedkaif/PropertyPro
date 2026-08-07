@@ -13,9 +13,12 @@ import {
   restoreProperty,
 } from './property.controller.js'
 
+// Auth rate limit (strict) is for login/register — property CRUD needs a much higher limit
+const PROPERTY_RATE_LIMIT = env.NODE_ENV === 'development' ? 500 : 200
+
 const propertyLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
-  limit: env.AUTH_RATE_LIMIT,
+  limit: PROPERTY_RATE_LIMIT,
   standardHeaders: true,
   legacyHeaders: false,
   handler: (_req, res) => {
@@ -32,7 +35,7 @@ const propertyLimiter = rateLimit({
 
 const router = Router()
 
-router.get('/properties', propertyLimiter, getProperties)
+router.get('/properties', authenticate, propertyLimiter, getProperties)
 router.get('/properties/search', propertyLimiter, searchProperties)
 router.get('/properties/:id', propertyLimiter, getProperty)
 

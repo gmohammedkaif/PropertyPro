@@ -64,6 +64,7 @@ export interface UpdatePropertyInput {
 
 export interface PropertyFilter {
   search?: string
+  ownerId?: string
   type?: PropertyType
   status?: PropertyStatus
   city?: string

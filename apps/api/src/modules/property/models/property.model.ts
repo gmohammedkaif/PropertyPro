@@ -22,7 +22,7 @@ const locationSchema = new Schema(
 
 const propertySchema = new Schema(
   {
-    ownerId: { type: Schema.Types.ObjectId, required: true, index: true },
+    ownerId: { type: String, required: true, index: true },
     name: { type: String, required: true, trim: true },
     type: { type: String, enum: ['apartment', 'house', 'commercial', 'mixed'], required: true },
     address: { type: addressSchema, required: true },

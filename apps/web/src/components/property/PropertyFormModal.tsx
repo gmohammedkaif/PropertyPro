@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select'
 import { useToast } from '@/hooks/useToast'
 import { useCreateProperty, useUpdateProperty } from '@/hooks/useProperty'
 import { useAuthStore } from '@/stores/authStore'
+import { useLocalPropertiesStore, type LocalPropertyType } from '@/stores/localPropertiesStore'
 import type { PropertyRecord } from '@propertypro/shared'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -127,7 +128,6 @@ export function PropertyFormModal({
   open,
   onOpenChange,
   property,
-  onSuccess,
 }: PropertyFormModalProps) {
   const mode: Mode = property ? 'edit' : 'create'
   const toast = useToast()
@@ -195,6 +195,8 @@ export function PropertyFormModal({
     }
   }
 
+  const { add: addLocal, update: updateLocal } = useLocalPropertiesStore()
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setTouched(true)
@@ -204,31 +206,62 @@ export function PropertyFormModal({
       return
     }
 
-    const totalUnits = form.totalUnits ? parseInt(form.totalUnits, 10) : undefined
+    if (!user) {
+      toast.error('You must be logged in to add a property.')
+      return
+    }
+
+    const totalUnits = form.totalUnits ? parseInt(form.totalUnits, 10) : 0
+
+    const addressPayload = {
+      line1: form.line1.trim(),
+      line2: form.line2.trim() || undefined,
+      city: form.city.trim(),
+      state: form.state.trim(),
+      postalCode: form.postalCode.trim(),
+      country: form.country,
+    }
 
     try {
       if (mode === 'create') {
-        if (!user) return
+        // 1. Send API request & WAIT for backend MongoDB insertion
         const created = await createProperty.mutateAsync({
           ownerId: user.id,
           name: form.name.trim(),
           type: form.type as PropertyRecord['type'],
           description: form.description.trim() || undefined,
           totalUnits,
-          address: {
-            line1: form.line1.trim(),
-            line2: form.line2.trim() || undefined,
-            city: form.city.trim(),
-            state: form.state.trim(),
-            postalCode: form.postalCode.trim(),
-            country: form.country,
-          },
+          address: addressPayload,
         })
-        toast.success('Property created', { description: `"${created.name}" has been added.` })
-        onSuccess?.(created)
+
+        // 2. Sync to local store so offline/local views match MongoDB state
+        addLocal({
+          name: created.name,
+          type: created.type as LocalPropertyType,
+          description: created.description ?? undefined,
+          totalUnits: created.totalUnits ?? totalUnits,
+          occupiedUnits: created.occupiedUnits ?? 0,
+          address: {
+            line1: created.address.line1,
+            line2: created.address.line2 ?? undefined,
+            city: created.address.city,
+            state: created.address.state,
+            postalCode: created.address.postalCode,
+            country: created.address.country,
+          },
+          listingStatus: 'for-rent',
+          ownerEmail: user.email,
+        })
+
+        // 3. ONLY THEN show success toast & close modal
+        toast.success('Property Added Successfully', {
+          description: `"${created.name}" has been created and stored in the database.`,
+        })
         onOpenChange(false)
       } else {
         if (!property) return
+
+        // 1. Send API update & WAIT for backend
         const updated = await updateProperty.mutateAsync({
           id: property.id,
           input: {
@@ -236,23 +269,36 @@ export function PropertyFormModal({
             type: form.type as PropertyRecord['type'],
             description: form.description.trim() || null,
             totalUnits,
-            address: {
-              line1: form.line1.trim(),
-              line2: form.line2.trim() || undefined,
-              city: form.city.trim(),
-              state: form.state.trim(),
-              postalCode: form.postalCode.trim(),
-              country: form.country,
-            },
+            address: addressPayload,
           },
         })
-        toast.success('Property updated', { description: `"${updated.name}" has been saved.` })
-        onSuccess?.(updated)
+
+        // 2. Sync to local store
+        updateLocal(property.id, {
+          name: updated.name,
+          type: updated.type as LocalPropertyType,
+          description: updated.description ?? undefined,
+          totalUnits: updated.totalUnits ?? totalUnits,
+          address: {
+            line1: updated.address.line1,
+            line2: updated.address.line2 ?? undefined,
+            city: updated.address.city,
+            state: updated.address.state,
+            postalCode: updated.address.postalCode,
+            country: updated.address.country,
+          },
+        })
+
+        // 3. ONLY THEN show success toast & close modal
+        toast.success('Property Updated Successfully', {
+          description: `"${updated.name}" has been updated.`,
+        })
         onOpenChange(false)
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Something went wrong'
-      toast.error(mode === 'create' ? 'Failed to create property' : 'Failed to update property', {
+      // If backend fails, show proper error message — DO NOT show success toast
+      const message = err instanceof Error ? err.message : 'Property creation failed.'
+      toast.error(mode === 'create' ? 'Property creation failed' : 'Property update failed', {
         description: message,
       })
     }

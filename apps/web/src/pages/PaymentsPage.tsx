@@ -21,6 +21,9 @@ import { ActionsMenu } from '@/components/ui/ActionsMenu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 import { useToast } from '@/hooks/useToast'
 import { usePaymentsStore, type PaymentRecord, type PaymentStatus, type PaymentType } from '@/stores/paymentsStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
+import { useTenanciesStore } from '@/stores/tenanciesStore'
 import { cn } from '@/lib/utils'
 import { useConfirmStore } from '@/stores/confirmStore'
 
@@ -46,8 +49,39 @@ function getTransactionId(id: string): string {
 }
 
 export function PaymentsPage() {
+  const user = useAuthStore((state) => state.user)
   const toast = useToast()
-  const { items, add, update, remove } = usePaymentsStore()
+  const { items: allPayments, add, update, remove } = usePaymentsStore()
+  const { items: properties } = useLocalPropertiesStore()
+  const { items: tenancies } = useTenanciesStore()
+
+  const userEmail = user?.email?.toLowerCase() ?? ''
+  const userId = user?.id ?? ''
+  const userName = user?.name?.toLowerCase() ?? ''
+  const isSuperAdmin = user?.roles.includes('admin') || userEmail === 'admin@propertypro.com'
+  const isOwner = user?.roles.includes('owner') || user?.roles.includes('agent')
+
+  const myOwnerProperties = properties.filter(
+    (p) => p.ownerEmail?.toLowerCase() === userEmail || p.ownerId === userId,
+  )
+  const myPropertyNames = new Set(myOwnerProperties.map((p) => p.name.toLowerCase()))
+
+  const myTenancies = tenancies.filter(
+    (t) =>
+      t.ownerEmail?.toLowerCase() === userEmail ||
+      myPropertyNames.has(t.propertyName.toLowerCase()),
+  )
+  const myTenantNames = new Set(myTenancies.map((t) => t.tenantName.toLowerCase()))
+
+  const items = isSuperAdmin
+    ? allPayments
+    : isOwner
+    ? allPayments.filter(
+        (p) =>
+          myPropertyNames.has(p.propertyName.toLowerCase()) ||
+          myTenantNames.has(p.tenantName.toLowerCase()),
+      )
+    : allPayments.filter((p) => p.tenantName.toLowerCase() === userName)
 
   // State
   const [search, setSearch] = useState('')

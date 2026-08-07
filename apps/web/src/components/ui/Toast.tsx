@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { forwardRef, useEffect, useRef, useState } from 'react'
 
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertCircle, CheckCircle2, Info, X, AlertTriangle } from 'lucide-react'
@@ -36,7 +36,10 @@ const INTENT_META: Record<
 
 // ─── Single toast item ────────────────────────────────────────────────────────
 
-function ToastItem({ toast }: { toast: Toast }) {
+const ToastItem = forwardRef<HTMLLIElement, { toast: Toast }>(function ToastItem(
+  { toast },
+  ref,
+) {
   const removeToast = useToastStore((state) => state.removeToast)
   const [progress, setProgress] = useState(100)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -64,6 +67,7 @@ function ToastItem({ toast }: { toast: Toast }) {
 
   return (
     <motion.li
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 24, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -120,7 +124,7 @@ function ToastItem({ toast }: { toast: Toast }) {
       />
     </motion.li>
   )
-}
+})
 
 // ─── Container ────────────────────────────────────────────────────────────────
 

@@ -1,334 +1,389 @@
 import { useState } from 'react'
-import { ArrowLeft, Calendar, Key, MapPin, Phone, User, Clock, Shield, Heart } from 'lucide-react'
+import {
+  ArrowLeft,
+  Key,
+  MapPin,
+  Phone,
+  User,
+  Shield,
+  CheckCircle,
+  Car,
+  Layers,
+  Sparkles,
+  MessageSquare,
+} from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle, GlassCardDescription } from '@/components/ui/GlassCard'
+import { Input } from '@/components/ui/Input'
+import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/ui/GlassCard'
+import { Modal } from '@/components/ui/Modal'
 import { useAuthStore } from '@/stores/authStore'
 import { useListingsStore } from '@/stores/listingsStore'
 import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
 import { useTenanciesStore } from '@/stores/tenanciesStore'
+import { useRentalRequestsStore } from '@/stores/rentalRequestsStore'
+import { useNotificationsStore } from '@/stores/notificationsStore'
 import { useToast } from '@/hooks/useToast'
 
 function formatRupee(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n)
 }
 
+const GALLERY_IMAGES = [
+  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=800&q=80',
+]
+
 export function TenantPropertyDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
+  const toast = useToast()
+
   const { items: listings } = useListingsStore()
   const { items: properties } = useLocalPropertiesStore()
   const { items: tenancies } = useTenanciesStore()
-  const toast = useToast()
+  const { addRequest } = useRentalRequestsStore()
+  const { addNotification } = useNotificationsStore()
 
-  const listing = listings.find(l => l.id === id)
-  
-  // Also check local properties (for properties not yet listed but available)
-  const localProperty = properties.find(p => p.id === id)
-  
-  // Check if user already has a tenancy for this property
-  const existingTenancy = tenancies.find(t => 
-    (listing && t.propertyName === listing.propertyName) || 
-    (localProperty && t.propertyId === localProperty.id)
-  ) && tenancies.find(t => t.tenantEmail === user?.email)
+  const listing = listings.find((l) => l.id === id)
+  const localProperty = properties.find((p) => p.id === id)
 
-  const [isRequesting, setIsRequesting] = useState(false)
+  // Selected image gallery state
+  const [selectedImage, setSelectedImage] = useState(0)
 
-  const handleRequestRent = async () => {
-    if (!user) {
-      toast.error('Please sign in first')
-      navigate('/login')
-      return
-    }
+  // Request Modal State
+  const [requestModalOpen, setRequestModalOpen] = useState(false)
+  const [fullName, setFullName] = useState(user?.name ?? '')
+  const [mobileNumber, setMobileNumber] = useState('')
+  const [city, setCity] = useState(localProperty?.address.city ?? 'Hyderabad')
+  const [submitting, setSubmitting] = useState(false)
 
-    setIsRequesting(true)
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // Create a tenancy request (in real app, this would be an API call)
-    // For now, we'll show success and navigate to dashboard
-    toast.success('Rental Request Submitted!', {
-      description: 'The property owner has been notified. You\'ll hear back within 24-48 hours.'
-    })
-    
-    setIsRequesting(false)
-    navigate('/app')
-  }
+  // Check if tenant already has an active tenancy for this property
+  const existingTenancy = tenancies.find(
+    (t) =>
+      t.tenantEmail.toLowerCase() === (user?.email ?? '').toLowerCase() &&
+      ((listing && t.propertyName === listing.propertyName) || (localProperty && t.propertyId === localProperty.id))
+  )
 
-  const handleBookViewing = async () => {
-    if (!user) {
-      toast.error('Please sign in first')
-      navigate('/login')
-      return
-    }
-
-    setIsRequesting(true)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    toast.success('Viewing Booked!', {
-      description: 'We\'ll confirm the viewing time via email shortly.'
-    })
-    
-    setIsRequesting(false)
-  }
-
-  // If neither listing nor local property found, show not found
   if (!listing && !localProperty) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-danger-soft text-danger">
-          <Shield className="h-7 w-7" aria-hidden="true" />
-        </div>
-        <div className="text-center">
-          <h2 className="text-lg font-semibold text-text">Property Not Found</h2>
-          <p className="mt-1 text-sm text-muted">This property may have been removed or the link may be incorrect.</p>
-        </div>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
+        <Shield className="h-12 w-12 text-muted" />
+        <h2 className="text-lg font-semibold text-text">Property Not Found</h2>
+        <p className="text-sm text-muted">The requested property listing could not be found or has been removed.</p>
         <Button variant="secondary" onClick={() => navigate('/app/properties')}>
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to Properties
+          <ArrowLeft className="h-4 w-4" /> Back to Properties
         </Button>
       </div>
     )
   }
 
-  // Use listing data if available, otherwise fall back to local property
-  const propertyName = listing?.propertyName ?? localProperty?.name ?? 'Unknown Property'
-  const price = listing?.price ?? 0
-  const bedrooms = listing?.bedrooms
-  const bathrooms = listing?.bathrooms
-  const areaSqFt = listing?.areaSqFt
-  const description = listing?.description ?? localProperty?.description ?? 'No description available.'
+  const propertyName = listing?.propertyName ?? localProperty?.name ?? 'Property'
+  const price = listing?.price ?? (localProperty ? 18000 : 0)
+  const bedrooms = listing?.bedrooms ?? (localProperty?.type === 'house' ? 3 : 2)
+  const bathrooms = listing?.bathrooms ?? (localProperty?.type === 'house' ? 3 : 2)
+  const areaSqFt = listing?.areaSqFt ?? 1450
+  const description = listing?.description ?? localProperty?.description ?? 'Spacious, well-lit residential unit situated in a prime locality with top amenities.'
   const propertyType = listing?.type ?? 'rent'
   const status = listing?.status ?? 'available'
-  const city = localProperty?.address.city ?? 'Unknown City'
-  const address = localProperty?.address.line1 ?? 'Address not available'
-
   const isAvailable = status === 'available'
+  const propertyCity = localProperty?.address.city ?? 'Hyderabad'
+  const addressLine = localProperty?.address.line1 ?? 'Prime Location, Main Road'
+
+  const handleOpenRequestModal = () => {
+    if (!user) {
+      toast.error('Please login first')
+      navigate('/login')
+      return
+    }
+    setFullName(user.name)
+    setRequestModalOpen(true)
+  }
+
+  const handleSubmitRentalRequest = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!fullName.trim() || !mobileNumber.trim() || !city.trim()) {
+      toast.error('Please fill in all required fields.')
+      return
+    }
+
+    setSubmitting(true)
+    await new Promise((r) => setTimeout(r, 800))
+
+    // Create rental request in store
+    addRequest({
+      propertyId: id ?? 'prop_001',
+      propertyName,
+      propertyType,
+      tenantEmail: user?.email ?? '',
+      fullName: fullName.trim(),
+      mobileNumber: mobileNumber.trim(),
+      city: city.trim(),
+      monthlyRent: price,
+    })
+
+    // Create notification for tenant
+    addNotification({
+      userEmail: user?.email ?? '',
+      title: 'Rental Request Submitted',
+      message: `Your request for ${propertyName} has been sent to the property owner for review.`,
+      type: 'info',
+    })
+
+    toast.success('Rental Request Sent!', {
+      description: 'The property owner will review your application and respond soon.',
+    })
+
+    setSubmitting(false)
+    setRequestModalOpen(false)
+  }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Back button */}
-      <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="w-fit">
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back
-      </Button>
+    <div className="flex flex-col gap-6 animate-in fade-in duration-300 max-w-6xl mx-auto">
+      {/* Top back navigation */}
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <ArrowLeft className="h-4 w-4" /> Back to listings
+        </Button>
+        <div className="flex items-center gap-2">
+          <Badge intent={propertyType === 'rent' ? 'primary' : 'success'} size="md">
+            {propertyType === 'rent' ? 'For Rent' : 'For Sale'}
+          </Badge>
+          <Badge intent={isAvailable ? 'success' : 'warning'} size="md">
+            {isAvailable ? 'Available Now' : 'Under Review'}
+          </Badge>
+        </div>
+      </div>
 
-      {/* Hero Image Area */}
-      <GlassCard className="p-0 overflow-hidden">
-        <div className="relative h-72 w-full bg-surface2">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-muted/50">
-              <div className="text-6xl mb-2">🏠</div>
-              <p className="text-lg font-medium">{propertyName}</p>
+      {/* Large Image Gallery */}
+      <GlassCard className="p-4 overflow-hidden">
+        <div className="flex flex-col gap-3">
+          {/* Main Large Image */}
+          <div className="relative h-96 w-full rounded-2xl overflow-hidden bg-surface2 border border-border/40">
+            <img
+              src={GALLERY_IMAGES[selectedImage]}
+              alt={propertyName}
+              className="h-full w-full object-cover transition-all duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+            <div className="absolute bottom-4 left-6 text-white">
+              <h1 className="text-3xl font-extrabold font-display drop-shadow-md">{propertyName}</h1>
+              <p className="text-sm font-medium opacity-90 flex items-center gap-1 mt-1">
+                <MapPin className="h-4 w-4 text-primary" /> {addressLine}, {propertyCity}
+              </p>
+            </div>
+            <div className="absolute bottom-4 right-6 text-white text-right">
+              <p className="text-3xl font-extrabold font-display text-emerald-400">
+                {price > 0 ? formatRupee(price) : 'Contact Owner'}
+                <span className="text-sm font-normal text-white/80">/month</span>
+              </p>
             </div>
           </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          
-          {/* Status badges */}
-          <div className="absolute left-5 top-5 flex items-center gap-2">
-            <Badge intent={isAvailable ? 'success' : 'warning'} size="md">
-              {isAvailable ? 'Available for Rent' : status.charAt(0).toUpperCase() + status.slice(1)}
-            </Badge>
-          </div>
-          
-          <div className="absolute right-5 top-5">
-            <Badge intent="neutral" size="md">
-              {propertyType === 'rent' ? 'For Rent' : 'For Sale'}
-            </Badge>
-          </div>
 
-          {/* Price overlay */}
-          <div className="absolute bottom-5 left-5 right-5 text-white">
-            <p className="text-3xl font-bold font-display">
-              {price > 0 ? formatRupee(price) : 'Contact for Price'} 
-              <span className="text-lg font-normal opacity-80">/month</span>
-            </p>
+          {/* Thumbnails */}
+          <div className="grid grid-cols-4 gap-3">
+            {GALLERY_IMAGES.map((img, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setSelectedImage(idx)}
+                className={`relative h-20 rounded-xl overflow-hidden border-2 transition-all ${
+                  selectedImage === idx ? 'border-primary scale-[1.02] shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'
+                }`}
+              >
+                <img src={img} alt={`Thumbnail ${idx + 1}`} className="h-full w-full object-cover" />
+              </button>
+            ))}
           </div>
         </div>
       </GlassCard>
 
+      {/* Main Details Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Main Content */}
+        {/* Left Column: Description & Specifications */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Property Info */}
+          {/* Key Specs Breakdown */}
           <GlassCard>
-            <GlassCardHeader className="px-5 pt-5 pb-3 mb-0">
-              <div className="flex items-start justify-between">
-                <div>
-                  <GlassCardTitle className="text-2xl">{propertyName}</GlassCardTitle>
-                  <GlassCardDescription className="flex items-center gap-2 mt-1">
-                    <MapPin className="h-4 w-4" aria-hidden="true" />
-                    <span>{address}, {city}</span>
-                  </GlassCardDescription>
-                </div>
-                {existingTenancy && (
-                  <Badge intent="success" size="md" className="mt-1">
-                    Your Current Home
-                  </Badge>
-                )}
-              </div>
+            <GlassCardHeader>
+              <GlassCardTitle>Property Specifications</GlassCardTitle>
             </GlassCardHeader>
-            <GlassCardContent className="px-5 pb-5">
-              <p className="text-text2 leading-relaxed">{description}</p>
-              
-              {/* Features */}
-              <div className="mt-6 flex flex-wrap items-center gap-4">
-                {bedrooms && (
-                  <div className="flex items-center gap-2 text-sm text-text2">
-                    <Key className="h-4 w-4 text-primary" aria-hidden="true" />
-                    <span>{bedrooms} Bedroom{bedrooms > 1 ? 's' : ''}</span>
-                  </div>
-                )}
-                {bathrooms && (
-                  <div className="flex items-center gap-2 text-sm text-text2">
-                    <span className="text-lg">🛁</span>
-                    <span>{bathrooms} Bathroom{bathrooms > 1 ? 's' : ''}</span>
-                  </div>
-                )}
-                {areaSqFt && (
-                  <div className="flex items-center gap-2 text-sm text-text2">
-                    <span className="text-lg">📐</span>
-                    <span>{areaSqFt.toLocaleString()} sq ft</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-sm text-text2">
-                  <Calendar className="h-4 w-4 text-primary" aria-hidden="true" />
-                  <span>Available Immediately</span>
-                </div>
+            <GlassCardContent>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <SpecBox icon={<Key className="h-5 w-5 text-primary" />} label="Bedrooms" value={`${bedrooms} BHK`} />
+                <SpecBox icon={<span className="text-lg">习</span>} label="Bathrooms" value={`${bathrooms} Baths`} />
+                <SpecBox icon={<Car className="h-5 w-5 text-emerald-400" />} label="Parking" value="Covered Lot" />
+                <SpecBox icon={<span className="text-lg">📐</span>} label="Total Area" value={`${areaSqFt} sq ft`} />
+                <SpecBox icon={<Layers className="h-5 w-5 text-amber-400" />} label="Floor" value="3rd Floor" />
+                <SpecBox icon={<MapPin className="h-5 w-5 text-sky-400" />} label="City" value={propertyCity} />
+                <SpecBox icon={<Shield className="h-5 w-5 text-purple-400" />} label="Security" value="24x7 Guards" />
+                <SpecBox icon={<Sparkles className="h-5 w-5 text-pink-400" />} label="Furnishing" value="Semi-Furnished" />
               </div>
             </GlassCardContent>
           </GlassCard>
 
-          {/* Amenities / Highlights */}
+          {/* Description */}
           <GlassCard>
-            <GlassCardHeader className="px-5 pt-5 pb-3 mb-0">
-              <GlassCardTitle>Property Highlights</GlassCardTitle>
-              <GlassCardDescription>Key features and amenities</GlassCardDescription>
+            <GlassCardHeader>
+              <GlassCardTitle>About This Property</GlassCardTitle>
             </GlassCardHeader>
-            <GlassCardContent className="px-5 pb-5">
-              <div className="grid grid-cols-2 gap-3">
-                <HighlightItem icon={<Shield className="h-5 w-5" />} label="24/7 Security" />
-                <HighlightItem icon={<Heart className="h-5 w-5" />} label="Parking Available" />
-                <HighlightItem icon={<User className="h-5 w-5" />} label="Near Metro/Bus" />
-                <HighlightItem icon={<Clock className="h-5 w-5" />} label="Power Backup" />
-                <HighlightItem icon={<Shield className="h-5 w-5" />} label="Gated Community" />
-                <HighlightItem icon={<Heart className="h-5 w-5" />} label="Water Supply 24h" />
+            <GlassCardContent>
+              <p className="text-sm text-text2 leading-relaxed whitespace-pre-line">{description}</p>
+            </GlassCardContent>
+          </GlassCard>
+
+          {/* Amenities */}
+          <GlassCard>
+            <GlassCardHeader>
+              <GlassCardTitle>Amenities & Facilities</GlassCardTitle>
+            </GlassCardHeader>
+            <GlassCardContent>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {['24/7 Power Backup', 'High Speed Wifi', 'Elevator / Lift', 'Gym & Fitness', 'Covered Parking', 'Gated Community', 'Swimming Pool', 'CCTV Surveillance', 'Water Supply 24h'].map((amenity) => (
+                  <div key={amenity} className="flex items-center gap-2 rounded-xl border border-border/40 bg-surface2/40 px-3 py-2 text-xs font-medium text-text">
+                    <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
+                    <span>{amenity}</span>
+                  </div>
+                ))}
               </div>
             </GlassCardContent>
           </GlassCard>
         </div>
 
-        {/* Sidebar - Actions & Contact */}
+        {/* Right Column: Owner Info & Rental Request CTA */}
         <div className="flex flex-col gap-6">
-          {/* Action Card */}
-          <GlassCard variant="primary">
-            <GlassCardContent className="p-5 flex flex-col gap-4">
-              <div className="text-center">
-                <p className="text-3xl font-bold font-display text-text">
-                  {price > 0 ? formatRupee(price) : 'Contact for Price'}
-                </p>
-                <p className="text-sm text-muted">Monthly Rent</p>
+          {/* Price & Request Card */}
+          <GlassCard variant="primary" className="p-6">
+            <div className="flex flex-col gap-4 text-center">
+              <div>
+                <span className="text-xs text-muted uppercase font-semibold">Monthly Rent</span>
+                <h3 className="text-3xl font-extrabold text-text font-display mt-0.5">
+                  {price > 0 ? formatRupee(price) : 'Contact Owner'}
+                </h3>
               </div>
 
-              <div className="border-t border-border/60 pt-4 space-y-3">
-                <div className="flex items-center justify-between text-sm">
+              <div className="divide-y divide-border/40 text-xs py-2">
+                <div className="py-2 flex justify-between">
                   <span className="text-muted">Security Deposit</span>
-                  <span className="font-semibold text-text">{price > 0 ? formatRupee(price * 2) : '2 Months Rent'}</span>
+                  <span className="font-semibold text-text">{formatRupee(price * 2)}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted">Maintenance</span>
-                  <span className="font-semibold text-text">As per society</span>
+                <div className="py-2 flex justify-between">
+                  <span className="text-muted">Advance Rent</span>
+                  <span className="font-semibold text-text">1 Month</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted">Lease Term</span>
-                  <span className="font-semibold text-text">12 Months</span>
+                <div className="py-2 flex justify-between">
+                  <span className="text-muted">Availability</span>
+                  <span className="font-semibold text-emerald-400">Immediate</span>
                 </div>
               </div>
 
-              {!existingTenancy && isAvailable ? (
-                <div className="flex flex-col gap-3 pt-2">
-                  <Button 
-                    variant="primary" 
-                    size="lg" 
-                    className="w-full"
-                    onClick={handleRequestRent}
-                    disabled={isRequesting}
-                    loading={isRequesting}
-                  >
-                    Request to Rent
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    size="lg" 
-                    className="w-full"
-                    onClick={handleBookViewing}
-                    disabled={isRequesting}
-                  >
-                    Schedule a Viewing
-                  </Button>
-                </div>
-              ) : existingTenancy ? (
-                <div className="pt-2">
-                  <Badge intent="success" className="w-full justify-center py-3 text-base">
-                    This is your current residence
-                  </Badge>
-                </div>
+              {existingTenancy ? (
+                <Badge intent="success" size="md" className="py-2.5 justify-center text-sm font-semibold">
+                  This is your current residence
+                </Badge>
+              ) : propertyType === 'rent' ? (
+                <Button variant="primary" size="lg" className="w-full font-bold shadow-lg" onClick={handleOpenRequestModal}>
+                  <Sparkles className="h-4 w-4" /> Request For Rent
+                </Button>
               ) : (
-                <div className="pt-2">
-                  <Badge intent="warning" className="w-full justify-center py-3 text-base">
-                    Not Currently Available
-                  </Badge>
-                </div>
+                <Button variant="primary" size="lg" className="w-full font-bold" onClick={() => toast.info('Owner contacted for buying inquiry.')}>
+                  Inquire to Purchase
+                </Button>
               )}
-            </GlassCardContent>
+            </div>
           </GlassCard>
 
-          {/* Contact Owner Card */}
+          {/* Owner Information Card */}
           <GlassCard>
-            <GlassCardHeader className="px-5 pt-5 pb-3 mb-0">
-              <GlassCardTitle>Contact Property Manager</GlassCardTitle>
-              <GlassCardDescription>Have questions? Reach out directly.</GlassCardDescription>
+            <GlassCardHeader>
+              <GlassCardTitle className="text-sm flex items-center gap-2">
+                <User className="h-4 w-4 text-primary" /> Owner Information
+              </GlassCardTitle>
             </GlassCardHeader>
-            <GlassCardContent className="px-5 pb-5 space-y-3">
-              <Button variant="secondary" className="w-full justify-start gap-3" onClick={() => {}}>
-                <Phone className="h-5 w-5" aria-hidden="true" />
-                <span>Call: +91 98765 43210</span>
-              </Button>
-              <Button variant="secondary" className="w-full justify-start gap-3" onClick={() => {}}>
-                <User className="h-5 w-5" aria-hidden="true" />
-                <span>Message Owner</span>
-              </Button>
-            </GlassCardContent>
-          </GlassCard>
-
-          {/* Save/Share */}
-          <GlassCard>
-            <GlassCardContent className="p-5 flex flex-col gap-3">
-              <Button variant="ghost" className="w-full justify-start gap-3" onClick={() => {}}>
-                <Heart className="h-5 w-5" aria-hidden="true" />
-                <span>Save Property</span>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start gap-3" onClick={() => {}}>
-                <span className="flex h-5 w-5 items-center justify-center">📤</span>
-                <span>Share Property</span>
-              </Button>
+            <GlassCardContent className="space-y-3 text-xs">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-sm">
+                  HO
+                </div>
+                <div>
+                  <p className="font-bold text-text text-sm">House Owner</p>
+                  <p className="text-muted">Verified Property Manager</p>
+                </div>
+              </div>
+              <div className="pt-2 flex flex-col gap-2">
+                <Button variant="secondary" size="sm" className="w-full justify-start gap-2" onClick={() => toast.info('Calling owner +91 98765 43210')}>
+                  <Phone className="h-3.5 w-3.5 text-emerald-400" /> +91 98765 43210
+                </Button>
+                <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted hover:text-text" onClick={() => toast.info('Chat feature available in messages.')}>
+                  <MessageSquare className="h-3.5 w-3.5 text-primary" /> Send Message
+                </Button>
+              </div>
             </GlassCardContent>
           </GlassCard>
         </div>
       </div>
+
+      {/* ─── REQUEST FOR RENT MODAL ─────────────────────────────────────────── */}
+      <Modal open={requestModalOpen} onOpenChange={setRequestModalOpen}>
+        <div className="p-6 flex flex-col gap-4 max-w-md w-full">
+          <div>
+            <h3 className="text-lg font-bold text-text">Request For Rent</h3>
+            <p className="text-xs text-muted mt-0.5">Submit your rental request for <strong>{propertyName}</strong> directly to the owner.</p>
+          </div>
+
+          <form onSubmit={handleSubmitRentalRequest} className="flex flex-col gap-4 mt-2">
+            <Input
+              label="Full Name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Your Full Name"
+              required
+            />
+
+            <Input
+              label="Mobile Number"
+              type="tel"
+              value={mobileNumber}
+              onChange={(e) => setMobileNumber(e.target.value)}
+              placeholder="e.g. +91 98765 43210"
+              required
+            />
+
+            <Input
+              label="City"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="e.g. Hyderabad"
+              required
+            />
+
+            <div className="flex justify-end gap-3 mt-4">
+              <Button type="button" variant="ghost" onClick={() => setRequestModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" loading={submitting}>
+                Submit Request
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Modal>
     </div>
   )
 }
 
-function HighlightItem({ icon, label }: { icon: React.ReactNode; label: string }) {
+function SpecBox({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2.5 rounded-lg border border-border/50 bg-surface/50 p-3 transition hover:border-primary/30 hover:bg-primary/5">
-      <span className="text-primary">{icon}</span>
-      <span className="text-sm font-medium text-text">{label}</span>
+    <div className="flex flex-col gap-1 rounded-xl border border-border/40 bg-surface2/30 p-3">
+      <div className="flex items-center gap-1.5 text-muted">
+        {icon}
+        <span className="text-[10px] font-semibold uppercase">{label}</span>
+      </div>
+      <span className="text-sm font-bold text-text">{value}</span>
     </div>
   )
 }

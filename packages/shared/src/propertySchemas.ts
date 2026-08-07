@@ -40,6 +40,7 @@ export type UpdatePropertyInput = z.infer<typeof updatePropertySchema>
 
 export const propertyFilterSchema = z.object({
   search: z.string().trim().max(200).optional(),
+  ownerId: z.string().optional(),
   type: z.enum(['apartment', 'house', 'commercial', 'mixed']).optional(),
   status: z.enum(['active', 'archived']).optional(),
   city: z.string().trim().max(100).optional(),

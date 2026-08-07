@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware'
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type LocalPropertyType = 'apartment' | 'house' | 'villa' | 'commercial' | 'mixed'
+export type LocalPropertyListingStatus = 'for-rent' | 'for-sale' | 'occupied' | 'inactive'
 
 export interface LocalProperty {
   id: string
@@ -14,6 +15,19 @@ export interface LocalProperty {
   totalUnits: number
   /** How many units are currently occupied by tenants */
   occupiedUnits: number
+  /** Listing status controls tenant browsing visibility */
+  listingStatus: LocalPropertyListingStatus
+  /** Optional rich fields for owner-created properties */
+  bedrooms?: number
+  bathrooms?: number
+  parking?: number
+  areaSqFt?: number
+  monthlyRent?: number
+  salePrice?: number
+  amenities?: string[]
+  imageUrl?: string
+  ownerEmail?: string
+  ownerId?: string
   address: {
     line1: string
     line2?: string
@@ -50,6 +64,13 @@ const SEED: LocalProperty[] = [
     description: 'A premium apartment complex in the heart of the city.',
     totalUnits: 10,
     occupiedUnits: 2, // fttt + mohan
+    listingStatus: 'for-rent',
+    bedrooms: 2,
+    bathrooms: 2,
+    parking: 1,
+    areaSqFt: 1100,
+    monthlyRent: 8000,
+    amenities: ['Security', 'Lift', 'Power Backup', 'Water 24/7'],
     address: { line1: '43/18, MG Road', city: 'Hyderabad', state: 'Telangana', postalCode: '500001', country: 'IN' },
     createdAt: '2026-01-01T00:00:00.000Z',
   },
@@ -60,6 +81,13 @@ const SEED: LocalProperty[] = [
     description: 'Well-maintained residential complex with 24/7 security.',
     totalUnits: 8,
     occupiedUnits: 1, // ram
+    listingStatus: 'for-rent',
+    bedrooms: 3,
+    bathrooms: 2,
+    parking: 1,
+    areaSqFt: 1400,
+    monthlyRent: 9000,
+    amenities: ['Security', 'CCTV', 'Club House'],
     address: { line1: '43/65, Banjara Hills', city: 'Hyderabad', state: 'Telangana', postalCode: '500034', country: 'IN' },
     createdAt: '2026-01-01T00:00:00.000Z',
   },
@@ -70,6 +98,13 @@ const SEED: LocalProperty[] = [
     description: 'Independent villa in a serene green locality.',
     totalUnits: 1,
     occupiedUnits: 1, // mohammed
+    listingStatus: 'occupied',
+    bedrooms: 3,
+    bathrooms: 3,
+    parking: 2,
+    areaSqFt: 1800,
+    monthlyRent: 5000,
+    amenities: ['Garden', 'Terrace', 'Security'],
     address: { line1: 'Plot 12, Green Valley', city: 'Secunderabad', state: 'Telangana', postalCode: '500015', country: 'IN' },
     createdAt: '2026-01-01T00:00:00.000Z',
   },
@@ -77,9 +112,16 @@ const SEED: LocalProperty[] = [
     id: 'prop_004',
     name: 'Sunrise Villa',
     type: 'villa',
-    description: 'Luxury independent villa with private garden.',
+    description: 'Luxury independent villa with private garden and premium interiors.',
     totalUnits: 1,
     occupiedUnits: 0,
+    listingStatus: 'for-rent',
+    bedrooms: 4,
+    bathrooms: 4,
+    parking: 3,
+    areaSqFt: 3200,
+    monthlyRent: 35000,
+    amenities: ['Swimming Pool', 'Garden', 'Security', 'Gym', 'Power Backup'],
     address: { line1: '7-8-112, Jubilee Hills', city: 'Hyderabad', state: 'Telangana', postalCode: '500033', country: 'IN' },
     createdAt: '2026-02-01T00:00:00.000Z',
   },
@@ -90,8 +132,29 @@ const SEED: LocalProperty[] = [
     description: 'Modern apartments with gym and rooftop lounge.',
     totalUnits: 20,
     occupiedUnits: 0,
+    listingStatus: 'for-rent',
+    bedrooms: 2,
+    bathrooms: 2,
+    parking: 1,
+    areaSqFt: 950,
+    monthlyRent: 12000,
+    amenities: ['Gym', 'Rooftop Lounge', 'Lift', 'Visitor Parking'],
     address: { line1: 'Tower A, Kondapur', city: 'Hyderabad', state: 'Telangana', postalCode: '500084', country: 'IN' },
     createdAt: '2026-03-01T00:00:00.000Z',
+  },
+  {
+    id: 'prop_006',
+    name: 'Skyline Commercial Complex',
+    type: 'commercial',
+    description: 'Premium ground-floor commercial space in the central business district.',
+    totalUnits: 4,
+    occupiedUnits: 0,
+    listingStatus: 'for-sale',
+    areaSqFt: 2400,
+    salePrice: 8500000,
+    amenities: ['Parking', 'High-Speed Internet', 'Reception', 'Meeting Rooms'],
+    address: { line1: 'Plot 5, Hitech City', city: 'Hyderabad', state: 'Telangana', postalCode: '500081', country: 'IN' },
+    createdAt: '2026-03-15T00:00:00.000Z',
   },
 ]
 
@@ -106,6 +169,8 @@ interface LocalPropertiesState {
   occupyUnits: (propertyId: string, units: number) => void
   /** Called when a tenancy is terminated: frees units */
   freeUnits: (propertyId: string, units: number) => void
+  /** Explicitly set the listing status of a property */
+  setListingStatus: (propertyId: string, status: LocalPropertyListingStatus) => void
 }
 
 export const useLocalPropertiesStore = create<LocalPropertiesState>()(
@@ -134,20 +199,38 @@ export const useLocalPropertiesStore = create<LocalPropertiesState>()(
 
       occupyUnits: (propertyId, units) => {
         set((state) => ({
-          items: state.items.map((item) =>
-            item.id === propertyId
-              ? { ...item, occupiedUnits: Math.min(item.totalUnits, item.occupiedUnits + units) }
-              : item,
-          ),
+          items: state.items.map((item) => {
+            if (item.id !== propertyId) return item
+            const newOccupied = Math.min(item.totalUnits, item.occupiedUnits + units)
+            const fullyOccupied = newOccupied >= item.totalUnits
+            return {
+              ...item,
+              occupiedUnits: newOccupied,
+              listingStatus: fullyOccupied ? 'occupied' : item.listingStatus,
+            }
+          }),
         }))
       },
 
       freeUnits: (propertyId, units) => {
         set((state) => ({
+          items: state.items.map((item) => {
+            if (item.id !== propertyId) return item
+            const newOccupied = Math.max(0, item.occupiedUnits - units)
+            return {
+              ...item,
+              occupiedUnits: newOccupied,
+              // When freed, revert to for-rent if it was occupied
+              listingStatus: item.listingStatus === 'occupied' ? 'for-rent' : item.listingStatus,
+            }
+          }),
+        }))
+      },
+
+      setListingStatus: (propertyId, status) => {
+        set((state) => ({
           items: state.items.map((item) =>
-            item.id === propertyId
-              ? { ...item, occupiedUnits: Math.max(0, item.occupiedUnits - units) }
-              : item,
+            item.id === propertyId ? { ...item, listingStatus: status } : item,
           ),
         }))
       },

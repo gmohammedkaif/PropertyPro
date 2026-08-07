@@ -11,7 +11,13 @@ import {
 
 export const getProperties = asyncHandler(async (req: Request, res: Response) => {
   const filter = propertyFilterSchema.parse(req.query)
-  const result = await propertyService.listPublished(filter)
+  const isOwner = req.user?.roles.includes('owner') && !req.user?.roles.includes('admin')
+  if (isOwner && req.user?.id) {
+    filter.ownerId = req.user.id
+  }
+  const result = isOwner && req.user?.id
+    ? await propertyService.findByOwner(req.user.id, filter)
+    : await propertyService.listPublished(filter)
   res.json({ data: result, meta: {}, error: null })
 })
 
@@ -33,7 +39,11 @@ export const getProperty = asyncHandler(async (req: Request, res: Response) => {
 })
 
 export const createProperty = asyncHandler(async (req: Request, res: Response) => {
-  const input = createPropertySchema.parse(req.body)
+  const ownerId = req.body.ownerId || req.user?.id
+  const input = createPropertySchema.parse({
+    ...req.body,
+    ownerId,
+  })
   const property = await propertyService.create(input)
   res.status(201).json({ data: property, meta: {}, error: null })
 })

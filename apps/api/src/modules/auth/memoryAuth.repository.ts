@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
+import bcrypt from 'bcryptjs'
 import { ConflictError } from '../../core/errors.js'
 import { persistentDb } from '../../core/persistentDb.js'
 import type { AuthRepository } from './auth.repository.js'
@@ -28,6 +29,52 @@ export class InMemoryAuthRepository implements AuthRepository {
     this.refreshTokens = loaded.refreshTokens
     this.refreshTokensByHash = loaded.refreshTokensByHash
     this.passwordResetTokens = loaded.passwordResetTokens
+
+    // ── Dev-only Super Admin seed ──────────────────────────────────────────────
+    // Creates admin@propertypro.com / Admin@123 only if it does not already exist.
+    // InMemoryAuthRepository is ONLY used in development mode; never in production.
+    const ADMIN_EMAIL = 'admin@propertypro.com'
+    if (!this.usersByEmail.has(ADMIN_EMAIL)) {
+      const now = new Date().toISOString()
+      const adminRecord: UserRecord = {
+        id: randomUUID(),
+        email: ADMIN_EMAIL,
+        passwordHash: bcrypt.hashSync('Admin@123', 12),
+        roles: ['admin'],
+        firstName: 'Super',
+        lastName: 'Admin',
+        status: 'active',
+        emailVerifiedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      }
+      this.users.set(adminRecord.id, adminRecord)
+      this.usersByEmail.set(ADMIN_EMAIL, adminRecord.id)
+      this.save()
+    }
+
+    // ── Dev-only Owner seed ────────────────────────────────────────────────────
+    // Creates owner@propertypro.com / Owner@123 as a pre-approved owner account.
+    // Useful for testing the Owner Dashboard without needing Super Admin approval.
+    const OWNER_EMAIL = 'owner@propertypro.com'
+    if (!this.usersByEmail.has(OWNER_EMAIL)) {
+      const now = new Date().toISOString()
+      const ownerRecord: UserRecord = {
+        id: randomUUID(),
+        email: OWNER_EMAIL,
+        passwordHash: bcrypt.hashSync('Owner@123', 12),
+        roles: ['owner'],
+        firstName: 'Dev',
+        lastName: 'Owner',
+        status: 'active',
+        emailVerifiedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      }
+      this.users.set(ownerRecord.id, ownerRecord)
+      this.usersByEmail.set(OWNER_EMAIL, ownerRecord.id)
+      this.save()
+    }
   }
 
   private save() {

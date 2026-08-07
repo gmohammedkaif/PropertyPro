@@ -28,6 +28,7 @@ import { TenantLeasePage } from '@/pages/TenantLeasePage'
 import { TenantPropertyDetailPage } from '@/pages/TenantPropertyDetailPage'
 import { isAdmin } from '@/stores/authStore'
 import { useAuthStore } from '@/stores/authStore'
+import { TenantRequestsPage } from '@/pages/TenantRequestsPage'
 
 // Smart dashboard: renders admin or tenant dashboard based on role
 function SmartDashboard() {
@@ -104,6 +105,14 @@ export const router = createBrowserRouter([
       },
 
       // ── Admin/Owner routes ─────────────────────────────────────────────────
+      {
+        path: 'tenant-requests',
+        element: (
+          <AdminGuard>
+            <TenantRequestsPage />
+          </AdminGuard>
+        ),
+      },
       {
         path: 'tenancies',
         element: (

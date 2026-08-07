@@ -16,9 +16,13 @@ export function authenticate(
     return
   }
 
-  const payload = verifyAccessToken(header.slice('Bearer '.length))
-  req.user = { id: payload.sub, roles: payload.roles }
-  next()
+  try {
+    const payload = verifyAccessToken(header.slice('Bearer '.length))
+    req.user = { id: payload.sub, roles: payload.roles }
+    next()
+  } catch (err) {
+    next(err instanceof Error ? err : new UnauthorizedError('Invalid or expired access token'))
+  }
 }
 
 /** Role gate — OR semantics over the authenticated user's roles. */

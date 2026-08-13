@@ -7,10 +7,11 @@ import { UnauthorizedError } from '../../core/errors.js'
 export const AUTH_COOKIE_PATH = '/api/v1/auth'
 
 export function refreshCookieOptions(): CookieOptions {
+  const isProd = env.NODE_ENV === 'production'
   return {
     httpOnly: true,
-    secure: env.NODE_ENV === 'production' || env.AUTH_COOKIE_SECURE,
-    sameSite: 'lax',
+    secure: isProd || env.AUTH_COOKIE_SECURE,
+    sameSite: isProd ? 'none' : 'lax',
     path: AUTH_COOKIE_PATH,
     maxAge: env.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
   }
@@ -21,7 +22,13 @@ export function setRefreshCookie(res: Response, token: string): void {
 }
 
 export function clearRefreshCookie(res: Response): void {
-  res.clearCookie(env.AUTH_COOKIE_NAME, { path: AUTH_COOKIE_PATH })
+  const options = refreshCookieOptions()
+  res.clearCookie(env.AUTH_COOKIE_NAME, {
+    path: AUTH_COOKIE_PATH,
+    secure: options.secure,
+    sameSite: options.sameSite,
+    httpOnly: options.httpOnly,
+  })
 }
 
 export function readRefreshCookie(req: import('express').Request): string | undefined {

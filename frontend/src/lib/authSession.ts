@@ -67,7 +67,7 @@ export async function restoreSession(): Promise<boolean> {
 
 export async function logout(): Promise<void> {
   try {
-    await axios.post(`${API_PREFIX}/auth/logout`, { allDevices: true }, { withCredentials: true })
+    await axios.post(`${baseURL}/auth/logout`, { allDevices: true }, { withCredentials: true })
   } catch {
     /* best-effort */
   }

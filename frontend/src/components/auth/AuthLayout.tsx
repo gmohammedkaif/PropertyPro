@@ -43,7 +43,7 @@ export function AuthLayout({
       {/* Left side: Premium Image Panel */}
       <div 
         className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12 bg-cover bg-center"
-        style={{ backgroundImage: "url('/login_house_bg.png')" }}
+        style={{ backgroundImage: "url('/assets/login_house_bg.png')" }}
       >
         {/* Dark radial gradient overlay for text readability and aesthetic depth */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/60 z-0" />

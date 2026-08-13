@@ -25,7 +25,7 @@ export interface PropertyTableProps {
   totalPages: number
   onPageChange: (page: number) => void
   onRetry: () => void
-  onAddProperty: () => void
+  onAddProperty?: () => void
   onView: (id: string) => void
   onEdit?: (id: string) => void
   onDelete?: (id: string) => void
@@ -77,8 +77,8 @@ function DesktopTable({
 }: {
   data: PropertyRecord[]
   onView: (id: string) => void
-  onEdit: (id: string) => void
-  onDelete: (id: string) => void
+  onEdit?: (id: string) => void
+  onDelete?: (id: string) => void
 }) {
   return (
     <Table>
@@ -107,7 +107,7 @@ function DesktopTable({
               <TypeBadge type={property.type} />
             </TableCell>
             <TableCell>{property.address.city}</TableCell>
-            <TableCell className="tabular">--</TableCell>
+            <TableCell className="tabular">{getPropertyRentDisplay(property)}</TableCell>
             <TableCell>
               <StatusBadge status={property.status} />
             </TableCell>
@@ -116,13 +116,8 @@ function DesktopTable({
               <ActionsMenu
                 items={[
                   { label: 'View', icon: Eye, onClick: () => onView(property.id) },
-                  { label: 'Edit', icon: Edit, onClick: () => onEdit(property.id) },
-                  {
-                    label: 'Delete',
-                    icon: Trash2,
-                    onClick: () => onDelete(property.id),
-                    destructive: true,
-                  },
+                  ...(onEdit ? [{ label: 'Edit', icon: Edit, onClick: () => onEdit(property.id) }] : []),
+                  ...(onDelete ? [{ label: 'Delete', icon: Trash2, onClick: () => onDelete(property.id), destructive: true }] : []),
                 ]}
               />
             </TableCell>
@@ -141,8 +136,8 @@ function MobileCards({
 }: {
   data: PropertyRecord[]
   onView: (id: string) => void
-  onEdit: (id: string) => void
-  onDelete: (id: string) => void
+  onEdit?: (id: string) => void
+  onDelete?: (id: string) => void
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -169,13 +164,8 @@ function MobileCards({
               align="end"
               items={[
                 { label: 'View', icon: Eye, onClick: () => onView(property.id) },
-                { label: 'Edit', icon: Edit, onClick: () => onEdit(property.id) },
-                {
-                  label: 'Delete',
-                  icon: Trash2,
-                  onClick: () => onDelete(property.id),
-                  destructive: true,
-                },
+                ...(onEdit ? [{ label: 'Edit', icon: Edit, onClick: () => onEdit(property.id) }] : []),
+                ...(onDelete ? [{ label: 'Delete', icon: Trash2, onClick: () => onDelete(property.id), destructive: true }] : []),
               ]}
             />
           </div>
@@ -276,22 +266,17 @@ const PROPERTY_TYPE_IMAGES: Record<PropertyType, string> = {
   mixed: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=600&q=80',
 }
 
-function getPropertyRent(name: string, type: PropertyType): string {
-  const clean = name.toLowerCase()
-  if (clean.includes('zaid manzil')) return '8,000'
-  if (clean.includes('urban nest')) return '5,000'
-  if (clean.includes('sai enclave')) return '12,000'
-  if (clean.includes('bluestone')) return '23,000'
-  if (clean.includes('green valley')) return '5,000'
-  if (clean.includes('sunrise')) return '18,000'
-  if (clean.includes('oakwood')) return '15,000'
-  if (clean.includes('silicon')) return '85,000'
-  
-  // Fallbacks
-  if (type === 'apartment') return '5,000'
-  if (type === 'house') return '8,000'
-  if (type === 'commercial') return '85,000'
-  return '18,000'
+function formatRupee(n: number) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n)
+}
+
+function getPropertyRentDisplay(property: PropertyRecord): string {
+  const isSale = (property as any).listingStatus === 'for-sale'
+  const amount = isSale ? property.salePrice : property.monthlyRent
+  if (amount !== undefined && amount !== null && amount > 0) {
+    return formatRupee(amount) + (isSale ? '' : ' / month')
+  }
+  return 'Not specified'
 }
 
 function getPropertyUnitLabel(name: string, type: PropertyType): string {
@@ -316,13 +301,13 @@ function GridCards({
 }: {
   data: PropertyRecord[]
   onView: (id: string) => void
-  onEdit: (id: string) => void
-  onDelete: (id: string) => void
+  onEdit?: (id: string) => void
+  onDelete?: (id: string) => void
 }) {
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {data.map((property) => {
-        const imageUrl = PROPERTY_TYPE_IMAGES[property.type] || PROPERTY_TYPE_IMAGES.house
+        const imageUrl = property.imageUrl || (property as any).images?.[0] || PROPERTY_TYPE_IMAGES[property.type] || PROPERTY_TYPE_IMAGES.house
         return (
           <div
             key={property.id}
@@ -359,9 +344,11 @@ function GridCards({
               {/* Pricing & Actions */}
               <div className="mt-5 flex items-center justify-between border-t border-border/60 pt-4">
                 <div className="flex flex-col">
-                  <span className="text-[10px] uppercase tracking-wider text-muted">Rent</span>
+                  <span className="text-[10px] uppercase tracking-wider text-muted">
+                    {(property as any).listingStatus === 'for-sale' ? 'Sale Price' : 'Rent'}
+                  </span>
                   <p className="text-lg font-bold text-text font-display">
-                    ₹{getPropertyRent(property.name, property.type)} <span className="text-xs font-normal text-muted">/month</span>
+                    {getPropertyRentDisplay(property)}
                   </p>
                 </div>
 
@@ -369,18 +356,15 @@ function GridCards({
                   <Button variant="ghost" size="sm" className="text-xs font-semibold" onClick={() => onView(property.id)}>
                     View Details
                   </Button>
-                  <ActionsMenu
-                    align="end"
-                    items={[
-                      { label: 'Edit', icon: Edit, onClick: () => onEdit(property.id) },
-                      {
-                        label: 'Delete',
-                        icon: Trash2,
-                        onClick: () => onDelete(property.id),
-                        destructive: true,
-                      },
-                    ]}
-                  />
+                  {(onEdit || onDelete) && (
+                    <ActionsMenu
+                      align="end"
+                      items={[
+                        ...(onEdit ? [{ label: 'Edit', icon: Edit, onClick: () => onEdit(property.id) }] : []),
+                        ...(onDelete ? [{ label: 'Delete', icon: Trash2, onClick: () => onDelete(property.id), destructive: true }] : []),
+                      ]}
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -424,6 +408,15 @@ export function PropertyTable({
   }
 
   if (data.length === 0) {
+    if (!onAddProperty) {
+      return (
+        <EmptyState
+          icon={<Building className="h-6 w-6" aria-hidden="true" />}
+          title="No Properties Available"
+          description="New rental properties will appear here when they become available."
+        />
+      )
+    }
     return (
       <EmptyState
         icon={<Building className="h-6 w-6" aria-hidden="true" />}
@@ -444,15 +437,15 @@ export function PropertyTable({
       <p className="text-sm text-muted">{totalItems} properties found</p>
 
       {view === 'grid' ? (
-        <GridCards data={data} onView={onView} onEdit={onEdit ?? (() => {})} onDelete={onDelete ?? (() => {})} />
+        <GridCards data={data} onView={onView} onEdit={onEdit} onDelete={onDelete} />
       ) : (
         <>
           <div className="hidden sm:block">
-            <DesktopTable data={data} onView={onView} onEdit={onEdit ?? (() => {})} onDelete={onDelete ?? (() => {})} />
+            <DesktopTable data={data} onView={onView} onEdit={onEdit} onDelete={onDelete} />
           </div>
 
           <div className="sm:hidden">
-            <MobileCards data={data} onView={onView} onEdit={onEdit ?? (() => {})} onDelete={onDelete ?? (() => {})} />
+            <MobileCards data={data} onView={onView} onEdit={onEdit} onDelete={onDelete} />
           </div>
         </>
       )}

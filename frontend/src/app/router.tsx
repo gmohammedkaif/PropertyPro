@@ -26,6 +26,9 @@ import { AnalyticsPage } from '@/pages/AnalyticsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { TenantLeasePage } from '@/pages/TenantLeasePage'
 import { TenantPropertyDetailPage } from '@/pages/TenantPropertyDetailPage'
+import { OwnersPage } from '@/pages/OwnersPage'
+import { TenantsPage } from '@/pages/TenantsPage'
+import { AuditLogsPage } from '@/pages/AuditLogsPage'
 import { isAdmin } from '@/stores/authStore'
 import { useAuthStore } from '@/stores/authStore'
 import { TenantRequestsPage } from '@/pages/TenantRequestsPage'
@@ -100,6 +103,30 @@ export const router = createBrowserRouter([
         element: (
           <SuperAdminGuard>
             <OwnerRequestsPage />
+          </SuperAdminGuard>
+        ),
+      },
+      {
+        path: 'owners',
+        element: (
+          <SuperAdminGuard>
+            <OwnersPage />
+          </SuperAdminGuard>
+        ),
+      },
+      {
+        path: 'tenants',
+        element: (
+          <SuperAdminGuard>
+            <TenantsPage />
+          </SuperAdminGuard>
+        ),
+      },
+      {
+        path: 'audit-logs',
+        element: (
+          <SuperAdminGuard>
+            <AuditLogsPage />
           </SuperAdminGuard>
         ),
       },

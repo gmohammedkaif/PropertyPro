@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 import { API_PREFIX } from '@/shared'
+import { baseURL } from '@/lib/apiClient'
 import { useAuthStore, type AuthUser } from '@/stores/authStore'
 
 interface RefreshResponseData {
@@ -13,12 +14,12 @@ let refreshPromise: Promise<RefreshResponseData | null> | null = null
 async function rawRefresh(): Promise<RefreshResponseData | null> {
   try {
     const { data } = await axios.post<{ data: RefreshResponseData }>(
-      `${API_PREFIX}/auth/refresh`,
+      `${baseURL}/auth/refresh`,
       {},
       {
         withCredentials: true,
         headers: { 'Content-Type': 'application/json' },
-        timeout: 5_000, // Reduced timeout
+        timeout: 10_000,
       },
     )
     return data.data
@@ -44,7 +45,7 @@ export async function refreshAccessToken(): Promise<string | null> {
       useAuthStore.getState().signIn(res.user, res.accessToken)
       return res.accessToken
     } else {
-      // Don't sign out automatically - keep local session
+      useAuthStore.getState().signOut()
       return null
     }
   } finally {
@@ -52,18 +53,16 @@ export async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
-// Non-blocking restore - checks localStorage immediately, tries API in background
-export function restoreSession(): Promise<boolean> {
-  // Immediately return true if we have a persisted user
-  const storedUser = useAuthStore.getState().user
-  if (storedUser) {
-    // Fire and forget API refresh in background
-    refreshAccessToken().catch(() => {})
-    return Promise.resolve(true)
+export async function restoreSession(): Promise<boolean> {
+  try {
+    const token = await refreshAccessToken()
+    if (token) return true
+    useAuthStore.getState().signOut()
+    return false
+  } catch {
+    useAuthStore.getState().signOut()
+    return false
   }
-  
-  // No local session - try API but with short timeout
-  return refreshAccessToken().then(token => !!token).catch(() => false)
 }
 
 export async function logout(): Promise<void> {

@@ -209,14 +209,22 @@ function PropertyHeader({
   )
 }
 
+function formatRupee(n: number) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n)
+}
+
 // ─── Detail cards ──────────────────────────────────────────────────────────────
 
 function DetailsCard({ property }: { property: PropertyRecord }) {
+  const isSale = (property as any).listingStatus === 'for-sale'
   const fields: { label: string; value: string }[] = [
     { label: 'Property ID', value: property.id },
     { label: 'Owner ID', value: property.ownerId },
     { label: 'Type', value: TYPE_LABELS[property.type] },
     { label: 'Status', value: STATUS_CONFIG[property.status].label },
+    isSale
+      ? { label: 'Sale Price', value: property.salePrice && property.salePrice > 0 ? formatRupee(property.salePrice) : 'Not specified' }
+      : { label: 'Monthly Rent', value: property.monthlyRent && property.monthlyRent > 0 ? formatRupee(property.monthlyRent) : 'Not specified' },
     { label: 'Country', value: property.address.country },
     { label: 'Created', value: formatDate(property.createdAt) },
     { label: 'Last Updated', value: formatDate(property.updatedAt) },
@@ -349,11 +357,6 @@ export function PropertyDetailPage() {
   if (isLoading) return <PageSkeleton />
   if (error || !property) return <ErrorState onRetry={() => void refetch()} />
 
-  const occupancy =
-    property.totalUnits && property.totalUnits > 0
-      ? `${Math.round(((property.occupiedUnits ?? 0) / property.totalUnits) * 100)}%`
-      : 'N/A'
-
   return (
     <div className="flex flex-col gap-6">
       <PropertyHeader
@@ -363,18 +366,12 @@ export function PropertyDetailPage() {
       />
 
       {/* Stat strip */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatStrip
           label="Total Units"
           value={property.totalUnits ? String(property.totalUnits) : '—'}
           icon={Building2}
         />
-        <StatStrip
-          label="Occupied"
-          value={property.occupiedUnits ? String(property.occupiedUnits) : '0'}
-          icon={Users}
-        />
-        <StatStrip label="Occupancy" value={occupancy} icon={Hash} />
         <StatStrip label="Listed" value={formatDate(property.createdAt)} icon={Calendar} />
       </div>
 

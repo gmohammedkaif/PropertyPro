@@ -28,7 +28,6 @@ import { useAuthStore } from '@/stores/authStore'
 import { useTenanciesStore } from '@/stores/tenanciesStore'
 import { usePaymentsStore } from '@/stores/paymentsStore'
 import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
-import { useListingsStore } from '@/stores/listingsStore'
 import { useRentalRequestsStore } from '@/stores/rentalRequestsStore'
 import { useNotificationsStore } from '@/stores/notificationsStore'
 
@@ -58,7 +57,6 @@ export function TenantDashboardPage() {
   const { items: tenancies } = useTenanciesStore()
   const { items: payments } = usePaymentsStore()
   const { items: properties } = useLocalPropertiesStore()
-  const { items: listings } = useListingsStore()
   const { items: rentalRequests } = useRentalRequestsStore()
   const { items: notifications, markAsRead } = useNotificationsStore()
 
@@ -106,26 +104,50 @@ export function TenantDashboardPage() {
     (n) => n.userEmail.toLowerCase() === userEmail.toLowerCase(),
   )
 
-  // Real properties for rent & sale created by House Owners
+  // Real properties for rent — exclude the tenant's own currently rented property
+  const myRentedPropertyId = myTenancy?.propertyId ?? null
+
   const realRentProperties = properties
-    .filter((p) => p.totalUnits - p.occupiedUnits > 0)
+    .filter((p) =>
+      p.listingStatus === 'for-rent' &&
+      p.id !== myRentedPropertyId &&
+      (p.totalUnits <= 0 || p.totalUnits - p.occupiedUnits > 0)
+    )
     .map((p) => ({
       id: p.id,
       name: p.name,
       type: 'rent' as const,
       propertyType: p.type,
-      price: 15000 + (p.totalUnits * 2000), // Estimated rent if price not set
-      bedrooms: p.type === 'house' ? 3 : p.type === 'apartment' ? 2 : 1,
-      bathrooms: p.type === 'house' ? 3 : 2,
-      areaSqFt: p.type === 'house' ? 2200 : 1200,
+      price: p.monthlyRent || 0,
+      bedrooms: p.bedrooms || (p.type === 'house' ? 3 : p.type === 'apartment' ? 2 : 1),
+      bathrooms: p.bathrooms || (p.type === 'house' ? 3 : 2),
+      areaSqFt: p.areaSqFt || (p.type === 'house' ? 2200 : 1200),
       city: p.address.city,
       ownerName: 'House Owner',
       status: 'available',
       description: p.description ?? 'Beautiful modern residential property ready for occupancy.',
+      imageUrl: p.imageUrl,
     }))
 
-  const listedRentProperties = listings.filter((l) => l.type === 'rent')
-  const listedSaleProperties = listings.filter((l) => l.type === 'sale')
+  // Real properties for sale — exclude the tenant's own currently rented property
+  const realSaleProperties = properties
+    .filter((p) => p.listingStatus === 'for-sale' && p.id !== myRentedPropertyId)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      type: 'sale' as const,
+      propertyType: p.type,
+      price: p.salePrice || 0,
+      bedrooms: p.bedrooms || 3,
+      bathrooms: p.bathrooms || 2,
+      areaSqFt: p.areaSqFt || 1500,
+      city: p.address.city,
+      ownerName: 'House Owner',
+      status: 'available',
+      description: p.description ?? 'Beautiful modern residential property ready for occupancy.',
+      imageUrl: p.imageUrl,
+    }))
+
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
@@ -453,91 +475,77 @@ export function TenantDashboardPage() {
               </GlassCard>
             </div>
           )}
+        </div>
+      )}
 
-          {/* Available Properties for Rent Section */}
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-text flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-primary" /> Latest Properties For Rent
-                </h3>
-                <p className="text-xs text-muted">Properties created by House Owners available for instant booking</p>
-              </div>
+      {/* Available Properties for Rent Section */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-text flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" /> Latest Properties For Rent
+            </h3>
+            <p className="text-xs text-muted">Properties created by House Owners available for instant booking</p>
+          </div>
 
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => navigate('/app/properties')} className="text-xs text-primary">
-                  View All Properties <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/app/properties')} className="text-xs text-primary">
+              View All Properties <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {realRentProperties.slice(0, 3).map((property) => (
-                <PropertyDisplayCard
-                  key={property.id}
-                  name={property.name}
-                  type="rent"
-                  propertyType={property.propertyType}
-                  price={property.price}
-                  bedrooms={property.bedrooms}
-                  bathrooms={property.bathrooms}
-                  areaSqFt={property.areaSqFt}
-                  city={property.city}
-                  ownerName={property.ownerName}
-                  description={property.description}
-                  onClick={() => navigate(`/app/property/${property.id}`)}
-                />
-              ))}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {realRentProperties.slice(0, 3).map((property) => (
+            <PropertyDisplayCard
+              key={property.id}
+              name={property.name}
+              type="rent"
+              propertyType={property.propertyType}
+              price={property.price}
+              bedrooms={property.bedrooms}
+              bathrooms={property.bathrooms}
+              areaSqFt={property.areaSqFt}
+              city={property.city}
+              ownerName={property.ownerName}
+              description={property.description}
+              imageUrl={property.imageUrl}
+              onClick={() => navigate(`/app/property/${property.id}`)}
+            />
+          ))}
+        </div>
+      </div>
 
-              {listedRentProperties.slice(0, 3 - realRentProperties.length).map((listing) => (
-                <PropertyDisplayCard
-                  key={listing.id}
-                  name={listing.propertyName}
-                  type="rent"
-                  price={listing.price}
-                  bedrooms={listing.bedrooms}
-                  bathrooms={listing.bathrooms}
-                  areaSqFt={listing.areaSqFt}
-                  city="Hyderabad"
-                  ownerName="House Owner"
-                  description={listing.description}
-                  onClick={() => navigate(`/app/property/${listing.id}`)}
-                />
-              ))}
+      {/* Properties For Sale Section */}
+      {realSaleProperties.length > 0 && (
+        <div className="flex flex-col gap-4 mt-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-text flex items-center gap-2">
+                <Tag className="h-5 w-5 text-emerald-400" /> Latest Properties For Sale
+              </h3>
+              <p className="text-xs text-muted">Buy real estate properties directly from house owners</p>
             </div>
           </div>
 
-          {/* Properties For Sale Section */}
-          {listedSaleProperties.length > 0 && (
-            <div className="flex flex-col gap-4 mt-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-text flex items-center gap-2">
-                    <Tag className="h-5 w-5 text-emerald-400" /> Latest Properties For Sale
-                  </h3>
-                  <p className="text-xs text-muted">Buy real estate properties directly from house owners</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {listedSaleProperties.map((listing) => (
-                  <PropertyDisplayCard
-                    key={listing.id}
-                    name={listing.propertyName}
-                    type="sale"
-                    price={listing.price}
-                    bedrooms={3}
-                    bathrooms={2}
-                    areaSqFt={listing.areaSqFt}
-                    city="Hyderabad"
-                    ownerName="House Owner"
-                    description={listing.description}
-                    onClick={() => navigate(`/app/property/${listing.id}`)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {realSaleProperties.map((property) => (
+              <PropertyDisplayCard
+                key={property.id}
+                name={property.name}
+                type="sale"
+                price={property.price}
+                bedrooms={property.bedrooms}
+                bathrooms={property.bathrooms}
+                areaSqFt={property.areaSqFt}
+                city={property.city}
+                ownerName={property.ownerName}
+                description={property.description}
+                imageUrl={property.imageUrl}
+                onClick={() => navigate(`/app/property/${property.id}`)}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -556,6 +564,7 @@ function PropertyDisplayCard({
   city,
   ownerName,
   description,
+  imageUrl,
   onClick,
 }: {
   name: string
@@ -568,6 +577,7 @@ function PropertyDisplayCard({
   city?: string
   ownerName?: string
   description?: string
+  imageUrl?: string
   onClick: () => void
 }) {
   const [favorite, setFavorite] = useState(false)
@@ -580,9 +590,17 @@ function PropertyDisplayCard({
       {/* Header Image visuals */}
       <div className="relative h-44 w-full overflow-hidden bg-surface2">
         <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent opacity-90 z-10" />
-        <div className="absolute inset-0 flex items-center justify-center bg-surface3 group-hover:scale-105 transition-transform duration-500">
-          <Building2 className="h-16 w-16 text-muted/30" />
-        </div>
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={name}
+            className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-surface3 group-hover:scale-105 transition-transform duration-500">
+            <Building2 className="h-16 w-16 text-muted/30" />
+          </div>
+        )}
 
         {/* Badges */}
         <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
@@ -612,8 +630,8 @@ function PropertyDisplayCard({
         {/* Price Tag Overlay */}
         <div className="absolute bottom-3 left-3 z-20">
           <p className="text-xl font-extrabold text-text font-display drop-shadow-md">
-            {price > 0 ? formatRupee(price) : 'Contact Owner'}
-            {type === 'rent' && <span className="text-xs font-normal text-muted">/mo</span>}
+            {price > 0 ? formatRupee(price) : 'Not specified'}
+            {price > 0 && type === 'rent' && <span className="text-xs font-normal text-muted">/mo</span>}
           </p>
         </div>
       </div>

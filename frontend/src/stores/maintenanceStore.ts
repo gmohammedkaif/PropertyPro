@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { apiClient, type ApiEnvelope } from '@/lib/apiClient'
+import { useLocalPropertiesStore } from './localPropertiesStore'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,116 +26,99 @@ export interface MaintenanceRecord {
   updatedAt: string
 }
 
-// ─── Seed data ────────────────────────────────────────────────────────────────
-
-const SEED: MaintenanceRecord[] = [
-  {
-    id: 'mnt_001',
-    title: 'AC Unit Not Cooling',
-    description:
-      'The central air conditioning unit in the master bedroom stopped cooling. Tenant reports warm air blowing out.',
-    propertyName: 'Hassan Villa',
-    category: 'Electrical',
-    priority: 'urgent',
-    status: 'open',
-    reportedBy: 'Rajesh Kumar',
-    createdAt: '2026-08-04T10:00:00.000Z',
-    updatedAt: '2026-08-04T10:00:00.000Z',
-  },
-  {
-    id: 'mnt_002',
-    title: 'Leaking Kitchen Faucet',
-    description: 'Kitchen tap is dripping continuously. Tenant estimates ~5L water waste per day.',
-    propertyName: 'Green Park Residency',
-    category: 'Water',
-    priority: 'medium',
-    status: 'in-progress',
-    reportedBy: 'Priya Sharma',
-    assignedTo: 'Ravi Plumbing Services',
-    createdAt: '2026-08-02T10:00:00.000Z',
-    updatedAt: '2026-08-03T10:00:00.000Z',
-  },
-  {
-    id: 'mnt_003',
-    title: 'Exterior Paint Touch-up',
-    description: 'Paint peeling on the south-facing exterior wall. Needs repainting before monsoon.',
-    propertyName: 'Sunrise Heights Studio',
-    category: 'Painting',
-    priority: 'low',
-    status: 'resolved',
-    reportedBy: 'Building Inspector',
-    assignedTo: 'ColorPro Painters',
-    resolvedAt: '2026-07-28T10:00:00.000Z',
-    createdAt: '2026-07-15T10:00:00.000Z',
-    updatedAt: '2026-07-28T10:00:00.000Z',
-  },
-  {
-    id: 'mnt_004',
-    title: 'Main Gate Motor Failure',
-    description:
-      'Automated gate motor is not responding. Manual override is being used as a temporary fix.',
-    propertyName: 'Hassan Villa',
-    category: 'Security',
-    priority: 'high',
-    status: 'open',
-    reportedBy: 'Security Guard',
-    createdAt: '2026-08-03T10:00:00.000Z',
-    updatedAt: '2026-08-03T10:00:00.000Z',
-  },
-  {
-    id: 'mnt_005',
-    title: 'Internet Router Replacement',
-    description: 'Common area WiFi router has failed. Tenants require connectivity.',
-    propertyName: 'Green Park Residency',
-    category: 'Internet',
-    priority: 'medium',
-    status: 'closed',
-    reportedBy: 'Arjun Nair',
-    assignedTo: 'TechFix Solutions',
-    resolvedAt: '2026-07-20T10:00:00.000Z',
-    createdAt: '2026-07-18T10:00:00.000Z',
-    updatedAt: '2026-07-20T10:00:00.000Z',
-  },
-]
+// Seed data not needed for business data store of truth, but initialized empty
+const SEED: MaintenanceRecord[] = []
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 interface MaintenanceState {
   items: MaintenanceRecord[]
-  add: (item: Omit<MaintenanceRecord, 'id' | 'createdAt' | 'updatedAt'>) => MaintenanceRecord
-  update: (id: string, changes: Partial<Omit<MaintenanceRecord, 'id' | 'createdAt'>>) => void
-  remove: (id: string) => void
+  isLoading: boolean
+  error: Error | null
+  fetch: () => Promise<void>
+  add: (item: any) => Promise<MaintenanceRecord>
+  update: (id: string, changes: Partial<any>) => Promise<void>
+  remove: (id: string) => Promise<void>
 }
 
-export const useMaintenanceStore = create<MaintenanceState>()(
-  persist(
-    (set) => ({
-      items: SEED,
+export const useMaintenanceStore = create<MaintenanceState>()((set) => ({
+  items: [],
+  isLoading: false,
+  error: null,
 
-      add: (item) => {
-        const now = new Date().toISOString()
-        const record: MaintenanceRecord = {
-          ...item,
-          id: crypto.randomUUID(),
-          createdAt: now,
-          updatedAt: now,
-        }
-        set((state) => ({ items: [record, ...state.items] }))
-        return record
-      },
+  fetch: async () => {
+    set({ isLoading: true })
+    try {
+      const { data } = await apiClient.get<ApiEnvelope<MaintenanceRecord[]>>('/maintenance')
+      if (data.data) {
+        set({ items: data.data, error: null })
+      }
+    } catch (err: any) {
+      set({ error: err })
+    } finally {
+      set({ isLoading: false })
+    }
+  },
 
-      update: (id, changes) => {
-        set((state) => ({
-          items: state.items.map((item) =>
-            item.id === id ? { ...item, ...changes, updatedAt: new Date().toISOString() } : item,
-          ),
-        }))
-      },
+  add: async (item) => {
+    set({ isLoading: true })
+    try {
+      const properties = useLocalPropertiesStore.getState().items
+      const matchedProp = properties.find(
+        (p) => p.name.toLowerCase() === item.propertyName.toLowerCase()
+      )
+      
+      const payload = {
+        title: item.title,
+        description: item.description,
+        propertyId: item.propertyId || matchedProp?.id || item.propertyName,
+        category: item.category,
+        priority: item.priority,
+        status: item.status,
+      }
 
-      remove: (id) => {
-        set((state) => ({ items: state.items.filter((item) => item.id !== id) }))
-      },
-    }),
-    { name: 'propertypro-maintenance' },
-  ),
-)
+      const { data } = await apiClient.post<ApiEnvelope<MaintenanceRecord>>('/maintenance', payload)
+      if (!data.data) throw new Error(data.error?.message || 'Failed to submit maintenance ticket')
+      
+      const created = data.data
+      set((state) => ({ items: [created, ...state.items], error: null }))
+      return created
+    } catch (err: any) {
+      set({ error: err })
+      throw err
+    } finally {
+      set({ isLoading: false })
+    }
+  },
+
+  update: async (id, changes) => {
+    set({ isLoading: true })
+    try {
+      const { data } = await apiClient.patch<ApiEnvelope<MaintenanceRecord>>(`/maintenance/${id}`, changes)
+      if (data.error) throw new Error(data.error.message)
+      set((state) => ({
+        items: state.items.map((item) => (item.id === id ? { ...item, ...changes } : item)),
+        error: null,
+      }))
+    } catch (err: any) {
+      set({ error: err })
+      throw err
+    } finally {
+      set({ isLoading: false })
+    }
+  },
+
+  remove: async (id) => {
+    set({ isLoading: true })
+    try {
+      const { data } = await apiClient.delete<ApiEnvelope<any>>(`/maintenance/${id}`)
+      if (data.error) throw new Error(data.error.message)
+      set((state) => ({ items: state.items.filter((item) => item.id !== id), error: null }))
+    } catch (err: any) {
+      set({ error: err })
+      throw err
+    } finally {
+      set({ isLoading: false })
+    }
+  },
+}))

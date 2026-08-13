@@ -13,7 +13,10 @@ const envSchema = z.object({
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
   AUTH_COOKIE_NAME: z.string().default('pp_refresh'),
   AUTH_COOKIE_SECURE: z.coerce.boolean().default(false),
-  AUTH_RATE_LIMIT: z.coerce.number().int().positive().default(10),
+  AUTH_RATE_LIMIT: z.coerce.number().int().positive().default(100),
+  IMAGEKIT_PUBLIC_KEY: z.string().default('public_SpL5EvAW0MxKq7X0XE7huXzxVVA='),
+  IMAGEKIT_PRIVATE_KEY: z.string().default('private_lbpM4r2U4fnbz4O1urwFnx54Zh0='),
+  IMAGEKIT_URL_ENDPOINT: z.string().default('https://ik.imagekit.io/mdkaif472'),
 })
 
 const parsed = envSchema.safeParse(process.env)

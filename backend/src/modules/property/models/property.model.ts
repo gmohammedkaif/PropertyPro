@@ -32,6 +32,16 @@ const propertySchema = new Schema(
     totalUnits: { type: Number, default: 0, min: 0 },
     occupiedUnits: { type: Number, default: 0, min: 0 },
     status: { type: String, enum: ['active', 'archived'], default: 'active' },
+    listingStatus: { type: String, enum: ['for-rent', 'for-sale', 'occupied', 'inactive'], default: 'inactive' },
+    bedrooms: { type: Number, default: 0, min: 0 },
+    bathrooms: { type: Number, default: 0, min: 0 },
+    parking: { type: Number, default: 0, min: 0 },
+    areaSqFt: { type: Number, default: 0, min: 0 },
+    monthlyRent: { type: Number, default: 0, min: 0 },
+    securityDeposit: { type: Number, default: 0, min: 0 },
+    salePrice: { type: Number, default: 0, min: 0 },
+    imageUrl: { type: String, default: '' },
+    ownerEmail: { type: String, default: '', lowercase: true, trim: true },
     images: { type: [String], default: [] },
     deletedAt: { type: Date, default: null },
   },
@@ -44,6 +54,7 @@ const propertySchema = new Schema(
 
 propertySchema.index({ name: 'text', 'address.city': 'text', 'address.state': 'text' })
 propertySchema.index({ ownerId: 1, status: 1 })
+propertySchema.index({ ownerId: 1, listingStatus: 1 })
 propertySchema.index({ 'address.city': 1 })
 propertySchema.index({ 'address.state': 1 })
 propertySchema.index({ type: 1 })

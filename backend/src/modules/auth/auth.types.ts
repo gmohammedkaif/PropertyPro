@@ -8,6 +8,7 @@ export interface UserRecord {
   roles: Role[]
   firstName: string
   lastName: string
+  phone: string
   status: UserStatus
   emailVerifiedAt: string | null
   createdAt: string

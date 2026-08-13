@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 
 import { cn } from '@/lib/utils'
@@ -5,12 +6,34 @@ import { Drawer } from '@/components/ui/Drawer'
 import { Navbar } from '@/components/layout/Navbar'
 import { Sidebar, SidebarContent } from '@/components/layout/Sidebar'
 import { useUiStore } from '@/stores/uiStore'
+import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
+import { useListingsStore } from '@/stores/listingsStore'
+import { useRentalRequestsStore } from '@/stores/rentalRequestsStore'
+import { useTenanciesStore } from '@/stores/tenanciesStore'
+import { usePaymentsStore } from '@/stores/paymentsStore'
+import { useMaintenanceStore } from '@/stores/maintenanceStore'
 
 export function DashboardLayout() {
   const collapsed = useUiStore((state) => state.sidebarCollapsed)
   const toggleSidebar = useUiStore((state) => state.toggleSidebar)
   const mobileSidebarOpen = useUiStore((state) => state.mobileSidebarOpen)
   const setMobileSidebarOpen = useUiStore((state) => state.setMobileSidebarOpen)
+
+  const fetchProperties = useLocalPropertiesStore((state) => state.fetch)
+  const fetchListings = useListingsStore((state) => state.fetch)
+  const fetchRequests = useRentalRequestsStore((state) => state.fetch)
+  const fetchTenancies = useTenanciesStore((state) => state.fetch)
+  const fetchPayments = usePaymentsStore((state) => state.fetch)
+  const fetchMaintenance = useMaintenanceStore((state) => state.fetch)
+
+  useEffect(() => {
+    fetchProperties()
+    fetchListings()
+    fetchRequests()
+    fetchTenancies()
+    fetchPayments()
+    fetchMaintenance()
+  }, [fetchProperties, fetchListings, fetchRequests, fetchTenancies, fetchPayments, fetchMaintenance])
 
   return (
     <div className="min-h-screen bg-bg">

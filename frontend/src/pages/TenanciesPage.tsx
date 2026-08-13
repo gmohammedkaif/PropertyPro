@@ -154,13 +154,17 @@ export function TenanciesPage() {
       message: `Are you sure you want to end & remove lease for "${name}"?`,
     })
     if (confirmed) {
-      remove(id)
-      freeUnits(propertyId, units)
-      toast.success('Lease record removed successfully')
+      try {
+        await remove(id)
+        freeUnits(propertyId, units)
+        toast.success('Lease record removed successfully')
+      } catch (err: any) {
+        toast.error('Failed to end lease')
+      }
     }
   }
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!tenantName.trim() || !selectedPropertyId || !leaseStart || !leaseEnd) {
       toast.error('All required fields must be filled')
@@ -202,15 +206,19 @@ export function TenanciesPage() {
       status,
     }
 
-    if (editingItem) {
-      update(editingItem.id, payload)
-      toast.success('Tenancy details updated')
-    } else {
-      add(payload)
-      occupyUnits(prop.id, units)
-      toast.success('New tenancy lease activated')
+    try {
+      if (editingItem) {
+        await update(editingItem.id, payload)
+        toast.success('Tenancy details updated')
+      } else {
+        await add(payload)
+        occupyUnits(prop.id, units)
+        toast.success('New tenancy lease activated')
+      }
+      setModalOpen(false)
+    } catch (err: any) {
+      toast.error(editingItem ? 'Failed to update tenancy' : 'Failed to activate tenancy')
     }
-    setModalOpen(false)
   }
 
   const handleSendMessage = () => {
@@ -656,12 +664,6 @@ export function TenanciesPage() {
                 <p className="text-sm font-bold text-text">{formatCurrency(selectedTenancy.securityDeposit)}</p>
               </div>
             </div>
-            {selectedTenancy.advanceAmount && (
-              <div>
-                <p className="text-xs text-muted uppercase tracking-wider font-semibold">Advance Amount Paid</p>
-                <p className="text-sm font-bold text-amber-400">{formatCurrency(selectedTenancy.advanceAmount)}</p>
-              </div>
-            )}
             {selectedTenancy.leaseNotes && (
               <div>
                 <p className="text-xs text-muted uppercase tracking-wider font-semibold">Lease Conditions & Notes</p>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Plus,
   Search,
@@ -49,9 +49,13 @@ const STATUS_CONFIG: Record<
 export function MaintenancePage() {
   const user = useAuthStore((state) => state.user)
   const toast = useToast()
-  const { items: allMaintenance, add, update, remove } = useMaintenanceStore()
+  const { items: allMaintenance, add, update, remove, fetch: fetchMaintenance } = useMaintenanceStore()
   const { items: properties } = useLocalPropertiesStore()
   const { addNotification } = useNotificationsStore()
+
+  useEffect(() => {
+    fetchMaintenance()
+  }, [fetchMaintenance])
 
   const userEmail = user?.email?.toLowerCase() ?? ''
   const userId = user?.id ?? ''
@@ -133,8 +137,12 @@ export function MaintenancePage() {
       message: 'Are you sure you want to delete this maintenance request ticket?',
     })
     if (confirmed) {
-      remove(id)
-      toast.success('Ticket deleted successfully')
+      try {
+        await remove(id)
+        toast.success('Ticket deleted successfully')
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to delete ticket')
+      }
     }
   }
 
@@ -149,7 +157,7 @@ export function MaintenancePage() {
     })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim() || !propertyName.trim()) {
       toast.error('Ticket title and property name are required')
@@ -169,32 +177,40 @@ export function MaintenancePage() {
       resolvedAt: status === 'resolved' || status === 'closed' ? new Date().toISOString() : undefined,
     }
 
-    if (editingItem) {
-      const oldStatus = editingItem.status
-      update(editingItem.id, payload)
-      if (oldStatus !== status && payload.tenantEmail) {
-        handleNotifyTenant(payload.propertyName, payload.title, payload.tenantEmail, status)
+    try {
+      if (editingItem) {
+        const oldStatus = editingItem.status
+        await update(editingItem.id, payload)
+        if (oldStatus !== status && payload.tenantEmail) {
+          handleNotifyTenant(payload.propertyName, payload.title, payload.tenantEmail, status)
+        }
+        toast.success('Ticket updated successfully')
+      } else {
+        await add(payload)
+        if (payload.tenantEmail) {
+          handleNotifyTenant(payload.propertyName, payload.title, payload.tenantEmail, status)
+        }
+        toast.success('Maintenance ticket filed')
       }
-      toast.success('Ticket updated successfully')
-    } else {
-      add(payload)
-      if (payload.tenantEmail) {
-        handleNotifyTenant(payload.propertyName, payload.title, payload.tenantEmail, status)
-      }
-      toast.success('Maintenance ticket filed')
+      setModalOpen(false)
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save maintenance ticket')
     }
-    setModalOpen(false)
   }
 
-  const handleUpdateStatus = (item: MaintenanceRecord, newStatus: MaintenanceStatus) => {
-    update(item.id, {
-      status: newStatus,
-      resolvedAt: newStatus === 'resolved' || newStatus === 'closed' ? new Date().toISOString() : undefined,
-    })
-    if (item.tenantEmail) {
-      handleNotifyTenant(item.propertyName, item.title, item.tenantEmail, newStatus)
+  const handleUpdateStatus = async (item: MaintenanceRecord, newStatus: MaintenanceStatus) => {
+    try {
+      await update(item.id, {
+        status: newStatus,
+        resolvedAt: newStatus === 'resolved' || newStatus === 'closed' ? new Date().toISOString() : undefined,
+      })
+      if (item.tenantEmail) {
+        handleNotifyTenant(item.propertyName, item.title, item.tenantEmail, newStatus)
+      }
+      toast.success(`Ticket status marked as ${STATUS_CONFIG[newStatus]?.label ?? newStatus}`)
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update status')
     }
-    toast.success(`Ticket status marked as ${STATUS_CONFIG[newStatus]?.label ?? newStatus}`)
   }
 
   // Filters

@@ -53,6 +53,12 @@ export function TenantPropertyDetailPage() {
   const listing = listings.find((l) => l.id === id)
   const localProperty = properties.find((p) => p.id === id)
 
+  const propertyImages = localProperty?.imageUrl
+    ? [localProperty.imageUrl]
+    : (localProperty as any)?.images?.length
+      ? (localProperty as any).images
+      : GALLERY_IMAGES
+
   // Selected image gallery state
   const [selectedImage, setSelectedImage] = useState(0)
 
@@ -84,10 +90,11 @@ export function TenantPropertyDetailPage() {
   }
 
   const propertyName = listing?.propertyName ?? localProperty?.name ?? 'Property'
-  const price = listing?.price ?? (localProperty ? 18000 : 0)
-  const bedrooms = listing?.bedrooms ?? (localProperty?.type === 'house' ? 3 : 2)
-  const bathrooms = listing?.bathrooms ?? (localProperty?.type === 'house' ? 3 : 2)
-  const areaSqFt = listing?.areaSqFt ?? 1450
+  const price = listing?.price ?? (localProperty ? (localProperty.listingStatus === 'for-sale' ? localProperty.salePrice : localProperty.monthlyRent) : 0) ?? 0
+  const bedrooms = localProperty?.bedrooms ?? listing?.bedrooms ?? 0
+  const bathrooms = localProperty?.bathrooms ?? listing?.bathrooms ?? 0
+  const parking = localProperty?.parking ?? 0
+  const areaSqFt = localProperty?.areaSqFt ?? listing?.areaSqFt ?? 0
   const description = listing?.description ?? localProperty?.description ?? 'Spacious, well-lit residential unit situated in a prime locality with top amenities.'
   const propertyType = listing?.type ?? 'rent'
   const status = listing?.status ?? 'available'
@@ -116,28 +123,31 @@ export function TenantPropertyDetailPage() {
     await new Promise((r) => setTimeout(r, 800))
 
     // Create rental request in store
-    addRequest({
-      propertyId: id ?? 'prop_001',
-      propertyName,
-      propertyType,
-      tenantEmail: user?.email ?? '',
-      fullName: fullName.trim(),
-      mobileNumber: mobileNumber.trim(),
-      city: city.trim(),
-      monthlyRent: price,
-    })
+    try {
+      await addRequest({
+        propertyId: id ?? 'prop_001',
+        propertyName,
+        propertyType,
+        fullName: fullName.trim(),
+        mobileNumber: mobileNumber.trim(),
+        city: city.trim(),
+        monthlyRent: price,
+      })
 
-    // Create notification for tenant
-    addNotification({
-      userEmail: user?.email ?? '',
-      title: 'Rental Request Submitted',
-      message: `Your request for ${propertyName} has been sent to the property owner for review.`,
-      type: 'info',
-    })
+      // Create notification for tenant
+      addNotification({
+        userEmail: user?.email ?? '',
+        title: 'Rental Request Submitted',
+        message: `Your request for ${propertyName} has been sent to the property owner for review.`,
+        type: 'info',
+      })
 
-    toast.success('Rental Request Sent!', {
-      description: 'The property owner will review your application and respond soon.',
-    })
+      toast.success('Rental Request Sent!', {
+        description: 'The property owner will review your application and respond soon.',
+      })
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to submit rental request')
+    }
 
     setSubmitting(false)
     setRequestModalOpen(false)
@@ -166,7 +176,7 @@ export function TenantPropertyDetailPage() {
           {/* Main Large Image */}
           <div className="relative h-96 w-full rounded-2xl overflow-hidden bg-surface2 border border-border/40">
             <img
-              src={GALLERY_IMAGES[selectedImage]}
+              src={propertyImages[selectedImage] || propertyImages[0]}
               alt={propertyName}
               className="h-full w-full object-cover transition-all duration-500"
             />
@@ -187,7 +197,7 @@ export function TenantPropertyDetailPage() {
 
           {/* Thumbnails */}
           <div className="grid grid-cols-4 gap-3">
-            {GALLERY_IMAGES.map((img, idx) => (
+            {propertyImages.map((img: string, idx: number) => (
               <button
                 key={idx}
                 type="button"
@@ -213,15 +223,12 @@ export function TenantPropertyDetailPage() {
               <GlassCardTitle>Property Specifications</GlassCardTitle>
             </GlassCardHeader>
             <GlassCardContent>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <SpecBox icon={<Key className="h-5 w-5 text-primary" />} label="Bedrooms" value={`${bedrooms} BHK`} />
-                <SpecBox icon={<span className="text-lg">习</span>} label="Bathrooms" value={`${bathrooms} Baths`} />
-                <SpecBox icon={<Car className="h-5 w-5 text-emerald-400" />} label="Parking" value="Covered Lot" />
-                <SpecBox icon={<span className="text-lg">📐</span>} label="Total Area" value={`${areaSqFt} sq ft`} />
-                <SpecBox icon={<Layers className="h-5 w-5 text-amber-400" />} label="Floor" value="3rd Floor" />
-                <SpecBox icon={<MapPin className="h-5 w-5 text-sky-400" />} label="City" value={propertyCity} />
-                <SpecBox icon={<Shield className="h-5 w-5 text-purple-400" />} label="Security" value="24x7 Guards" />
-                <SpecBox icon={<Sparkles className="h-5 w-5 text-pink-400" />} label="Furnishing" value="Semi-Furnished" />
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+                <SpecBox icon={<Key className="h-5 w-5 text-primary" />} label="Bedrooms" value={bedrooms > 0 ? `${bedrooms} BHK` : 'Not specified'} />
+                <SpecBox icon={<span className="text-lg">🛁</span>} label="Bathrooms" value={bathrooms > 0 ? `${bathrooms} Baths` : 'Not specified'} />
+                <SpecBox icon={<Car className="h-5 w-5 text-emerald-400" />} label="Parking" value={parking > 0 ? `${parking} Spaces` : 'Not specified'} />
+                <SpecBox icon={<span className="text-lg">📐</span>} label="Total Area" value={areaSqFt > 0 ? `${areaSqFt} sq ft` : 'Not specified'} />
+                <SpecBox icon={<MapPin className="h-5 w-5 text-sky-400" />} label="City" value={propertyCity || 'Not specified'} />
               </div>
             </GlassCardContent>
           </GlassCard>

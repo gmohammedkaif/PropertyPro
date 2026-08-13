@@ -1,8 +1,9 @@
 import type { Request, Response } from 'express'
 import { asyncHandler } from '../../core/asyncHandler.js'
-import { NotFoundError } from '../../core/errors.js'
+import { NotFoundError, ForbiddenError, ConflictError } from '../../core/errors.js'
 import { Tenancy } from './tenancy.model.js'
 import { Property } from '../property/models/property.model.js'
+import { createNotificationIdempotent } from '../notification/notification.model.js'
 
 function formatDoc(doc: any) {
   return {
@@ -18,7 +19,6 @@ function formatDoc(doc: any) {
     leaseEnd: doc.leaseEnd ? doc.leaseEnd.toISOString() : null,
     leaseDurationMonths: doc.leaseDurationMonths,
     monthlyRent: doc.monthlyRent,
-    advanceAmount: doc.advanceAmount,
     securityDeposit: doc.securityDeposit,
     leaseNotes: doc.leaseNotes,
     ownerEmail: doc.ownerEmail,
@@ -35,17 +35,13 @@ export const listTenancies = asyncHandler(async (req: Request, res: Response) =>
   const isSuperAdmin = user?.roles.includes('admin') || user?.email === 'admin@propertypro.com'
   const isOwner = user?.roles.includes('owner') || user?.roles.includes('agent')
 
-  let query: Record<string, unknown> = {}
+  let query: Record<string, any> = { status: { $ne: 'terminated' } }
 
   if (!isSuperAdmin) {
     if (isOwner) {
-      query = {
-        $or: [{ ownerId: user?.id }, { ownerEmail: user?.email?.toLowerCase() }],
-      }
+      query.$or = [{ ownerId: user?.id }, { ownerEmail: user?.email?.toLowerCase() }]
     } else {
-      query = {
-        $or: [{ tenantEmail: user?.email?.toLowerCase() }],
-      }
+      query.$or = [{ tenantEmail: user?.email?.toLowerCase() }]
     }
   }
 
@@ -83,25 +79,38 @@ export const getMyTenancy = asyncHandler(async (req: Request, res: Response) => 
 })
 
 export const createTenancy = asyncHandler(async (req: Request, res: Response) => {
-  const ownerEmail = req.body.ownerEmail || req.user?.email || ''
-  const ownerId = req.body.ownerId || req.user?.id || ''
+  const ownerEmail = req.user?.email || ''
+  const ownerId = req.user?.id || ''
 
   const property = await Property.findById(req.body.propertyId).lean().catch(() => null)
+  if (!property) throw new NotFoundError('Property not found')
+
+  if (property.ownerId !== ownerId && !req.user?.roles.includes('admin')) {
+    throw new ForbiddenError('You do not have permission to manage this property')
+  }
+
+  // Check if property has active tenancy
+  const activeTenancy = await Tenancy.findOne({
+    propertyId: req.body.propertyId,
+    status: { $in: ['active', 'expiring-soon'] },
+  }).lean()
+  if (activeTenancy) {
+    throw new ConflictError('This property already has an active tenancy lease')
+  }
 
   const doc = await Tenancy.create({
     tenantName: req.body.tenantName,
     tenantEmail: req.body.tenantEmail.toLowerCase(),
     tenantPhone: req.body.tenantPhone || '',
     propertyId: req.body.propertyId,
-    propertyName: req.body.propertyName || (property ? property.name : 'Rented Property'),
+    propertyName: req.body.propertyName || property.name,
     unitNumber: req.body.unitNumber || 'Main',
     unitsOccupied: req.body.unitsOccupied || 1,
     leaseStart: new Date(req.body.leaseStart),
     leaseEnd: new Date(req.body.leaseEnd),
     leaseDurationMonths: req.body.leaseDurationMonths || 12,
     monthlyRent: req.body.monthlyRent,
-    advanceAmount: req.body.advanceAmount || req.body.monthlyRent * 2,
-    securityDeposit: req.body.securityDeposit || req.body.monthlyRent * 5,
+    securityDeposit: req.body.securityDeposit || req.body.monthlyRent * 2,
     leaseNotes: req.body.leaseNotes || '',
     ownerEmail: ownerEmail.toLowerCase(),
     ownerId,
@@ -118,14 +127,63 @@ export const createTenancy = asyncHandler(async (req: Request, res: Response) =>
 
 export const updateTenancy = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params
+  const tenancy = await Tenancy.findById(id)
+  if (!tenancy) throw new NotFoundError('Tenancy not found')
+
+  if (tenancy.ownerId !== req.user?.id && !req.user?.roles.includes('admin')) {
+    throw new ForbiddenError('You do not have permission to modify this tenancy')
+  }
+
   const updated = await Tenancy.findByIdAndUpdate(id, { $set: req.body }, { new: true, runValidators: true }).lean()
-  if (!updated) throw new NotFoundError('Tenancy not found')
-  res.json({ data: formatDoc(updated), meta: {}, error: null })
+  res.json({ data: formatDoc(updated!), meta: {}, error: null })
 })
 
 export const deleteTenancy = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params
-  const deleted = await Tenancy.findByIdAndDelete(id).lean()
-  if (!deleted) throw new NotFoundError('Tenancy not found')
-  res.json({ data: formatDoc(deleted), meta: {}, error: null })
+  const tenancy = await Tenancy.findById(id)
+  if (!tenancy) throw new NotFoundError('Tenancy not found')
+
+  if (tenancy.ownerId !== req.user?.id && !req.user?.roles.includes('admin')) {
+    throw new ForbiddenError('You do not have permission to delete this tenancy')
+  }
+
+  // Idempotent termination safeguard: only transition and decrement if lease was active
+  if (tenancy.status === 'active' || tenancy.status === 'expiring-soon') {
+    tenancy.status = 'terminated'
+    await tenancy.save()
+
+    // Decrement occupiedUnits on property (never below 0)
+    if (tenancy.propertyId) {
+      const property = await Property.findById(tenancy.propertyId)
+      if (property && property.occupiedUnits > 0) {
+        property.occupiedUnits = Math.max(0, property.occupiedUnits - (tenancy.unitsOccupied || 1))
+        await property.save()
+      }
+    }
+
+    // Emit notifications
+    const tenancyIdStr = tenancy._id.toString()
+    if (tenancy.tenantEmail) {
+      await createNotificationIdempotent({
+        userEmail: tenancy.tenantEmail,
+        title: 'Lease Terminated 🛑',
+        message: `Your tenancy lease for ${tenancy.propertyName} has been terminated.`,
+        type: 'warning',
+        eventType: 'LEASE_TERMINATED',
+        relatedEntityId: tenancyIdStr,
+      })
+    }
+    if (tenancy.ownerEmail) {
+      await createNotificationIdempotent({
+        userEmail: tenancy.ownerEmail,
+        title: 'Lease Terminated 🛑',
+        message: `The tenancy lease for ${tenancy.propertyName} (${tenancy.tenantName}) has been terminated.`,
+        type: 'info',
+        eventType: 'LEASE_TERMINATED',
+        relatedEntityId: tenancyIdStr,
+      })
+    }
+  }
+
+  res.json({ data: formatDoc(tenancy), meta: {}, error: null })
 })

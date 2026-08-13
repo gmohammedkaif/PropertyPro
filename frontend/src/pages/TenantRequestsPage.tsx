@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import {
   Building2,
   Calendar,
@@ -48,8 +48,6 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
-// ─── Lease Creation Modal ─────────────────────────────────────────────────────
-
 interface LeaseModalProps {
   open: boolean
   onClose: () => void
@@ -58,7 +56,6 @@ interface LeaseModalProps {
     leaseStart: string
     leaseDurationMonths: number
     monthlyRent: number
-    advanceAmount: number
     securityDeposit: number
     leaseNotes: string
   }) => void
@@ -68,7 +65,6 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
   const [leaseStart, setLeaseStart] = useState(new Date().toISOString().split('T')[0])
   const [leaseDuration, setLeaseDuration] = useState('12')
   const [monthlyRent, setMonthlyRent] = useState(String(request.monthlyRent ?? 18000))
-  const [advanceAmount, setAdvanceAmount] = useState(String((request.monthlyRent ?? 18000) * 2))
   const [securityDeposit, setSecurityDeposit] = useState(String((request.monthlyRent ?? 18000) * 2))
   const [leaseNotes, setLeaseNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -88,7 +84,6 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
       leaseStart,
       leaseDurationMonths: Number(leaseDuration),
       monthlyRent: Number(monthlyRent),
-      advanceAmount: Number(advanceAmount),
       securityDeposit: Number(securityDeposit),
       leaseNotes,
     })
@@ -100,7 +95,7 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
     <Modal
       open={open}
       onOpenChange={onClose}
-      size="lg"
+      size="xl"
       title={
         <span className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" />
@@ -180,7 +175,7 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
         )}
 
         {/* Financial Details */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text2 uppercase tracking-wider">
               Monthly Rent (₹)
@@ -191,19 +186,6 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
               min={1000}
               value={monthlyRent}
               onChange={(e) => setMonthlyRent(e.target.value)}
-              className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text2 uppercase tracking-wider">
-              Advance Amount (₹)
-            </label>
-            <input
-              type="number"
-              required
-              min={0}
-              value={advanceAmount}
-              onChange={(e) => setAdvanceAmount(e.target.value)}
               className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
             />
           </div>
@@ -230,14 +212,14 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
           </div>
           <div className="h-10 w-px bg-border/50" />
           <div>
-            <p className="text-[10px] text-muted uppercase tracking-wider font-semibold">Advance</p>
-            <p className="text-lg font-bold text-amber-400">{fmtCurrency(Number(advanceAmount) || 0)}</p>
+            <p className="text-[10px] text-muted uppercase tracking-wider font-semibold">Security Deposit</p>
+            <p className="text-lg font-bold text-text">{fmtCurrency(Number(securityDeposit) || 0)}</p>
           </div>
           <div className="h-10 w-px bg-border/50" />
           <div>
             <p className="text-[10px] text-muted uppercase tracking-wider font-semibold">Total Move-in</p>
             <p className="text-lg font-bold text-emerald-400">
-              {fmtCurrency((Number(monthlyRent) || 0) + (Number(securityDeposit) || 0) + (Number(advanceAmount) || 0))}
+              {fmtCurrency((Number(monthlyRent) || 0) + (Number(securityDeposit) || 0))}
             </p>
           </div>
         </div>
@@ -334,11 +316,15 @@ export function TenantRequestsPage() {
   const user = useAuthStore((state) => state.user)
   const toast = useToast()
 
-  const { items: allRentalRequests, updateStatus } = useRentalRequestsStore()
+  const { items: allRentalRequests, approveRequest, rejectRequest, fetch: fetchRequests } = useRentalRequestsStore()
   const { add: addTenancy } = useTenanciesStore()
   const { items: allProperties, occupyUnits, setListingStatus } = useLocalPropertiesStore()
   const { add: addPayment } = usePaymentsStore()
   const { addNotification } = useNotificationsStore()
+
+  useEffect(() => {
+    fetchRequests()
+  }, [fetchRequests])
 
   const userEmail = user?.email?.toLowerCase() ?? ''
   const userId = user?.id ?? ''
@@ -366,6 +352,7 @@ export function TenantRequestsPage() {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [leaseOpen, setLeaseOpen] = useState(false)
   const [pendingApproval, setPendingApproval] = useState<RentalRequestRecord | null>(null)
+  const [rejectingIds, setRejectingIds] = useState<Record<string, boolean>>({})
 
   const filtered = rentalRequests.filter((req) => {
     const search_ = search.toLowerCase()
@@ -386,93 +373,53 @@ export function TenantRequestsPage() {
     setLeaseOpen(true)
   }
 
-  const handleRejectClick = (req: RentalRequestRecord) => {
-    updateStatus(req.id, 'rejected')
-    addNotification({
-      userEmail: req.tenantEmail,
-      title: 'Rental Request Update',
-      message: `Your rental request for ${req.propertyName} was not approved at this time. Please browse other available properties.`,
-      type: 'danger',
-    })
-    toast.info(`Rejected request from ${req.fullName}`)
+  const handleRejectClick = async (req: RentalRequestRecord) => {
+    if (rejectingIds[req.id]) return
+    setRejectingIds((prev) => ({ ...prev, [req.id]: true }))
+    try {
+      await rejectRequest(req.id)
+      toast.info(`Rejected request from ${req.fullName}`)
+      fetchRequests()
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to reject request')
+    } finally {
+      setRejectingIds((prev) => {
+        const next = { ...prev }
+        delete next[req.id]
+        return next
+      })
+    }
   }
 
-  const handleLeaseConfirm = (lease: {
+  const handleLeaseConfirm = async (lease: {
     leaseStart: string
     leaseDurationMonths: number
     monthlyRent: number
-    advanceAmount: number
     securityDeposit: number
     leaseNotes: string
   }) => {
     if (!pendingApproval) return
     const req = pendingApproval
 
-    // Calculate lease end date
-    const endDate = new Date(lease.leaseStart)
-    endDate.setMonth(endDate.getMonth() + lease.leaseDurationMonths)
-    const leaseEnd = endDate.toISOString().split('T')[0]
-
-    // 1. Approve the request
-    updateStatus(req.id, 'approved')
-
-    // 2. Create tenancy record
-    addTenancy({
-      tenantName: req.fullName,
-      tenantEmail: req.tenantEmail,
-      tenantPhone: req.mobileNumber,
-      propertyId: req.propertyId,
-      propertyName: req.propertyName,
-      unitsOccupied: 1,
-      leaseStart: lease.leaseStart,
-      leaseEnd,
-      leaseDurationMonths: lease.leaseDurationMonths,
-      monthlyRent: lease.monthlyRent,
-      advanceAmount: lease.advanceAmount,
-      securityDeposit: lease.securityDeposit,
-      leaseNotes: lease.leaseNotes || undefined,
-      ownerEmail: user?.email,
-      requestId: req.id,
-      status: 'active',
-    })
-
-    // 3. Mark property as occupied
-    occupyUnits(req.propertyId, 1)
-    setListingStatus(req.propertyId, 'occupied')
-
-    // 4. Create first month rent payment (pending)
-    const dueDate = new Date(lease.leaseStart)
-    dueDate.setDate(dueDate.getDate() + 7)
-    addPayment({
-      tenantName: req.fullName,
-      propertyName: req.propertyName,
-      amount: lease.monthlyRent,
-      dueDate: dueDate.toISOString().split('T')[0],
-      status: 'pending',
-      type: 'rent',
-      notes: `First month rent — Lease started ${lease.leaseStart}`,
-    })
-
-    // 5. Notify tenant — approval
-    addNotification({
-      userEmail: req.tenantEmail,
-      title: '🎉 Rental Request Approved!',
-      message: `Your rental request for ${req.propertyName} has been approved! Lease created from ${lease.leaseStart} for ${lease.leaseDurationMonths} months. Monthly rent: ${fmtCurrency(lease.monthlyRent)}. Check your dashboard.`,
-      type: 'success',
-    })
-
-    // 6. Notify owner
-    if (user?.email) {
-      addNotification({
-        userEmail: user.email,
-        title: 'Lease Created Successfully',
-        message: `Lease for ${req.fullName} at ${req.propertyName} has been created. Rent: ${fmtCurrency(lease.monthlyRent)}/month.`,
-        type: 'success',
+    try {
+      await approveRequest(req.id, {
+        leaseStart: lease.leaseStart,
+        leaseDurationMonths: lease.leaseDurationMonths,
+        monthlyRent: lease.monthlyRent,
+        securityDeposit: lease.securityDeposit,
+        leaseNotes: lease.leaseNotes || undefined,
       })
+      // Sync requests, properties, leases, and payments
+      fetchRequests()
+      useLocalPropertiesStore.getState().fetch()
+      useTenanciesStore.getState().fetch()
+      usePaymentsStore.getState().fetch()
+      
+      toast.success(`Lease created for ${req.fullName}! Property marked as occupied.`)
+      setPendingApproval(null)
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to approve request')
     }
-
-    toast.success(`Lease created for ${req.fullName}! Property marked as occupied.`)
-    setPendingApproval(null)
   }
 
   return (
@@ -617,6 +564,7 @@ export function TenantRequestsPage() {
                               size="sm"
                               className="h-8 px-3 text-xs"
                               onClick={() => handleApproveClick(req)}
+                              disabled={Object.values(rejectingIds).some(Boolean)}
                             >
                               <CheckCircle2 className="h-3.5 w-3.5" /> Approve
                             </EnhancedButton>
@@ -626,6 +574,8 @@ export function TenantRequestsPage() {
                               size="sm"
                               className="h-8 px-3 text-xs"
                               onClick={() => handleRejectClick(req)}
+                              loading={rejectingIds[req.id]}
+                              disabled={Object.values(rejectingIds).some(Boolean)}
                             >
                               <XCircle className="h-3.5 w-3.5" /> Reject
                             </EnhancedButton>

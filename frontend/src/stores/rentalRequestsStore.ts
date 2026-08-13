@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { apiClient, type ApiEnvelope } from '@/lib/apiClient'
 
 export type RentalRequestStatus = 'pending' | 'approved' | 'rejected'
 
@@ -23,79 +23,126 @@ export interface RentalRequestRecord {
   updatedAt: string
 }
 
-const SEED: RentalRequestRecord[] = [
-  {
-    id: 'req_001',
-    propertyId: 'prop_004',
-    propertyName: 'Sunrise Villa',
-    propertyType: 'villa',
-    tenantEmail: 'tenant@propertypro.app',
-    fullName: 'John Tenant',
-    mobileNumber: '9876543210',
-    city: 'Hyderabad',
-    monthlyRent: 35000,
-    status: 'pending',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-]
-
 interface RentalRequestsState {
   items: RentalRequestRecord[]
+  isLoading: boolean
+  error: Error | null
+  fetch: () => Promise<void>
   addRequest: (input: {
     propertyId: string
     propertyName: string
     propertyType?: string
-    ownerId?: string
-    ownerName?: string
-    tenantId?: string
-    tenantEmail: string
     fullName: string
     mobileNumber: string
     city: string
     monthlyRent?: number
-  }) => RentalRequestRecord
+    notes?: string
+  }) => Promise<RentalRequestRecord>
+  approveRequest: (id: string, leaseDetails: {
+    leaseStart: string
+    leaseDurationMonths: number
+    monthlyRent: number
+    securityDeposit: number
+    leaseNotes?: string
+  }) => Promise<void>
+  rejectRequest: (id: string) => Promise<void>
   updateStatus: (id: string, status: RentalRequestStatus, notes?: string) => void
   removeRequest: (id: string) => void
   getRequestsByTenant: (email: string) => RentalRequestRecord[]
 }
 
-export const useRentalRequestsStore = create<RentalRequestsState>()(
-  persist(
-    (set, get) => ({
-      items: SEED,
+export const useRentalRequestsStore = create<RentalRequestsState>()((set, get) => ({
+  items: [],
+  isLoading: false,
+  error: null,
 
-      addRequest: (input) => {
-        const now = new Date().toISOString()
-        const record: RentalRequestRecord = {
-          id: `req_${Math.random().toString(36).substring(2, 9)}`,
-          ...input,
-          status: 'pending',
-          createdAt: now,
-          updatedAt: now,
-        }
-        set((state) => ({ items: [record, ...state.items] }))
-        return record
-      },
+  fetch: async () => {
+    set({ isLoading: true })
+    try {
+      const { data } = await apiClient.get<ApiEnvelope<RentalRequestRecord[]>>('/rental-requests')
+      if (data.data) {
+        set({ items: data.data, error: null })
+      }
+    } catch (err: any) {
+      set({ error: err })
+    } finally {
+      set({ isLoading: false })
+    }
+  },
 
-      updateStatus: (id, status, notes) => {
-        set((state) => ({
-          items: state.items.map((item) =>
-            item.id === id
-              ? { ...item, status, notes: notes ?? item.notes, updatedAt: new Date().toISOString() }
-              : item,
-          ),
-        }))
-      },
+  addRequest: async (input) => {
+    set({ isLoading: true })
+    try {
+      const { data } = await apiClient.post<ApiEnvelope<RentalRequestRecord>>('/rental-requests', input)
+      if (!data.data) throw new Error(data.error?.message || 'Failed to submit request')
+      const created = data.data
+      set((state) => ({ items: [created, ...state.items], error: null }))
+      return created
+    } catch (err: any) {
+      set({ error: err })
+      throw err
+    } finally {
+      set({ isLoading: false })
+    }
+  },
 
-      removeRequest: (id) => {
-        set((state) => ({ items: state.items.filter((item) => item.id !== id) }))
-      },
+  approveRequest: async (id, leaseDetails) => {
+    set({ isLoading: true })
+    try {
+      const { data } = await apiClient.post<ApiEnvelope<any>>(`/rental-requests/${id}/approve`, leaseDetails)
+      if (data.error) throw new Error(data.error.message)
+      // Update request status locally to approved
+      set((state) => ({
+        items: state.items.map((item) =>
+          item.id === id ? { ...item, status: 'approved', updatedAt: new Date().toISOString() } : item
+        ),
+        error: null,
+      }))
+    } catch (err: any) {
+      set({ error: err })
+      throw err
+    } finally {
+      set({ isLoading: false })
+    }
+  },
 
-      getRequestsByTenant: (email) => {
-        return get().items.filter((req) => req.tenantEmail.toLowerCase() === email.toLowerCase())
-      },
-    }),
-    { name: 'propertypro-rental-requests' },
-  ),
-)
+  rejectRequest: async (id) => {
+    set({ isLoading: true })
+    try {
+      const { data } = await apiClient.post<ApiEnvelope<any>>(`/rental-requests/${id}/reject`, {})
+      if (data.error) throw new Error(data.error.message)
+      // Update request status locally to rejected
+      set((state) => ({
+        items: state.items.map((item) =>
+          item.id === id ? { ...item, status: 'rejected', updatedAt: new Date().toISOString() } : item
+        ),
+        error: null,
+      }))
+    } catch (err: any) {
+      set({ error: err })
+      throw err
+    } finally {
+      set({ isLoading: false })
+    }
+  },
+
+  updateStatus: (id, status, notes) => {
+    // Kept for backward compatibility
+    set((state) => ({
+      items: state.items.map((item) =>
+        item.id === id
+          ? { ...item, status, notes: notes ?? item.notes, updatedAt: new Date().toISOString() }
+          : item
+      ),
+    }))
+  },
+
+  removeRequest: (id) => {
+    // Kept for backward compatibility
+    set((state) => ({ items: state.items.filter((item) => item.id !== id) }))
+  },
+
+  getRequestsByTenant: (email) => {
+    return get().items.filter((req) => req.tenantEmail.toLowerCase() === email.toLowerCase())
+  },
+}))

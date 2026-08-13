@@ -13,7 +13,6 @@ const tenancySchema = new Schema(
     leaseEnd: { type: Date, required: true },
     leaseDurationMonths: { type: Number, default: 12 },
     monthlyRent: { type: Number, required: true, min: 0 },
-    advanceAmount: { type: Number, default: 0 },
     securityDeposit: { type: Number, default: 0 },
     leaseNotes: { type: String, default: '' },
     ownerEmail: { type: String, default: '', index: true },

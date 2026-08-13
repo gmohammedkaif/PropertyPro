@@ -55,6 +55,10 @@ class PropertyService {
     return this.repository.findAllPublished(filter)
   }
 
+  async findAll(filter: PropertyFilter): Promise<PropertyListResult> {
+    return this.repository.findAll(filter)
+  }
+
   async search(query: string, filter: PropertyFilter): Promise<PropertyListResult> {
     return this.repository.search(query, filter)
   }

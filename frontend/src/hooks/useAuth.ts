@@ -33,6 +33,7 @@ function tryDemoRegister(input: { email: string; password: string; firstName: st
     id: crypto.randomUUID(),
     email: input.email,
     name: `${input.firstName} ${input.lastName}`,
+    phone: '',
     roles: [(input.role as AuthUser['roles'][0]) || 'tenant'],
     status: 'active',
   }

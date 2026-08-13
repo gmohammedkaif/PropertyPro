@@ -1,391 +1,615 @@
-import { useState } from 'react'
-import { User, Plus, Trash2, Edit2, Users, Camera, Lock } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import {
+  User,
+  Lock,
+  Bell,
+  Shield,
+  ChevronRight,
+  Camera,
+  Save,
+  Eye,
+  EyeOff,
+  Users,
+  Plus,
+  Trash2,
+} from 'lucide-react'
 
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle, GlassCardDescription } from '@/components/ui/GlassCard'
-import { Input } from '@/components/ui/Input'
-import { Button } from '@/components/ui/Button'
-import { Select } from '@/components/ui/Select'
-import { Modal } from '@/components/ui/Modal'
+import { useAuthStore } from '@/stores/authStore'
+import { useFamilyMembersStore } from '@/stores/familyMembersStore'
+import { apiClient, type ApiEnvelope } from '@/lib/apiClient'
 import { useToast } from '@/hooks/useToast'
-import { useAuthStore, isAdmin } from '@/stores/authStore'
-import { useFamilyMembersStore, type FamilyRelationship } from '@/stores/familyMembersStore'
+
+type Tab = 'profile' | 'password' | 'notifications' | 'family'
 
 export function SettingsPage() {
   const toast = useToast()
-  const user = useAuthStore((state) => state.user)
-  const isOwnerAdmin = isAdmin(user)
 
-  const { familyMembers, addMember, updateMember, removeMember, getMembersByTenant } = useFamilyMembersStore((s) => ({
-    familyMembers: s.items,
-    addMember: s.addMember,
-    updateMember: s.updateMember,
-    removeMember: s.removeMember,
-    getMembersByTenant: s.getMembersByTenant,
-  }))
+  // ── Individual selectors to avoid infinite re-render ──────────────────────
+  const user = useAuthStore((s) => s.user)
+  const refreshMe = useAuthStore((s) => s.refreshMe)
+  const signOut = useAuthStore((s) => s.signOut)
 
-  const userEmail = user?.email ?? 'tenant@propertypro.app'
-  const myFamilyMembers = getMembersByTenant(userEmail)
+  const familyItems = useFamilyMembersStore((s) => s.items)
+  const fetchFamily = useFamilyMembersStore((s) => s.fetch)
+  const addMember = useFamilyMembersStore((s) => s.addMember)
+  const removeMember = useFamilyMembersStore((s) => s.removeMember)
 
-  // Personal Info Form State
-  const [name, setName] = useState(user?.name ?? 'John Tenant')
-  const [email, setEmail] = useState(userEmail)
-  const [phone, setPhone] = useState('+91 98765 43210')
-  const [address, setAddress] = useState('Flat 402, Green Park Residency, Hyderabad')
-  const [emergencyContact, setEmergencyContact] = useState('+91 91234 56789 (Father)')
-  const [profilePic, setProfilePic] = useState<string | null>(null)
+  const isAdmin = user?.roles.includes('admin')
+  const isOwner = user?.roles.includes('owner')
+  const isTenant = !isAdmin && !isOwner
 
-  // Password Update Form State (specifically requested for owners)
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
+  // ── Active tab ─────────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState<Tab>('profile')
 
-  // Family Member Modal State
-  const [familyModalOpen, setFamilyModalOpen] = useState(false)
-  const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
+  // ── Profile form ──────────────────────────────────────────────────────────
+  const [name, setName] = useState(user?.name ?? '')
+  const [phone, setPhone] = useState(user?.phone ?? '')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name ?? '')
+      setPhone(user.phone ?? '')
+    }
+  }, [user?.name, user?.phone])
+
+  // ── Password form ─────────────────────────────────────────────────────────
+  const [currentPwd, setCurrentPwd] = useState('')
+  const [newPwd, setNewPwd] = useState('')
+  const [confirmPwd, setConfirmPwd] = useState('')
+  const [showCurrent, setShowCurrent] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+  const [savingPwd, setSavingPwd] = useState(false)
+
+  // ── Family ─────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (isTenant) fetchFamily()
+  }, [isTenant])
+
   const [famName, setFamName] = useState('')
-  const [famRel, setFamRel] = useState<FamilyRelationship>('Spouse')
-  const [famAge, setFamAge] = useState<number>(30)
+  const [famRel, setFamRel] = useState('Spouse')
+  const [famAge, setFamAge] = useState(30)
   const [famPhone, setFamPhone] = useState('')
+  const [addingMember, setAddingMember] = useState(false)
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const myFamily = familyItems.filter(
+    (m) => m.tenantEmail?.toLowerCase() === user?.email?.toLowerCase(),
+  )
+
+  // ── Notification toggles (UI only) ────────────────────────────────────────
+  const [emailNotifs, setEmailNotifs] = useState(true)
+  const [smsNotifs, setSmsNotifs] = useState(false)
+  const [appNotifs, setAppNotifs] = useState(true)
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim() || !email.trim()) {
-      toast.error('Name and Email cannot be empty.')
-      return
-    }
-    toast.success('Personal Information Saved Successfully! 🎉')
-  }
-
-  const handleUpdatePassword = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error('Please fill in all password fields.')
-      return
-    }
-    if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match.')
-      return
-    }
-    toast.success('Password Updated Successfully! 🔒')
-    setCurrentPassword('')
-    setNewPassword('')
-    setConfirmPassword('')
-  }
-
-  const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => setProfilePic(reader.result as string)
-      reader.readAsDataURL(file)
-    }
-  }
-
-  // Open modal for adding or editing member
-  const handleOpenFamilyModal = (memberId?: string) => {
-    if (memberId) {
-      const m = familyMembers.find((item) => item.id === memberId)
-      if (m) {
-        setEditingMemberId(m.id)
-        setFamName(m.name)
-        setFamRel(m.relationship)
-        setFamAge(m.age)
-        setFamPhone(m.phone)
-      }
-    } else {
-      setEditingMemberId(null)
-      setFamName('')
-      setFamRel('Spouse')
-      setFamAge(28)
-      setFamPhone('')
-    }
-    setFamilyModalOpen(true)
-  }
-
-  const handleSaveFamilyMember = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!famName.trim()) {
-      toast.error('Family member name is required.')
-      return
-    }
-
-    if (editingMemberId) {
-      updateMember(editingMemberId, {
-        name: famName.trim(),
-        relationship: famRel,
-        age: Number(famAge),
-        phone: famPhone.trim() || 'N/A',
+    if (!name.trim()) { toast.error('Name cannot be empty.'); return }
+    setSaving(true)
+    try {
+      await apiClient.patch<ApiEnvelope<unknown>>('/auth/me', {
+        firstName: name.split(' ')[0] ?? name,
+        lastName: name.split(' ').slice(1).join(' ') || '',
+        phone: phone.trim(),
       })
-      toast.success('Family member updated successfully.')
-    } else {
-      addMember({
-        tenantEmail: userEmail,
-        name: famName.trim(),
-        relationship: famRel,
-        age: Number(famAge),
-        phone: famPhone.trim() || 'N/A',
-      })
-      toast.success('Family member added successfully.')
+      await refreshMe()
+      toast.success('Profile updated successfully!')
+    } catch {
+      toast.error('Failed to update profile.')
+    } finally {
+      setSaving(false)
     }
-
-    setFamilyModalOpen(false)
   }
 
-  const handleDeleteMember = (id: string, name: string) => {
-    removeMember(id)
-    toast.info(`Removed ${name} from family members.`)
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!currentPwd || !newPwd || !confirmPwd) { toast.error('Please fill all fields.'); return }
+    if (newPwd !== confirmPwd) { toast.error('New passwords do not match.'); return }
+    if (newPwd.length < 8) { toast.error('Password must be at least 8 characters.'); return }
+    setSavingPwd(true)
+    try {
+      await apiClient.post('/auth/change-password', { currentPassword: currentPwd, newPassword: newPwd })
+      toast.success('Password changed. Please sign in again.')
+      setCurrentPwd(''); setNewPwd(''); setConfirmPwd('')
+      setTimeout(() => signOut(), 1500)
+    } catch {
+      toast.error('Incorrect current password.')
+    } finally {
+      setSavingPwd(false)
+    }
   }
+
+  const handleAddMember = async () => {
+    if (!famName.trim()) return
+    setAddingMember(true)
+    try {
+      await addMember({
+        tenantEmail: user?.email ?? '',
+        name: famName,
+        relationship: famRel as any,
+        age: famAge,
+        phone: famPhone,
+      })
+      setFamName(''); setFamPhone(''); setFamAge(30)
+      toast.success('Family member added!')
+    } catch {
+      toast.error('Failed to add member.')
+    } finally {
+      setAddingMember(false)
+    }
+  }
+
+  // ── Role badge ────────────────────────────────────────────────────────────
+  const roleBadge = isAdmin
+    ? { label: 'Super Admin', color: 'var(--color-warning, #f59e0b)' }
+    : isOwner
+      ? { label: 'Property Owner', color: 'var(--color-accent, #6366f1)' }
+      : { label: 'Tenant', color: 'var(--color-success, #10b981)' }
+
+  // ── Tabs config ───────────────────────────────────────────────────────────
+  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: 'profile', label: 'Personal Info', icon: <User size={16} /> },
+    { id: 'password', label: 'Password', icon: <Lock size={16} /> },
+    { id: 'notifications', label: 'Notifications', icon: <Bell size={16} /> },
+    ...(isTenant ? [{ id: 'family' as Tab, label: 'Family Members', icon: <Users size={16} /> }] : []),
+  ]
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto animate-in fade-in duration-300">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-text flex items-center gap-2">
-          Profile & Settings <User className="h-5 w-5 text-primary" />
+    <div style={{ padding: '2rem', maxWidth: '900px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text-primary, #f8fafc)', margin: 0 }}>
+          Settings
         </h1>
-        <p className="text-sm text-muted mt-0.5">
-          {isOwnerAdmin 
-            ? 'Manage your owner profile, login credentials, and contact details.' 
-            : 'Manage your personal credentials, profile photo, emergency contact, and family members.'}
+        <p style={{ color: 'var(--color-text-muted, #94a3b8)', marginTop: '0.25rem', fontSize: '0.9rem' }}>
+          Manage your account preferences
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {/* ─── PERSONAL INFORMATION CARD ─────────────────────────────────────── */}
-        <GlassCard>
-          <GlassCardHeader>
-            <GlassCardTitle className="text-base flex items-center gap-2">
-              <User className="h-4 w-4 text-primary" /> Personal Information
-            </GlassCardTitle>
-            <GlassCardDescription>
-              {isOwnerAdmin ? 'Your essential owner profile details' : 'Your essential tenant profile information'}
-            </GlassCardDescription>
-          </GlassCardHeader>
-          <GlassCardContent>
-            <form onSubmit={handleSaveProfile} className="flex flex-col gap-5">
-              {/* Profile Photo Uploader */}
-              <div className="flex items-center gap-5 py-2 border-b border-border/40 pb-4">
-                <div className="relative h-20 w-20 rounded-full bg-primary/20 border-2 border-primary/40 overflow-hidden flex items-center justify-center font-bold text-primary text-xl shrink-0">
-                  {profilePic ? (
-                    <img src={profilePic} alt="Profile" className="h-full w-full object-cover" />
-                  ) : (
-                    <span>{name.slice(0, 2).toUpperCase()}</span>
-                  )}
-                  <label className="absolute inset-0 bg-black/40 text-white flex items-center justify-center opacity-0 hover:opacity-100 transition cursor-pointer">
-                    <Camera className="h-5 w-5" />
-                    <input type="file" accept="image/*" className="hidden" onChange={handleProfilePicChange} />
-                  </label>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-bold text-text">Profile Picture</h4>
-                  <p className="text-xs text-muted mt-0.5">Click photo to upload new avatar</p>
-                </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+        {/* ── Sidebar ───────────────────────────────────────────────────── */}
+        <div style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '16px',
+          overflow: 'hidden',
+        }}>
+          {/* Avatar card */}
+          <div style={{
+            padding: '1.5rem',
+            textAlign: 'center',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+          }}>
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: '0.75rem' }}>
+              <div style={{
+                width: 72, height: 72, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1.75rem', fontWeight: 700, color: '#fff',
+                margin: '0 auto',
+              }}>
+                {(user?.name ?? '?')[0].toUpperCase()}
               </div>
+              <button style={{
+                position: 'absolute', bottom: 0, right: 0,
+                width: 24, height: 24, borderRadius: '50%',
+                background: '#6366f1', border: '2px solid #0f172a',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: '#fff',
+              }}>
+                <Camera size={12} />
+              </button>
+            </div>
+            <div style={{ fontWeight: 600, color: 'var(--color-text-primary, #f8fafc)', fontSize: '0.9rem' }}>
+              {user?.name ?? 'User'}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted, #94a3b8)', marginTop: '0.2rem' }}>
+              {user?.email}
+            </div>
+            <span style={{
+              display: 'inline-block', marginTop: '0.5rem',
+              padding: '0.15rem 0.6rem', borderRadius: '999px',
+              fontSize: '0.7rem', fontWeight: 600,
+              background: `${roleBadge.color}22`,
+              color: roleBadge.color, border: `1px solid ${roleBadge.color}55`,
+            }}>
+              {roleBadge.label}
+            </span>
+          </div>
 
-              {/* Input Fields */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Input label={isOwnerAdmin ? "Username / Full Name" : "Full Name"} value={name} onChange={(e) => setName(e.target.value)} required />
-                <Input label="Email Address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                <Input label="Phone Number" value={phone} onChange={(e) => setPhone(e.target.value)} required />
-                {!isOwnerAdmin && (
-                  <Input label="Emergency Contact" value={emergencyContact} onChange={(e) => setEmergencyContact(e.target.value)} required />
+          {/* Nav items */}
+          <nav style={{ padding: '0.5rem' }}>
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem',
+                  padding: '0.65rem 0.85rem', borderRadius: '10px', border: 'none',
+                  background: activeTab === tab.id ? 'rgba(99,102,241,0.15)' : 'transparent',
+                  color: activeTab === tab.id ? '#818cf8' : 'var(--color-text-muted, #94a3b8)',
+                  cursor: 'pointer', fontSize: '0.85rem', fontWeight: activeTab === tab.id ? 600 : 400,
+                  transition: 'all 0.15s', textAlign: 'left', marginBottom: '0.1rem',
+                }}
+              >
+                {tab.icon}
+                {tab.label}
+                {activeTab === tab.id && (
+                  <ChevronRight size={14} style={{ marginLeft: 'auto' }} />
                 )}
+              </button>
+            ))}
+          </nav>
+
+          {/* Admin-only section */}
+          {isAdmin && (
+            <div style={{
+              padding: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)',
+              margin: '0.5rem',
+            }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.5rem 0.75rem', borderRadius: '8px',
+                background: 'rgba(239,68,68,0.08)', color: '#f87171', fontSize: '0.8rem',
+              }}>
+                <Shield size={14} />
+                <span>Admin Privileges</span>
               </div>
+            </div>
+          )}
+        </div>
 
-              {!isOwnerAdmin && (
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-text2 uppercase tracking-wider">Address</label>
-                  <textarea
-                    rows={2}
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-muted outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
-              )}
+        {/* ── Content ───────────────────────────────────────────────────── */}
+        <div style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '16px',
+          padding: '1.75rem',
+        }}>
 
-              <div className="flex justify-end pt-2">
-                <Button type="submit" variant="primary" className="font-bold">
-                  Save Profile Settings
-                </Button>
-              </div>
-            </form>
-          </GlassCardContent>
-        </GlassCard>
+          {/* ── PROFILE TAB ──────────────────────────────────────────── */}
+          {activeTab === 'profile' && (
+            <form onSubmit={handleSaveProfile}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary, #f8fafc)', marginTop: 0 }}>
+                Personal Information
+              </h2>
+              <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.85rem', marginBottom: '1.5rem', marginTop: '0.25rem' }}>
+                Update your name and contact details.
+              </p>
 
-        {/* ─── PASSWORD UPDATE CARD (For Owner/Admin) ────────────────────────── */}
-        {isOwnerAdmin && (
-          <GlassCard>
-            <GlassCardHeader>
-              <GlassCardTitle className="text-base flex items-center gap-2">
-                <Lock className="h-4 w-4 text-primary" /> Update Password
-              </GlassCardTitle>
-              <GlassCardDescription>Change your login password securely</GlassCardDescription>
-            </GlassCardHeader>
-            <GlassCardContent>
-              <form onSubmit={handleUpdatePassword} className="flex flex-col gap-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  <Input 
-                    label="Current Password" 
-                    type="password" 
-                    value={currentPassword} 
-                    onChange={(e) => setCurrentPassword(e.target.value)} 
-                    required 
-                  />
-                  <Input 
-                    label="New Password" 
-                    type="password" 
-                    value={newPassword} 
-                    onChange={(e) => setNewPassword(e.target.value)} 
-                    required 
-                  />
-                  <Input 
-                    label="Confirm New Password" 
-                    type="password" 
-                    value={confirmPassword} 
-                    onChange={(e) => setConfirmPassword(e.target.value)} 
-                    required 
-                  />
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <Button type="submit" variant="primary" className="font-bold">
-                    Change Password
-                  </Button>
-                </div>
-              </form>
-            </GlassCardContent>
-          </GlassCard>
-        )}
-
-        {/* ─── OPTIONAL FAMILY MEMBERS SECTION (Tenant only) ─────────────────── */}
-        {!isOwnerAdmin && (
-          <GlassCard>
-            <GlassCardHeader>
-              <div className="flex items-center justify-between">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                 <div>
-                  <GlassCardTitle className="text-base flex items-center gap-2">
-                    <Users className="h-4 w-4 text-emerald-400" /> Family Members (Optional)
-                  </GlassCardTitle>
-                  <GlassCardDescription>Add family members residing with you in your rented property</GlassCardDescription>
+                  <label style={labelStyle}>Full Name</label>
+                  <input
+                    style={inputStyle}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your full name"
+                  />
                 </div>
-
-                <Button variant="primary" size="sm" onClick={() => handleOpenFamilyModal()} className="font-bold">
-                  <Plus className="h-4 w-4" /> Add Family Member
-                </Button>
+                <div>
+                  <label style={labelStyle}>Email Address</label>
+                  <input
+                    style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
+                    value={user?.email ?? ''}
+                    disabled
+                  />
+                </div>
               </div>
-            </GlassCardHeader>
-            <GlassCardContent>
-              {myFamilyMembers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center gap-2 border border-dashed border-border/60 rounded-xl bg-surface2/30">
-                  <Users className="h-8 w-8 text-muted/40" />
-                  <p className="text-xs text-muted">No family members added yet.</p>
-                  <Button variant="ghost" size="sm" onClick={() => handleOpenFamilyModal()} className="text-xs text-primary">
-                    + Add First Member
-                  </Button>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div>
+                  <label style={labelStyle}>Phone Number</label>
+                  <input
+                    style={inputStyle}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Role</label>
+                  <input
+                    style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
+                    value={roleBadge.label}
+                    disabled
+                  />
+                </div>
+              </div>
+
+              <button type="submit" disabled={saving} style={primaryBtnStyle}>
+                <Save size={15} />
+                {saving ? 'Saving…' : 'Save Changes'}
+              </button>
+            </form>
+          )}
+
+          {/* ── PASSWORD TAB ─────────────────────────────────────────── */}
+          {activeTab === 'password' && (
+            <form onSubmit={handleChangePassword}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary, #f8fafc)', marginTop: 0 }}>
+                Change Password
+              </h2>
+              <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.85rem', marginBottom: '1.5rem', marginTop: '0.25rem' }}>
+                After changing your password you will be signed out.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '420px', marginBottom: '1.5rem' }}>
+                <div>
+                  <label style={labelStyle}>Current Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      style={inputStyle}
+                      type={showCurrent ? 'text' : 'password'}
+                      value={currentPwd}
+                      onChange={(e) => setCurrentPwd(e.target.value)}
+                      placeholder="Enter current password"
+                    />
+                    <button type="button" onClick={() => setShowCurrent(!showCurrent)} style={eyeBtnStyle}>
+                      {showCurrent ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>New Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      style={inputStyle}
+                      type={showNew ? 'text' : 'password'}
+                      value={newPwd}
+                      onChange={(e) => setNewPwd(e.target.value)}
+                      placeholder="At least 8 characters"
+                    />
+                    <button type="button" onClick={() => setShowNew(!showNew)} style={eyeBtnStyle}>
+                      {showNew ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>Confirm New Password</label>
+                  <input
+                    style={{
+                      ...inputStyle,
+                      borderColor: confirmPwd && confirmPwd !== newPwd ? '#f87171' : undefined,
+                    }}
+                    type="password"
+                    value={confirmPwd}
+                    onChange={(e) => setConfirmPwd(e.target.value)}
+                    placeholder="Repeat new password"
+                  />
+                  {confirmPwd && confirmPwd !== newPwd && (
+                    <p style={{ color: '#f87171', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                      Passwords do not match
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <button type="submit" disabled={savingPwd} style={primaryBtnStyle}>
+                <Lock size={15} />
+                {savingPwd ? 'Changing…' : 'Change Password'}
+              </button>
+            </form>
+          )}
+
+          {/* ── NOTIFICATIONS TAB ────────────────────────────────────── */}
+          {activeTab === 'notifications' && (
+            <div>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary, #f8fafc)', marginTop: 0 }}>
+                Notification Preferences
+              </h2>
+              <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.85rem', marginBottom: '1.5rem', marginTop: '0.25rem' }}>
+                Choose how you want to receive alerts.
+              </p>
+
+              {[
+                { label: 'Email Notifications', desc: 'Receive updates via email', value: emailNotifs, set: setEmailNotifs },
+                { label: 'SMS Notifications', desc: 'Get text messages for important alerts', value: smsNotifs, set: setSmsNotifs },
+                { label: 'In-App Notifications', desc: 'See alerts inside PropertyPro', value: appNotifs, set: setAppNotifs },
+              ].map((item) => (
+                <div key={item.label} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '1rem', borderRadius: '12px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  marginBottom: '0.75rem',
+                }}>
+                  <div>
+                    <div style={{ fontWeight: 600, color: 'var(--color-text-primary, #f8fafc)', fontSize: '0.9rem' }}>
+                      {item.label}
+                    </div>
+                    <div style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.8rem' }}>
+                      {item.desc}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => item.set(!item.value)}
+                    style={{
+                      width: 44, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer',
+                      background: item.value ? '#6366f1' : 'rgba(255,255,255,0.1)',
+                      position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                    }}
+                  >
+                    <span style={{
+                      position: 'absolute', top: 3, left: item.value ? 23 : 3,
+                      width: 18, height: 18, borderRadius: '50%', background: '#fff',
+                      transition: 'left 0.2s',
+                    }} />
+                  </button>
+                </div>
+              ))}
+
+              <div style={{ marginTop: '1.5rem' }}>
+                <button
+                  onClick={() => toast.success('Notification preferences saved!')}
+                  style={primaryBtnStyle}
+                >
+                  <Save size={15} />
+                  Save Preferences
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── FAMILY TAB (tenants only) ─────────────────────────── */}
+          {activeTab === 'family' && (
+            <div>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary, #f8fafc)', marginTop: 0 }}>
+                Family Members
+              </h2>
+              <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.85rem', marginBottom: '1.5rem', marginTop: '0.25rem' }}>
+                Add or remove family members living with you.
+              </p>
+
+              {/* Add member form */}
+              <div style={{
+                padding: '1rem', borderRadius: '12px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                marginBottom: '1.25rem',
+              }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-primary, #f8fafc)', marginBottom: '0.75rem' }}>
+                  Add New Member
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px 1fr', gap: '0.75rem', alignItems: 'end' }}>
+                  <div>
+                    <label style={labelStyle}>Name</label>
+                    <input style={inputStyle} value={famName} onChange={(e) => setFamName(e.target.value)} placeholder="Full name" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Relationship</label>
+                    <select
+                      style={{ ...inputStyle, cursor: 'pointer' }}
+                      value={famRel}
+                      onChange={(e) => setFamRel(e.target.value)}
+                    >
+                      {['Spouse', 'Child', 'Parent', 'Sibling', 'Other'].map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Age</label>
+                    <input style={inputStyle} type="number" min={0} max={120} value={famAge} onChange={(e) => setFamAge(Number(e.target.value))} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Phone</label>
+                    <input style={inputStyle} value={famPhone} onChange={(e) => setFamPhone(e.target.value)} placeholder="Optional" />
+                  </div>
+                </div>
+                <button
+                  onClick={handleAddMember}
+                  disabled={addingMember || !famName.trim()}
+                  style={{ ...primaryBtnStyle, marginTop: '0.75rem', padding: '0.5rem 1rem', fontSize: '0.82rem' }}
+                >
+                  <Plus size={14} />
+                  {addingMember ? 'Adding…' : 'Add Member'}
+                </button>
+              </div>
+
+              {/* Members list */}
+              {myFamily.length === 0 ? (
+                <div style={{
+                  textAlign: 'center', padding: '2rem',
+                  color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.9rem',
+                }}>
+                  <Users size={32} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
+                  <p style={{ margin: 0 }}>No family members added yet.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {myFamilyMembers.map((member) => (
-                    <div
-                      key={member.id}
-                      className="flex items-center justify-between p-4 rounded-xl border border-border/40 bg-surface2/30 hover:border-primary/30 transition group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs uppercase">
-                          {member.relationship.slice(0, 2)}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  {myFamily.map((m) => (
+                    <div key={m.id} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '0.75rem 1rem', borderRadius: '10px',
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: '50%',
+                          background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontWeight: 700, color: '#fff', fontSize: '0.9rem',
+                        }}>
+                          {m.name[0].toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-text">{member.name}</p>
-                          <p className="text-xs text-muted">
-                            {member.relationship} · {member.age} yrs · {member.phone}
-                          </p>
+                          <div style={{ fontWeight: 600, color: 'var(--color-text-primary, #f8fafc)', fontSize: '0.88rem' }}>
+                            {m.name}
+                          </div>
+                          <div style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.78rem' }}>
+                            {m.relationship} · Age {m.age}
+                          </div>
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenFamilyModal(member.id)}
-                          className="p-1.5 rounded-lg text-muted hover:text-text hover:bg-surface2"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteMember(member.id, member.name)}
-                          className="p-1.5 rounded-lg text-muted hover:text-red-400 hover:bg-red-500/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => removeMember(m.id)}
+                        style={{
+                          background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+                          borderRadius: '8px', padding: '0.35rem 0.5rem', cursor: 'pointer', color: '#f87171',
+                          display: 'flex', alignItems: 'center',
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   ))}
                 </div>
               )}
-            </GlassCardContent>
-          </GlassCard>
-        )}
-      </div>
-
-      {/* ─── ADD / EDIT FAMILY MEMBER MODAL ──────────────────────────────── */}
-      <Modal open={familyModalOpen} onOpenChange={setFamilyModalOpen}>
-        <div className="p-6 flex flex-col gap-4 max-w-md w-full">
-          <div>
-            <h3 className="text-lg font-bold text-text">
-              {editingMemberId ? 'Edit Family Member' : 'Add Family Member'}
-            </h3>
-            <p className="text-xs text-muted mt-0.5">Fill in details for your family member.</p>
-          </div>
-
-          <form onSubmit={handleSaveFamilyMember} className="flex flex-col gap-4 mt-2">
-            <Input
-              label="Member Name"
-              value={famName}
-              onChange={(e) => setFamName(e.target.value)}
-              placeholder="e.g. Sarah Tenant"
-              required
-            />
-
-            <Select
-              label="Relationship"
-              options={[
-                { value: 'Spouse', label: 'Spouse' },
-                { value: 'Child', label: 'Child' },
-                { value: 'Parent', label: 'Parent' },
-                { value: 'Sibling', label: 'Sibling' },
-                { value: 'Other', label: 'Other' },
-              ]}
-              value={famRel}
-              onChange={(e) => setFamRel(e.target.value as FamilyRelationship)}
-            />
-
-            <Input
-              label="Age"
-              type="number"
-              value={famAge}
-              onChange={(e) => setFamAge(Number(e.target.value))}
-              required
-            />
-
-            <Input
-              label="Phone Number"
-              value={famPhone}
-              onChange={(e) => setFamPhone(e.target.value)}
-              placeholder="e.g. +91 98765 12345 (or N/A)"
-            />
-
-            <div className="flex justify-end gap-3 mt-4">
-              <Button type="button" variant="ghost" onClick={() => setFamilyModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary">
-                {editingMemberId ? 'Update Member' : 'Add Member'}
-              </Button>
             </div>
-          </form>
+          )}
         </div>
-      </Modal>
+      </div>
     </div>
   )
+}
+
+// ── Shared micro-styles ────────────────────────────────────────────────────
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '0.78rem',
+  fontWeight: 600,
+  color: 'var(--color-text-muted, #94a3b8)',
+  marginBottom: '0.35rem',
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '0.6rem 0.85rem',
+  borderRadius: '10px',
+  border: '1px solid rgba(255,255,255,0.1)',
+  background: 'rgba(255,255,255,0.05)',
+  color: 'var(--color-text-primary, #f8fafc)',
+  fontSize: '0.88rem',
+  outline: 'none',
+  boxSizing: 'border-box',
+}
+
+const primaryBtnStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.5rem',
+  padding: '0.65rem 1.4rem',
+  borderRadius: '10px',
+  border: 'none',
+  background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+  color: '#fff',
+  fontWeight: 600,
+  fontSize: '0.88rem',
+  cursor: 'pointer',
+}
+
+const eyeBtnStyle: React.CSSProperties = {
+  position: 'absolute',
+  right: '0.75rem',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  background: 'none',
+  border: 'none',
+  color: 'var(--color-text-muted, #94a3b8)',
+  cursor: 'pointer',
+  padding: 0,
 }

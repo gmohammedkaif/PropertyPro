@@ -13,7 +13,10 @@ import {
   logoutSchema,
   registerSchema,
   resetPasswordSchema,
+  updateProfileSchema,
+  changePasswordSchema,
 } from './auth.schemas.js'
+import { logAudit } from '../admin/audit.service.js'
 
 const authService = new AuthService()
 
@@ -95,8 +98,77 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
   res.status(204).send()
 }
 
+import { User } from './models/user.model.js'
+import { NotFoundError } from '../../core/errors.js'
+
 export async function me(req: Request, res: Response): Promise<void> {
   if (!req.user) throw new Error('authenticate() must run before me()')
   const user = await authService.me(req.user.id)
   res.json({ data: user, meta: {}, error: null })
+}
+
+export async function updateMe(req: Request, res: Response): Promise<void> {
+  if (!req.user) throw new Error('authenticate() must run before updateMe()')
+  // Strip any protected fields from the body — only allow name and phone
+  const input = updateProfileSchema.parse(req.body)
+  const user = await authService.updateProfile(req.user.id, input)
+
+  await logAudit({
+    actorUserId: req.user.id,
+    actorRole: req.user.roles?.[0] || 'user',
+    action: 'PROFILE_UPDATE',
+    entityType: 'User',
+    entityId: req.user.id,
+    metadata: { fields: Object.keys(input) },
+  })
+
+  res.json({ data: user, meta: {}, error: null })
+}
+
+export async function changePassword(req: Request, res: Response): Promise<void> {
+  if (!req.user) throw new Error('authenticate() must run before changePassword()')
+  const { currentPassword, newPassword } = changePasswordSchema.parse(req.body)
+  await authService.changePassword(req.user.id, currentPassword, newPassword)
+
+  await logAudit({
+    actorUserId: req.user.id,
+    actorRole: req.user.roles?.[0] || 'user',
+    action: 'PASSWORD_CHANGE',
+    entityType: 'User',
+    entityId: req.user.id,
+  })
+
+  clearRefreshCookie(res)
+  res.json({
+    data: null,
+    meta: { message: 'Password changed successfully. Please sign in again.' },
+    error: null,
+  })
+}
+
+export async function getFamilyMembers(req: Request, res: Response): Promise<void> {
+  if (!req.user) throw new Error('authenticate() must run before getFamilyMembers()')
+  const user = await User.findById(req.user.id).lean()
+  if (!user) throw new NotFoundError('User not found')
+  const members = ((user as any).familyMembers || []).map((m: any) => ({
+    ...m,
+    tenantEmail: user.email,
+  }))
+  res.json({ data: members, meta: {}, error: null })
+}
+
+export async function updateFamilyMembers(req: Request, res: Response): Promise<void> {
+  if (!req.user) throw new Error('authenticate() must run before updateFamilyMembers()')
+  const user = await User.findById(req.user.id)
+  if (!user) throw new NotFoundError('User not found')
+  
+  const members = Array.isArray(req.body.familyMembers) ? req.body.familyMembers : req.body
+  ;(user as any).familyMembers = members
+  await user.save()
+
+  const updatedMembers = ((user as any).familyMembers || []).map((m: any) => ({
+    ...m,
+    tenantEmail: user.email,
+  }))
+  res.json({ data: updatedMembers, meta: {}, error: null })
 }

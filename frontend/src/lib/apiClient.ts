@@ -25,7 +25,7 @@ export class ApiError extends Error {
 }
 
 /** Prefer VITE_API_URL when pointed at a deployed API; otherwise use the same-origin dev proxy. */
-const baseURL = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || API_PREFIX
+export const baseURL = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || API_PREFIX
 
 export const apiClient = axios.create({
   baseURL,

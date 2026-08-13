@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Search, Filter, MapPin, Key, Bath, Square, Heart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/Button'
 import { GlassCard, GlassCardContent } from '@/components/ui/GlassCard'
 import { Input } from '@/components/ui/Input'
 import { Select, type SelectOption } from '@/components/ui/Select'
-import { useListingsStore } from '@/stores/listingsStore'
 import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -39,9 +38,12 @@ const SORT_OPTIONS: SelectOption[] = [
 
 export function BrowsePage() {
   const navigate = useNavigate()
-  const { items: listings } = useListingsStore()
-  const { items: properties } = useLocalPropertiesStore()
+  const { items: properties, fetch: fetchProperties } = useLocalPropertiesStore()
   const user = useAuthStore((state) => state.user)
+
+  useEffect(() => {
+    fetchProperties()
+  }, [fetchProperties])
 
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
@@ -50,44 +52,25 @@ export function BrowsePage() {
   const [sortBy, setSortBy] = useState('newest')
   const [showFilters, setShowFilters] = useState(false)
 
-  // Combine listings and available local properties
+  // Get active properties for marketplace from MongoDB
   const allListings = useMemo(() => {
-    const listingItems = listings
-      .filter(l => l.type === 'rent' && l.status === 'available')
-      .map(l => ({
-        id: l.id,
-        name: l.propertyName,
-        price: l.price,
-        bedrooms: l.bedrooms,
-        bathrooms: l.bathrooms,
-        areaSqFt: l.areaSqFt,
-        description: l.description,
-        type: 'listing' as const,
-        listingType: l.type,
-        status: l.status,
-        city: 'Hyderabad', // Would come from property reference
-      }))
-
-    // Add local properties that have available units and aren't already listed
-    const localItems = properties
-      .filter(p => p.occupiedUnits < p.totalUnits)
-      .filter(p => !listings.some(l => l.propertyName === p.name && l.status === 'available'))
+    return properties
+      .filter(p => p.listingStatus === 'for-rent' || p.listingStatus === 'for-sale')
       .map(p => ({
         id: p.id,
         name: p.name,
-        price: 0, // Contact for price
-        bedrooms: p.type === 'apartment' ? 2 : p.type === 'house' ? 3 : undefined,
-        bathrooms: p.type === 'apartment' ? 1 : p.type === 'house' ? 2 : undefined,
-        areaSqFt: undefined,
+        price: p.listingStatus === 'for-sale' ? (p.salePrice || 0) : (p.monthlyRent || 0),
+        bedrooms: p.bedrooms || (p.type === 'house' ? 3 : p.type === 'apartment' ? 2 : 1),
+        bathrooms: p.bathrooms || (p.type === 'house' ? 3 : 2),
+        areaSqFt: p.areaSqFt || (p.type === 'house' ? 2200 : 1200),
         description: p.description,
         type: 'local' as const,
-        listingType: 'rent',
-        status: 'available',
+        listingType: p.listingStatus === 'for-sale' ? ('sale' as const) : ('rent' as const),
+        status: 'available' as const,
         city: p.address.city,
+        imageUrl: p.imageUrl,
       }))
-
-    return [...listingItems, ...localItems]
-  }, [listings, properties])
+  }, [properties])
 
   // Filter listings
   const filteredListings = useMemo(() => {
@@ -306,6 +289,8 @@ interface ListingCardProps {
     description?: string
     type: 'listing' | 'local'
     city: string
+    imageUrl?: string
+    listingType?: 'rent' | 'sale'
   }
   onClick: (id: string) => void
 }
@@ -316,19 +301,27 @@ function ListingCard({ item, onClick }: ListingCardProps) {
       className="group flex flex-col h-full overflow-hidden border-r border-b border-border/50 last:border-r-0 sm:last:border-r border-r transition-all duration-300 hover:bg-surface/50 cursor-pointer"
       onClick={() => onClick(item.id)}
     >
-      {/* Image Placeholder */}
+      {/* Image Header */}
       <div className="relative h-48 w-full bg-surface2 overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center text-muted/50">
-            <div className="text-5xl mb-1">🏠</div>
-            <p className="text-sm font-medium">{item.name}</p>
+        {item.imageUrl ? (
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center text-muted/50">
+              <div className="text-5xl mb-1">🏠</div>
+              <p className="text-sm font-medium">{item.name}</p>
+            </div>
           </div>
-        </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent group-hover:from-black/60 transition-colors" />
         
         <div className="absolute left-3 top-3 flex gap-1.5">
           <Badge intent="success" size="sm">Available</Badge>
-          <Badge intent="neutral" size="sm">For Rent</Badge>
+          <Badge intent="neutral" size="sm">{item.listingType === 'sale' ? 'For Sale' : 'For Rent'}</Badge>
         </div>
         
         <div className="absolute right-3 top-3">
@@ -343,8 +336,8 @@ function ListingCard({ item, onClick }: ListingCardProps) {
 
         <div className="absolute bottom-3 left-3 right-3 text-white">
           <p className="text-xl font-bold font-display">
-            {item.price > 0 ? formatRupee(item.price) : 'Contact for Price'} 
-            <span className="text-base font-normal opacity-80">/month</span>
+            {item.price > 0 ? formatRupee(item.price) : 'Not specified'} 
+            {item.price > 0 && item.listingType !== 'sale' && <span className="text-base font-normal opacity-80">/month</span>}
           </p>
         </div>
       </div>

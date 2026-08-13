@@ -2,6 +2,19 @@ import { ROLE_LIST, type Role, type UserStatus } from '../../../shared/index.js'
 import mongoose from 'mongoose'
 import { Schema, type InferSchemaType, type Model } from 'mongoose'
 
+const familyMemberSchema = new Schema(
+  {
+    id: { type: String, required: true },
+    name: { type: String, required: true, trim: true },
+    relationship: { type: String, required: true },
+    age: { type: Number, default: 0 },
+    phone: { type: String, default: '' },
+    createdAt: { type: String, default: () => new Date().toISOString() },
+    updatedAt: { type: String, default: () => new Date().toISOString() },
+  },
+  { _id: false },
+)
+
 const userSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
@@ -11,6 +24,8 @@ const userSchema = new Schema(
       firstName: { type: String, trim: true, default: '' },
       lastName: { type: String, trim: true, default: '' },
     },
+    phone: { type: String, trim: true, default: '' },
+    familyMembers: { type: [familyMemberSchema], default: [] },
     status: {
       type: String,
       enum: ['pending_verification', 'pending_approval', 'active', 'suspended', 'rejected'],

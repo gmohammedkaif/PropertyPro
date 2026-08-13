@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { apiClient, type ApiEnvelope } from '@/lib/apiClient'
+import { useAuthStore } from './authStore'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -22,7 +23,6 @@ export interface TenancyRecord {
   /** Duration in months (e.g. 6, 12, 18, 24) */
   leaseDurationMonths?: number
   monthlyRent: number
-  advanceAmount?: number
   securityDeposit: number
   leaseNotes?: string
   /** Email of the owner who approved the lease */
@@ -34,125 +34,84 @@ export interface TenancyRecord {
   updatedAt: string
 }
 
-// ─── Seed data ────────────────────────────────────────────────────────────────
-
-const SEED: TenancyRecord[] = [
-  {
-    id: 'tnc_001',
-    tenantName: 'fttt',
-    tenantEmail: 'ft@gmail.com',
-    tenantPhone: '9978543215',
-    propertyId: 'prop_001',
-    propertyName: 'Zaid Manzil',
-    unitNumber: '43/18',
-    unitsOccupied: 1,
-    leaseStart: '2026-05-01',
-    leaseEnd: '2027-04-30',
-    leaseDurationMonths: 12,
-    monthlyRent: 8000,
-    advanceAmount: 16000,
-    securityDeposit: 70000,
-    status: 'active',
-    createdAt: '2026-05-01T10:00:00.000Z',
-    updatedAt: '2026-05-01T10:00:00.000Z',
-  },
-  {
-    id: 'tnc_002',
-    tenantName: 'mohan',
-    tenantEmail: 'mohan@gmail.com',
-    tenantPhone: '9898989898',
-    propertyId: 'prop_001',
-    propertyName: 'Zaid Manzil',
-    unitNumber: '101',
-    unitsOccupied: 1,
-    leaseStart: '2026-06-01',
-    leaseEnd: '2027-05-31',
-    leaseDurationMonths: 12,
-    monthlyRent: 8000,
-    advanceAmount: 16000,
-    securityDeposit: 200000,
-    status: 'active',
-    createdAt: '2026-06-01T10:00:00.000Z',
-    updatedAt: '2026-06-01T10:00:00.000Z',
-  },
-  {
-    id: 'tnc_003',
-    tenantName: 'ram',
-    tenantEmail: 'ram@gmail.com',
-    tenantPhone: '9008989898',
-    propertyId: 'prop_002',
-    propertyName: 'Sai Enclave',
-    unitNumber: '43/65',
-    unitsOccupied: 1,
-    leaseStart: '2026-01-01',
-    leaseEnd: '2026-12-31',
-    leaseDurationMonths: 12,
-    monthlyRent: 9000,
-    advanceAmount: 18000,
-    securityDeposit: 50000,
-    status: 'active',
-    createdAt: '2026-01-01T10:00:00.000Z',
-    updatedAt: '2026-01-01T10:00:00.000Z',
-  },
-  {
-    id: 'tnc_004',
-    tenantName: 'mohammed',
-    tenantEmail: 'mohammed@gmail.com',
-    tenantPhone: '8765456789',
-    propertyId: 'prop_003',
-    propertyName: 'Green Valley Homes',
-    unitNumber: undefined,
-    unitsOccupied: 1,
-    leaseStart: '2026-05-01',
-    leaseEnd: '2027-04-30',
-    leaseDurationMonths: 12,
-    monthlyRent: 5000,
-    advanceAmount: 10000,
-    securityDeposit: 100000,
-    status: 'active',
-    createdAt: '2026-05-01T10:00:00.000Z',
-    updatedAt: '2026-05-01T10:00:00.000Z',
-  },
-]
+// Seed data not needed for business data store of truth, but initialized empty
+const SEED: TenancyRecord[] = []
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 interface TenanciesState {
   items: TenancyRecord[]
-  add: (tenancy: Omit<TenancyRecord, 'id' | 'createdAt' | 'updatedAt'>) => TenancyRecord
-  update: (id: string, changes: Partial<Omit<TenancyRecord, 'id' | 'createdAt'>>) => void
-  remove: (id: string) => void
+  isLoading: boolean
+  error: Error | null
+  fetch: () => Promise<void>
+  add: (tenancy: any) => Promise<TenancyRecord>
+  update: (id: string, changes: Partial<any>) => Promise<void>
+  remove: (id: string) => Promise<void>
 }
 
 export const useTenanciesStore = create<TenanciesState>()(
-  persist(
-    (set) => ({
-      items: SEED,
+  (set) => ({
+    items: [],
+    isLoading: false,
+    error: null,
 
-      add: (tenancy) => {
-        const now = new Date().toISOString()
-        const record: TenancyRecord = {
-          ...tenancy,
-          id: crypto.randomUUID(),
-          createdAt: now,
-          updatedAt: now,
+    fetch: async () => {
+      set({ isLoading: true })
+      try {
+        const user = useAuthStore.getState().user
+        if (!user) return
+
+        const isTenant = user.roles.includes('tenant') && !user.roles.some((r) => ['owner', 'agent', 'admin'].includes(r))
+        
+        if (isTenant) {
+          try {
+            const { data } = await apiClient.get<ApiEnvelope<TenancyRecord>>('/tenancies/my-lease')
+            if (data.data) {
+              set({ items: [data.data], error: null })
+            } else {
+              set({ items: [], error: null })
+            }
+          } catch (err: any) {
+            if (err.status === 404) {
+              set({ items: [], error: null })
+            } else {
+              throw err
+            }
+          }
+        } else {
+          const { data } = await apiClient.get<ApiEnvelope<TenancyRecord[]>>('/tenancies')
+          if (data.data) {
+            set({ items: data.data, error: null })
+          }
         }
-        set((state) => ({ items: [record, ...state.items] }))
-        return record
-      },
+      } catch (err: any) {
+        set({ error: err })
+      } finally {
+        set({ isLoading: false })
+      }
+    },
 
-      update: (id, changes) => {
-        set((state) => ({
-          items: state.items.map((item) =>
-            item.id === id ? { ...item, ...changes, updatedAt: new Date().toISOString() } : item,
-          ),
-        }))
-      },
+    add: async (tenancy) => {
+      const { data } = await apiClient.post<ApiEnvelope<TenancyRecord>>('/tenancies', tenancy)
+      if (data.error || !data.data) throw new Error(data.error?.message || 'Failed to create tenancy')
+      const record = data.data
+      set((state) => ({ items: [record, ...state.items] }))
+      return record
+    },
 
-      remove: (id) => {
-        set((state) => ({ items: state.items.filter((item) => item.id !== id) }))
-      },
-    }),
-    { name: 'propertypro-tenancies' },
-  ),
+    update: async (id, changes) => {
+      const { data } = await apiClient.patch<ApiEnvelope<TenancyRecord>>(`/tenancies/${id}`, changes)
+      if (data.error || !data.data) throw new Error(data.error?.message || 'Failed to update tenancy')
+      const record = data.data
+      set((state) => ({
+        items: state.items.map((item) => (item.id === id ? record : item)),
+      }))
+    },
+
+    remove: async (id) => {
+      const { data } = await apiClient.delete<ApiEnvelope<any>>(`/tenancies/${id}`)
+      if (data.error) throw new Error(data.error.message)
+      set((state) => ({ items: state.items.filter((item) => item.id !== id) }))
+    },
+  }),
 )

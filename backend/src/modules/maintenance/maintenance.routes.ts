@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { authenticate } from '../auth/auth.middleware.js'
+import { authenticate, authorize } from '../auth/auth.middleware.js'
 import {
   createMaintenanceTicket,
   listMaintenanceTickets,
@@ -9,7 +9,7 @@ import {
 
 const router = Router()
 
-router.post('/maintenance', authenticate, createMaintenanceTicket)
+router.post('/maintenance', authenticate, authorize('tenant', 'admin'), createMaintenanceTicket)
 router.get('/maintenance', authenticate, listMaintenanceTickets)
 router.patch('/maintenance/:id', authenticate, updateMaintenanceTicket)
 router.delete('/maintenance/:id', authenticate, deleteMaintenanceTicket)

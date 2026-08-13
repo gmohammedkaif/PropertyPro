@@ -19,6 +19,7 @@ import tenancyRoutes from './modules/tenancy/tenancy.routes.js'
 import maintenanceRoutes from './modules/maintenance/maintenance.routes.js'
 import notificationRoutes from './modules/notification/notification.routes.js'
 import paymentRoutes from './modules/payment/payment.routes.js'
+import analyticsRoutes from './modules/analytics/analytics.routes.js'
 
 export function createApp(): express.Express {
   const app = express()
@@ -34,7 +35,13 @@ export function createApp(): express.Express {
       credentials: true,
     }),
   )
-  app.use(express.json({ limit: '1mb' }))
+  app.use((req, res, next) => {
+    if (req.path.endsWith('/properties/upload-image')) {
+      express.json({ limit: '15mb' })(req, res, next)
+    } else {
+      express.json({ limit: '1mb' })(req, res, next)
+    }
+  })
   app.use(cookieParser())
 
   app.use(
@@ -58,6 +65,7 @@ export function createApp(): express.Express {
   app.use(API_PREFIX, maintenanceRoutes)
   app.use(API_PREFIX, notificationRoutes)
   app.use(API_PREFIX, paymentRoutes)
+  app.use(API_PREFIX, analyticsRoutes)
 
   app.use(notFoundHandler)
   app.use(errorHandler)

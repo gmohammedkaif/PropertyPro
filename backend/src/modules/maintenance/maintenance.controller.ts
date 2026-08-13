@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express'
 import { asyncHandler } from '../../core/asyncHandler.js'
-import { NotFoundError } from '../../core/errors.js'
+import { NotFoundError, ForbiddenError } from '../../core/errors.js'
 import { Maintenance } from './maintenance.model.js'
 import { Tenancy } from '../tenancy/tenancy.model.js'
 import { Notification } from '../notification/notification.model.js'
@@ -28,23 +28,27 @@ function formatDoc(doc: any) {
 }
 
 export const createMaintenanceTicket = asyncHandler(async (req: Request, res: Response) => {
-  const tenantEmail = req.body.tenantEmail || req.user?.email?.toLowerCase() || ''
+  const tenantEmail = req.user?.email?.toLowerCase() || ''
   const tenantId = req.user?.id || ''
 
-  // Look up tenancy to find owner
+  // Look up tenancy to find owner, enforcing they can only submit tickets for their active rental property
   const tenancy = await Tenancy.findOne({
     tenantEmail,
     status: { $in: ['active', 'expiring-soon'] },
-  }).lean().catch(() => null)
+  }).lean()
 
-  const ownerEmail = req.body.ownerEmail || (tenancy ? tenancy.ownerEmail : '') || ''
-  const ownerId = req.body.ownerId || (tenancy ? tenancy.ownerId : '') || ''
-  const propertyId = req.body.propertyId || (tenancy ? tenancy.propertyId : '') || ''
+  if (!tenancy) {
+    throw new ForbiddenError('You must have an active lease/tenancy to submit a maintenance ticket')
+  }
+
+  const ownerEmail = tenancy.ownerEmail || ''
+  const ownerId = tenancy.ownerId || ''
+  const propertyId = tenancy.propertyId || ''
 
   const doc = await Maintenance.create({
     title: req.body.title,
     description: req.body.description || '',
-    propertyName: req.body.propertyName || (tenancy ? tenancy.propertyName : 'Rented Property'),
+    propertyName: tenancy.propertyName,
     propertyId,
     category: req.body.category || 'Electrical',
     priority: (req.body.priority || 'medium').toLowerCase(),
@@ -107,6 +111,14 @@ export const updateMaintenanceTicket = asyncHandler(async (req: Request, res: Re
   const existing = await Maintenance.findById(id)
   if (!existing) throw new NotFoundError('Maintenance ticket not found')
 
+  const isOwner = existing.ownerId === req.user?.id || existing.ownerEmail?.toLowerCase() === req.user?.email?.toLowerCase()
+  const isTenant = existing.tenantId === req.user?.id || existing.tenantEmail?.toLowerCase() === req.user?.email?.toLowerCase()
+  const isAdmin = req.user?.roles.includes('admin')
+
+  if (!isOwner && !isTenant && !isAdmin) {
+    throw new ForbiddenError('You do not have permission to modify this maintenance ticket')
+  }
+
   const oldStatus = existing.status
   const updated = await Maintenance.findByIdAndUpdate(id, { $set: req.body }, { new: true, runValidators: true }).lean()
   if (!updated) throw new NotFoundError('Maintenance ticket not found')
@@ -127,7 +139,24 @@ export const updateMaintenanceTicket = asyncHandler(async (req: Request, res: Re
 
 export const deleteMaintenanceTicket = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params
-  const deleted = await Maintenance.findByIdAndDelete(id).lean()
-  if (!deleted) throw new NotFoundError('Maintenance ticket not found')
-  res.json({ data: formatDoc(deleted), meta: {}, error: null })
+  const existing = await Maintenance.findById(id)
+  if (!existing) throw new NotFoundError('Maintenance ticket not found')
+
+  const isOwner = existing.ownerId === req.user?.id || existing.ownerEmail?.toLowerCase() === req.user?.email?.toLowerCase()
+  const isTenant = existing.tenantId === req.user?.id || existing.tenantEmail?.toLowerCase() === req.user?.email?.toLowerCase()
+  const isAdmin = req.user?.roles.includes('admin')
+
+  if (!isOwner && !isTenant && !isAdmin) {
+    throw new ForbiddenError('You do not have permission to delete this maintenance ticket')
+  }
+
+  if (isAdmin) {
+    const deleted = await Maintenance.findByIdAndDelete(id).lean()
+    res.json({ data: formatDoc(deleted!), meta: {}, error: null })
+  } else {
+    // Tenants and Owners cannot permanently delete tickets; instead transition status to 'closed'
+    existing.status = 'closed'
+    await existing.save()
+    res.json({ data: formatDoc(existing), meta: {}, error: null })
+  }
 })

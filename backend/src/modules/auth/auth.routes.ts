@@ -8,13 +8,18 @@ import {
   login,
   logout,
   me,
+  updateMe,
+  changePassword,
   refresh,
   register,
   resetPassword,
+  getFamilyMembers,
+  updateFamilyMembers,
 } from './auth.controller.js'
 import { authenticate } from './auth.middleware.js'
 
-// API.md §16 — auth tier: 10 requests / 5 minutes (configurable for tests).
+// Auth rate limiter: protects login, register, and password reset endpoints.
+// /auth/refresh is intentionally excluded — it fires automatically on every page load.
 const authLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   limit: env.AUTH_RATE_LIMIT,
@@ -36,12 +41,16 @@ const router = Router()
 
 router.post('/auth/register', authLimiter, asyncHandler(register))
 router.post('/auth/login', authLimiter, asyncHandler(login))
-router.post('/auth/refresh', authLimiter, asyncHandler(refresh))
-router.post('/auth/logout', authLimiter, asyncHandler(logout))
+router.post('/auth/refresh', asyncHandler(refresh))
+router.post('/auth/logout', asyncHandler(logout))
 router.post('/auth/forgot-password', authLimiter, asyncHandler(forgotPassword))
 router.post('/auth/reset-password', authLimiter, asyncHandler(resetPassword))
 
-// Protected route — demonstrates authentication middleware (any active session).
+// Protected routes — any active session
 router.get('/auth/me', authenticate, asyncHandler(me))
+router.patch('/auth/me', authenticate, asyncHandler(updateMe))
+router.post('/auth/change-password', authenticate, asyncHandler(changePassword))
+router.get('/auth/family', authenticate, asyncHandler(getFamilyMembers))
+router.put('/auth/family', authenticate, asyncHandler(updateFamilyMembers))
 
 export default router

@@ -16,6 +16,7 @@ const location = z.object({
 
 export const createPropertySchema = z.object({
   ownerId: z.string().min(1, 'Owner ID is required'),
+  ownerEmail: z.string().email('Invalid owner email').optional(),
   name: z.string().trim().min(1, 'Name is required').max(200),
   type: z.enum(['apartment', 'house', 'commercial', 'mixed']),
   address,
@@ -23,6 +24,22 @@ export const createPropertySchema = z.object({
   description: z.string().trim().max(2000).optional(),
   amenities: z.array(z.string()).max(50).optional(),
   totalUnits: z.coerce.number().int().min(0).max(99999).optional(),
+  listingStatus: z.enum(['for-rent', 'for-sale', 'occupied', 'inactive']).optional(),
+  bedrooms: z.coerce.number().int().min(0).optional(),
+  bathrooms: z.coerce.number().int().min(0).optional(),
+  parking: z.coerce.number().int().min(0).optional(),
+  areaSqFt: z.coerce.number().min(0).optional(),
+  monthlyRent: z.coerce.number().min(0).optional(),
+  securityDeposit: z.coerce.number().min(0).optional(),
+  salePrice: z.coerce.number().min(0).optional(),
+  imageUrl: z
+    .string({ required_error: 'Please upload at least one property image.' })
+    .trim()
+    .url('Property image must be a valid URL')
+    .min(1, 'Please upload at least one property image.')
+    .refine((url) => url.startsWith('https://ik.imagekit.io/'), {
+      message: 'Property image must be uploaded to ImageKit CDN',
+    }),
 })
 export type CreatePropertyInput = z.infer<typeof createPropertySchema>
 
@@ -35,6 +52,16 @@ export const updatePropertySchema = z.object({
   amenities: z.array(z.string()).max(50).optional(),
   totalUnits: z.coerce.number().int().min(0).max(99999).optional(),
   status: z.enum(['active', 'archived']).optional(),
+  listingStatus: z.enum(['for-rent', 'for-sale', 'occupied', 'inactive']).optional(),
+  bedrooms: z.coerce.number().int().min(0).optional(),
+  bathrooms: z.coerce.number().int().min(0).optional(),
+  parking: z.coerce.number().int().min(0).optional(),
+  areaSqFt: z.coerce.number().min(0).optional(),
+  monthlyRent: z.coerce.number().min(0).optional(),
+  securityDeposit: z.coerce.number().min(0).optional(),
+  salePrice: z.coerce.number().min(0).optional(),
+  imageUrl: z.string().trim().max(1000).optional(),
+  ownerEmail: z.string().email('Invalid owner email').optional(),
 })
 export type UpdatePropertyInput = z.infer<typeof updatePropertySchema>
 

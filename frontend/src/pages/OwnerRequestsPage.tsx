@@ -5,6 +5,7 @@ import { EnhancedButton } from '@/components/ui/EnhancedButton'
 import { Spinner } from '@/components/ui/Spinner'
 import { useToast } from '@/hooks/useToast'
 import { useOwnerRequests, useApproveOwner, useRejectOwner, type OwnerRequest } from '@/hooks/useAdmin'
+import { EnhancedInput } from '@/components/ui/EnhancedInput'
 
 export function OwnerRequestsPage() {
   const { data: ownerRequests = [], isLoading } = useOwnerRequests()
@@ -60,16 +61,14 @@ export function OwnerRequestsPage() {
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 glass rounded-xl border border-border/50">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
-          <input
-            type="text"
-            placeholder="Search by name or email…"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-10 pl-9 pr-4 rounded-lg bg-surface2/60 border border-border/40 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-          />
-        </div>
+        <EnhancedInput
+          type="text"
+          placeholder="Search by name or email…"
+          leftIcon={<Search className="h-4 w-4" aria-hidden="true" />}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          containerClassName="w-full sm:w-80"
+        />
 
         <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
           {['all', 'pending_approval', 'active', 'rejected'].map((statusKey) => (

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import {
   DollarSign,
   Plus,
@@ -13,9 +13,11 @@ import {
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { GlassCard, GlassCardContent, GlassCardDescription, GlassCardHeader, GlassCardTitle } from '@/components/ui/GlassCard'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Modal } from '@/components/ui/Modal'
+import { Spinner } from '@/components/ui/Spinner'
 import { StatCard } from '@/components/ui/StatCard'
 import { ActionsMenu } from '@/components/ui/ActionsMenu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
@@ -51,9 +53,13 @@ function getTransactionId(id: string): string {
 export function PaymentsPage() {
   const user = useAuthStore((state) => state.user)
   const toast = useToast()
-  const { items: allPayments, add, update, remove } = usePaymentsStore()
+  const { items: allPayments, add, update, remove, processPayment, fetch: fetchPayments } = usePaymentsStore()
   const { items: properties } = useLocalPropertiesStore()
   const { items: tenancies } = useTenanciesStore()
+
+  useState(() => {
+    fetchPayments()
+  })
 
   const userEmail = user?.email?.toLowerCase() ?? ''
   const userId = user?.id ?? ''
@@ -133,12 +139,16 @@ export function PaymentsPage() {
       message: 'Are you sure you want to remove this payment record?'
     })
     if (confirmed) {
-      remove(id)
-      toast.success('Payment record removed')
+      try {
+        await remove(id)
+        toast.success('Payment record removed')
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to remove payment record')
+      }
     }
   }
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!tenantName.trim() || !propertyName.trim() || !amount || !dueDate) {
       toast.error('All required fields must be filled')
@@ -156,28 +166,31 @@ export function PaymentsPage() {
       propertyName: propertyName.trim(),
       amount: numAmount,
       dueDate,
-      paidDate: paidDate ? paidDate : undefined,
-      status,
       type,
       notes: notes.trim() || undefined,
     }
 
-    if (editingItem) {
-      update(editingItem.id, payload)
-      toast.success('Payment record updated')
-    } else {
-      add(payload)
-      toast.success('Payment record created')
+    try {
+      if (editingItem) {
+        update(editingItem.id, payload)
+        toast.success('Payment record updated')
+      } else {
+        await add(payload)
+        toast.success('Payment record created')
+      }
+      setModalOpen(false)
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save payment record')
     }
-    setModalOpen(false)
   }
 
-  const handleMarkAsPaid = (item: PaymentRecord) => {
-    update(item.id, {
-      status: 'paid',
-      paidDate: new Date().toISOString().slice(0, 10),
-    })
-    toast.success('Marked as paid')
+  const handleMarkAsPaid = async (item: PaymentRecord) => {
+    try {
+      await processPayment(item.id)
+      toast.success('Marked as paid')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to process payment')
+    }
   }
 
   // Filters

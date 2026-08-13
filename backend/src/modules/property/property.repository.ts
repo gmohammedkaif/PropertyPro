@@ -14,5 +14,7 @@ export interface PropertyRepository {
   softDelete(id: string): Promise<PropertyRecord | null>
   restore(id: string): Promise<PropertyRecord | null>
   findAllPublished(filter: PropertyFilter): Promise<PropertyListResult>
+  findAll(filter: PropertyFilter): Promise<PropertyListResult>
   search(query: string, filter: PropertyFilter): Promise<PropertyListResult>
+  listAllProperties(): Promise<PropertyRecord[]>
 }

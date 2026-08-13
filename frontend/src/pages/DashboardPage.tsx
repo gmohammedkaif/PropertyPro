@@ -27,6 +27,7 @@ import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
 import { useRentalRequestsStore } from '@/stores/rentalRequestsStore'
 import { useMaintenanceStore } from '@/stores/maintenanceStore'
 import { useNotificationsStore } from '@/stores/notificationsStore'
+import { useAdminStats } from '@/hooks/useAdmin'
 
 function greeting(): string {
   const hour = new Date().getHours()
@@ -66,6 +67,8 @@ export function DashboardPage() {
   const userEmail = user?.email?.toLowerCase() ?? ''
   const userId = user?.id ?? ''
   const isSuperAdmin = user?.roles.includes('admin') || userEmail === 'admin@propertypro.com'
+
+  const { data: adminStats } = useAdminStats({ enabled: isSuperAdmin })
 
   // ── Role Data Isolation ───────────────────────────────────────────────────────
   const properties = isSuperAdmin
@@ -207,16 +210,28 @@ export function DashboardPage() {
       </div>
 
       {/* ── Stats Grid ─────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Properties" value={String(totalProperties)} icon={Building2} variant="primary" />
-        <StatCard title="For Rent" value={String(forRentCount)} icon={Home} variant="secondary" />
-        <StatCard title="For Sale" value={String(forSaleCount)} icon={ShoppingBag} variant="warning" />
-        <StatCard title="Occupied" value={String(occupiedCount)} icon={UserCheck} variant="success" />
-        <StatCard title="Pending Requests" value={String(pendingRequests)} icon={ClipboardList} variant={pendingRequests > 0 ? 'danger' : 'default'} />
-        <StatCard title="Active Tenants" value={String(activeTenants)} icon={Users} variant="secondary" />
-        <StatCard title="Open Maintenance" value={String(openMaintenance)} icon={Wrench} variant={openMaintenance > 0 ? 'warning' : 'default'} />
-        <StatCard title="Monthly Income" value={fmtRupee(monthlyIncome)} icon={DollarSign} variant="success" />
-      </div>
+      {isSuperAdmin ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <StatCard title="Total Properties" value={String(adminStats?.totalProperties ?? 0)} icon={Building2} variant="primary" />
+          <StatCard title="Rented Properties" value={String(adminStats?.rentedProperties ?? 0)} icon={UserCheck} variant="success" />
+          <StatCard title="Available Properties" value={String(adminStats?.availableProperties ?? 0)} icon={Home} variant="secondary" />
+          <StatCard title="Properties for Sale" value={String(adminStats?.propertiesForSale ?? 0)} icon={ShoppingBag} variant="warning" />
+          <StatCard title="Total Owners" value={String(adminStats?.totalOwners ?? 0)} icon={Users} variant="primary" />
+          <StatCard title="Total Tenants" value={String(adminStats?.totalTenants ?? 0)} icon={Users} variant="secondary" />
+          <StatCard title="Active Leases" value={String(adminStats?.activeTenants ?? 0)} icon={UserCheck} variant="success" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard title="Total Properties" value={String(totalProperties)} icon={Building2} variant="primary" />
+          <StatCard title="For Rent" value={String(forRentCount)} icon={Home} variant="secondary" />
+          <StatCard title="For Sale" value={String(forSaleCount)} icon={ShoppingBag} variant="warning" />
+          <StatCard title="Occupied" value={String(occupiedCount)} icon={UserCheck} variant="success" />
+          <StatCard title="Pending Requests" value={String(pendingRequests)} icon={ClipboardList} variant={pendingRequests > 0 ? 'danger' : 'default'} />
+          <StatCard title="Active Tenants" value={String(activeTenants)} icon={Users} variant="secondary" />
+          <StatCard title="Open Maintenance" value={String(openMaintenance)} icon={Wrench} variant={openMaintenance > 0 ? 'warning' : 'default'} />
+          <StatCard title="Monthly Income" value={fmtRupee(monthlyIncome)} icon={DollarSign} variant="success" />
+        </div>
+      )}
 
       {/* ── Middle Row: Portfolio Overview + Quick Actions ──────────────────────── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

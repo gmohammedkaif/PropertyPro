@@ -5,6 +5,8 @@ import { env } from './config/env.js'
 import { logger } from './core/logger.js'
 import { connectDatabase, disconnectDatabase } from './db/connect.js'
 
+import { sweepLeaseExpiries } from './modules/tenancy/tenancyExpiry.service.js'
+
 const dbReady = await connectDatabase()
 
 const app = createApp()
@@ -12,6 +14,13 @@ const app = createApp()
 if (!process.env.VERCEL) {
   const server = app.listen(env.PORT, env.HOST, () => {
     logger.info({ host: env.HOST, port: env.PORT, db: dbReady ? 'mongodb' : 'memory' }, 'PropertyPro API listening')
+
+    // Initial sweep and hourly scheduled sweeper for lease expiries
+    void sweepLeaseExpiries().catch(() => null)
+    const expiryInterval = setInterval(() => {
+      void sweepLeaseExpiries().catch(() => null)
+    }, 60 * 60 * 1000)
+    expiryInterval.unref()
   })
 
   const shutdown = (signal: NodeJS.Signals): void => {

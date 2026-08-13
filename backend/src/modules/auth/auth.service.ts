@@ -121,14 +121,26 @@ export class AuthService {
       throw new UnauthorizedError('Session expired. Please sign in again.')
     }
 
-    // Reuse detection: a rotated/revoked token presented again revokes the family.
+    // Reuse detection: a rotated/revoked token presented again revokes the family,
+    // unless presented within a 15-second grace period (e.g. rapid page reloads/concurrency).
     if (record.revokedAt) {
-      await this.repository.revokeFamily(record.familyId)
-      logger.warn(
-        { userId: record.userId, familyId: record.familyId },
-        'Refresh token reuse detected — session family revoked',
+      const revokedTime = new Date(record.revokedAt).getTime()
+      const timeSinceRevoked = Date.now() - revokedTime
+      const ROTATION_GRACE_PERIOD_MS = 15_000
+
+      if (timeSinceRevoked > ROTATION_GRACE_PERIOD_MS) {
+        await this.repository.revokeFamily(record.familyId)
+        logger.warn(
+          { userId: record.userId, familyId: record.familyId, timeSinceRevoked },
+          'Refresh token reuse detected outside grace period — session family revoked',
+        )
+        throw new UnauthorizedError('Session expired. Please sign in again.')
+      }
+
+      logger.info(
+        { userId: record.userId, familyId: record.familyId, timeSinceRevoked },
+        'Refresh token presented within rotation grace period — issuing new session token in family',
       )
-      throw new UnauthorizedError('Session expired. Please sign in again.')
     }
 
     if (record.expiresAt.getTime() <= Date.now()) {
@@ -206,6 +218,49 @@ export class AuthService {
     return toAuthUser(user)
   }
 
+  updateProfile = async (userId: string, input: { name?: string; phone?: string }): Promise<AuthUser> => {
+    const user = await this.repository.findById(userId)
+    if (!user) {
+      throw new UnauthorizedError('Account not found.')
+    }
+
+    const profileInput: { firstName?: string; lastName?: string; phone?: string } = {}
+    if (input.name !== undefined) {
+      const parts = input.name.trim().split(/\s+/)
+      profileInput.firstName = parts[0] || ''
+      profileInput.lastName = parts.slice(1).join(' ') || ''
+    }
+    if (input.phone !== undefined) {
+      profileInput.phone = input.phone.trim()
+    }
+
+    const updated = await this.repository.updateProfile(userId, profileInput)
+    if (!updated) {
+      throw new UnauthorizedError('Account not found.')
+    }
+
+    logger.info({ userId }, 'Profile updated')
+    return toAuthUser(updated)
+  }
+
+  changePassword = async (userId: string, currentPassword: string, newPassword: string): Promise<void> => {
+    const user = await this.repository.findById(userId)
+    if (!user) {
+      throw new UnauthorizedError('Account not found.')
+    }
+
+    const currentOk = await bcrypt.compare(currentPassword, user.passwordHash)
+    if (!currentOk) {
+      throw new UnauthorizedError('Current password is incorrect.')
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS)
+    await this.repository.updatePassword(user.id, passwordHash)
+    await this.repository.revokeAllForUser(user.id)
+
+    logger.info({ userId }, 'Password changed — all sessions revoked')
+  }
+
   private get repository() {
     return getAuthRepository()
   }
@@ -241,6 +296,7 @@ function toAuthUser(user: UserRecord): AuthUser {
     id: user.id,
     email: user.email,
     name: name || user.email,
+    phone: user.phone || '',
     roles: user.roles,
     status: user.status,
   }

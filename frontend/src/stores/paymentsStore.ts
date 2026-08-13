@@ -1,5 +1,8 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { apiClient, type ApiEnvelope } from '@/lib/apiClient'
+import { useAuthStore } from './authStore'
+import { useLocalPropertiesStore } from './localPropertiesStore'
+import { useTenanciesStore } from './tenanciesStore'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,94 +23,127 @@ export interface PaymentRecord {
   updatedAt: string
 }
 
-const SEED: PaymentRecord[] = [
-  {
-    id: 'pay_001',
-    tenantName: 'fttt',
-    propertyName: 'Zaid Manzil',
-    amount: 8000,
-    dueDate: '2026-08-01',
-    paidDate: '2026-07-31',
-    status: 'paid',
-    type: 'rent',
-    createdAt: '2026-07-31T09:00:00.000Z',
-    updatedAt: '2026-07-31T09:00:00.000Z',
-  },
-  {
-    id: 'pay_002',
-    tenantName: 'mohan',
-    propertyName: 'Zaid Manzil',
-    amount: 8000,
-    dueDate: '2026-08-05',
-    paidDate: '2026-08-04',
-    status: 'paid',
-    type: 'rent',
-    createdAt: '2026-08-04T09:00:00.000Z',
-    updatedAt: '2026-08-04T09:00:00.000Z',
-  },
-  {
-    id: 'pay_003',
-    tenantName: 'ram',
-    propertyName: 'Sai Enclave',
-    amount: 9000,
-    dueDate: '2026-07-01',
-    paidDate: '2026-07-01',
-    status: 'paid',
-    type: 'rent',
-    createdAt: '2026-07-01T09:00:00.000Z',
-    updatedAt: '2026-07-01T09:00:00.000Z',
-  },
-  {
-    id: 'pay_004',
-    tenantName: 'mohammed',
-    propertyName: 'Green Valley Homes',
-    amount: 5000,
-    dueDate: '2026-07-05',
-    status: 'pending',
-    type: 'rent',
-    createdAt: '2026-07-01T09:00:00.000Z',
-    updatedAt: '2026-07-01T09:00:00.000Z',
-  },
-]
+// Seed data not needed for business data store of truth, but initialized empty
+const SEED: PaymentRecord[] = []
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 interface PaymentsState {
   items: PaymentRecord[]
-  add: (payment: Omit<PaymentRecord, 'id' | 'createdAt' | 'updatedAt'>) => PaymentRecord
-  update: (id: string, changes: Partial<Omit<PaymentRecord, 'id' | 'createdAt'>>) => void
-  remove: (id: string) => void
+  isLoading: boolean
+  error: Error | null
+  fetch: () => Promise<void>
+  add: (payment: {
+    tenantName: string
+    propertyName: string
+    amount: number
+    dueDate: string
+    type: PaymentType
+    notes?: string
+  }) => Promise<PaymentRecord>
+  processPayment: (id: string) => Promise<void>
+  remove: (id: string) => Promise<void>
+  update: (id: string, changes: Partial<any>) => void // Kept for interface compatibility
 }
 
-export const usePaymentsStore = create<PaymentsState>()(
-  persist(
-    (set) => ({
-      items: SEED,
+export const usePaymentsStore = create<PaymentsState>()((set) => ({
+  items: [],
+  isLoading: false,
+  error: null,
 
-      add: (payment) => {
-        const now = new Date().toISOString()
-        const record: PaymentRecord = {
-          ...payment,
-          id: crypto.randomUUID(),
-          createdAt: now,
-          updatedAt: now,
-        }
-        set((state) => ({ items: [record, ...state.items] }))
-        return record
-      },
+  fetch: async () => {
+    set({ isLoading: true })
+    try {
+      const user = useAuthStore.getState().user
+      if (!user) return
 
-      update: (id, changes) => {
-        set((state) => ({
-          items: state.items.map((item) =>
-            item.id === id ? { ...item, ...changes, updatedAt: new Date().toISOString() } : item,
-          ),
-        }))
-      },
+      const isTenant = user.roles.includes('tenant') && !user.roles.some((r) => ['owner', 'agent', 'admin'].includes(r))
+      const endpoint = isTenant ? '/payments/my-payments' : '/payments'
+      const { data } = await apiClient.get<ApiEnvelope<PaymentRecord[]>>(endpoint)
+      if (data.data) {
+        set({ items: data.data, error: null })
+      }
+    } catch (err: any) {
+      set({ error: err })
+    } finally {
+      set({ isLoading: false })
+    }
+  },
 
-      remove: (id) => {
-        set((state) => ({ items: state.items.filter((item) => item.id !== id) }))
-      },
-    }),
-    { name: 'propertypro-payments' },
-  ),
-)
+  add: async (payment) => {
+    set({ isLoading: true })
+    try {
+      const properties = useLocalPropertiesStore.getState().items
+      const matchedProp = properties.find(
+        (p) => p.name.toLowerCase() === payment.propertyName.toLowerCase()
+      )
+      const tenancies = useTenanciesStore.getState().items
+      const matchedTenancy = tenancies.find(
+        (t) => t.tenantName.toLowerCase() === payment.tenantName.toLowerCase()
+      )
+      
+      const payload = {
+        propertyId: matchedProp?.id || payment.propertyName,
+        amount: payment.amount,
+        dueDate: payment.dueDate,
+        type: payment.type,
+        tenantEmail: matchedTenancy?.tenantEmail || `${payment.tenantName.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
+        notes: payment.notes,
+      }
+
+      const { data } = await apiClient.post<ApiEnvelope<PaymentRecord>>('/payments', payload)
+      if (!data.data) throw new Error(data.error?.message || 'Failed to create invoice')
+      
+      const created = data.data
+      set((state) => ({ items: [created, ...state.items], error: null }))
+      return created
+    } catch (err: any) {
+      set({ error: err })
+      throw err
+    } finally {
+      set({ isLoading: false })
+    }
+  },
+
+  processPayment: async (id) => {
+    set({ isLoading: true })
+    try {
+      const { data } = await apiClient.post<ApiEnvelope<any>>(`/payments/${id}/pay`, {})
+      if (data.error) throw new Error(data.error.message)
+      set((state) => ({
+        items: state.items.map((item) =>
+          item.id === id ? { ...item, status: 'paid', paidDate: new Date().toISOString().slice(0, 10), updatedAt: new Date().toISOString() } : item
+        ),
+        error: null,
+      }))
+    } catch (err: any) {
+      set({ error: err })
+      throw err
+    } finally {
+      set({ isLoading: false })
+    }
+  },
+
+  remove: async (id) => {
+    set({ isLoading: true })
+    try {
+      const { data } = await apiClient.delete<ApiEnvelope<any>>(`/payments/${id}`)
+      if (data.error) throw new Error(data.error.message)
+      set((state) => ({ items: state.items.filter((item) => item.id !== id), error: null }))
+    } catch (err: any) {
+      set({ error: err })
+      throw err
+    } finally {
+      set({ isLoading: false })
+    }
+  },
+
+  update: (id, changes) => {
+    // Kept for backward compatibility
+    set((state) => ({
+      items: state.items.map((item) =>
+        item.id === id ? { ...item, ...changes, updatedAt: new Date().toISOString() } : item
+      ),
+    }))
+  },
+}))

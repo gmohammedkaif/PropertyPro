@@ -20,6 +20,16 @@ export interface PropertyRecord {
   totalUnits: number
   occupiedUnits: number
   status: PropertyStatus
+  listingStatus?: 'for-rent' | 'for-sale' | 'occupied' | 'inactive'
+  bedrooms?: number
+  bathrooms?: number
+  parking?: number
+  areaSqFt?: number
+  monthlyRent?: number
+  securityDeposit?: number
+  salePrice?: number
+  imageUrl?: string
+  ownerEmail?: string
   images: string[]
   deletedAt?: string | null
   createdAt: string
@@ -49,6 +59,18 @@ export interface CreatePropertyInput {
   description?: string
   amenities?: string[]
   totalUnits?: number
+  occupiedUnits?: number
+  listingStatus?: 'for-rent' | 'for-sale' | 'occupied' | 'inactive'
+  bedrooms?: number
+  bathrooms?: number
+  parking?: number
+  areaSqFt?: number
+  monthlyRent?: number
+  securityDeposit?: number
+  salePrice?: number
+  imageUrl?: string
+  ownerEmail?: string
+  images?: string[]
 }
 
 export interface UpdatePropertyInput {
@@ -60,6 +82,17 @@ export interface UpdatePropertyInput {
   amenities?: string[]
   totalUnits?: number
   status?: PropertyStatus
+  listingStatus?: 'for-rent' | 'for-sale' | 'occupied' | 'inactive'
+  bedrooms?: number
+  bathrooms?: number
+  parking?: number
+  areaSqFt?: number
+  monthlyRent?: number
+  securityDeposit?: number
+  salePrice?: number
+  imageUrl?: string
+  ownerEmail?: string
+  images?: string[]
 }
 
 export interface PropertyFilter {

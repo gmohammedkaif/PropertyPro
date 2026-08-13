@@ -9,6 +9,7 @@ import type {
   PropertyFilter,
   PropertyListResult,
 } from '@/shared'
+import { useLocalPropertiesStore, type LocalPropertyType } from '@/stores/localPropertiesStore'
 
 // Query keys for property-related queries
 export const propertyKeys = {
@@ -55,12 +56,11 @@ export function useSearchProperties(query?: string, filter?: PropertyFilter) {
     queryKey: [...propertyKeys.all, 'search', query, filter],
     queryFn: async () => {
       const { data } = await apiClient.get<ApiEnvelope<PropertyListResult>>('/properties/search', {
-        params: { q: query, ...filter },
+        params: { q: query || undefined, ...filter },
       })
       if (!data.data) throw new Error('Malformed search response')
       return data.data
     },
-    enabled: !!query,
     staleTime: 15_000,
     retry: 1,
   })
@@ -106,8 +106,9 @@ export function useDeleteProperty() {
       const { data } = await apiClient.delete<ApiEnvelope<PropertyRecord>>(`/properties/${id}`)
       return data.data!
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: propertyKeys.lists() })
+    onSuccess: (data, id) => {
+      queryClient.invalidateQueries({ queryKey: propertyKeys.all })
+      useLocalPropertiesStore.getState().remove(id)
     },
     retry: false,
   })
@@ -121,8 +122,27 @@ export function useRestoreProperty() {
       const { data } = await apiClient.post<ApiEnvelope<PropertyRecord>>(`/properties/${id}/restore`)
       return data.data!
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: propertyKeys.lists() })
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: propertyKeys.all })
+      useLocalPropertiesStore.getState().add({
+        id: data.id,
+        name: data.name,
+        type: data.type as LocalPropertyType,
+        description: data.description ?? undefined,
+        totalUnits: data.totalUnits ?? 0,
+        occupiedUnits: data.occupiedUnits ?? 0,
+        listingStatus: (data as any).listingStatus ?? 'inactive',
+        bedrooms: (data as any).bedrooms,
+        bathrooms: (data as any).bathrooms,
+        parking: (data as any).parking,
+        areaSqFt: (data as any).areaSqFt,
+        monthlyRent: (data as any).monthlyRent,
+        salePrice: (data as any).salePrice,
+        imageUrl: data.imageUrl,
+        ownerEmail: (data as any).ownerEmail,
+        ownerId: data.ownerId,
+        address: data.address,
+      })
     },
     retry: false,
   })

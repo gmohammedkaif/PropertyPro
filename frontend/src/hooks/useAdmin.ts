@@ -15,30 +15,8 @@ export function useOwnerRequests() {
   return useQuery({
     queryKey: ['admin', 'owner-requests'],
     queryFn: async () => {
-      try {
-        const { data } = await apiClient.get<{ data: OwnerRequest[] }>('/admin/owner-requests')
-        return data.data
-      } catch {
-        // Fallback demo requests for dev mode
-        return [
-          {
-            id: 'req_01',
-            email: 'john.owner@example.com',
-            name: 'John Owner',
-            roles: ['owner'],
-            status: 'pending_approval' as UserStatus,
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: 'req_02',
-            email: 'sarah.properties@example.com',
-            name: 'Sarah Properties',
-            roles: ['owner'],
-            status: 'pending_approval' as UserStatus,
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-          },
-        ]
-      }
+      const { data } = await apiClient.get<{ data: OwnerRequest[] }>('/admin/owner-requests')
+      return data.data
     },
   })
 }
@@ -77,6 +55,66 @@ export function useRejectOwner() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'owner-requests'] })
+    },
+  })
+}
+
+export interface AdminStats {
+  totalProperties: number
+  rentedProperties: number
+  availableProperties: number
+  propertiesForSale: number
+  totalOwners: number
+  totalTenants: number
+  activeTenants: number
+  totalLeases: number
+}
+
+export function useAdminStats(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['admin', 'stats'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: AdminStats }>('/admin/stats')
+      return data.data
+    },
+    ...options,
+  })
+}
+
+export interface AdminOwner {
+  id: string
+  name: string
+  email: string
+  phone: string
+  propertyCount: number
+  status: UserStatus
+}
+
+export function useAdminOwners(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['admin', 'owners'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: AdminOwner[] }>('/admin/owners')
+      return data.data
+    },
+    ...options,
+  })
+}
+
+export interface AdminTenant {
+  id: string
+  name: string
+  email: string
+  status: UserStatus
+  hasActiveLease?: boolean
+}
+
+export function useAdminTenants() {
+  return useQuery({
+    queryKey: ['admin', 'tenants'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ data: AdminTenant[] }>('/admin/tenants')
+      return data.data
     },
   })
 }

@@ -10,6 +10,9 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { useAuthStore } from '@/stores/authStore'
 import { useLogout } from '@/hooks/useAuth'
 import { useUiStore } from '@/stores/uiStore'
+import { useNotificationsStore } from '@/stores/notificationsStore'
+import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
+import { useEffect } from 'react'
 
 interface NavbarProps {
   onMenuClick: () => void
@@ -23,11 +26,35 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
   const navigate = useNavigate()
   const location = useLocation()
 
+  const notifications = useNotificationsStore((s) => s.items)
+  const fetchNotifications = useNotificationsStore((s) => s.fetch)
+  const markAsRead = useNotificationsStore((s) => s.markAsRead)
+  const markAllAsRead = useNotificationsStore((s) => s.markAllAsRead)
+
+  const unreadCount = notifications.filter((n) => !n.read).length
+
+  useEffect(() => {
+    fetchNotifications()
+  }, [])
+
   const handleSignOut = () => {
     logout.mutate()
   }
 
-  const title = getPageTitle(location.pathname)
+  const properties = useLocalPropertiesStore((s) => s.items)
+
+  let title = getPageTitle(location.pathname)
+
+  const propertyDetailMatch = location.pathname.match(/^\/app\/propert(?:ies|y)\/([^/]+)/)
+  if (propertyDetailMatch) {
+    const propertyId = propertyDetailMatch[1]
+    const property = properties.find((p) => p.id === propertyId)
+    if (property) {
+      title = property.name
+    } else {
+      title = 'Property Detail'
+    }
+  }
 
   return (
     <header className="glass-subtle sticky top-0 z-[var(--z-sticky)] flex h-16 items-center gap-3 border-b border-border px-4 sm:px-6">
@@ -77,17 +104,77 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
 
         <ThemeToggle />
 
-        <button
-          type="button"
-          aria-label="Notifications"
-          className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'relative')}
-        >
-          <Bell className="h-5 w-5" aria-hidden="true" />
-          <span
-            aria-hidden="true"
-            className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-danger ring-2 ring-surface"
-          />
-        </button>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <button
+              type="button"
+              aria-label="Notifications"
+              className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'relative cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-focus')}
+            >
+              <Bell className="h-5 w-5" aria-hidden="true" />
+              {unreadCount > 0 && (
+                <span
+                  aria-hidden="true"
+                  className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-danger ring-2 ring-surface"
+                />
+              )}
+            </button>
+          </DropdownMenu.Trigger>
+
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              align="end"
+              sideOffset={8}
+              className="glass z-[var(--z-dropdown)] w-80 rounded-xl p-1.5 shadow-lg max-h-96 overflow-y-auto"
+            >
+              <div className="flex items-center justify-between px-2.5 py-2">
+                <p className="text-sm font-semibold text-text">Notifications</p>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={() => markAllAsRead()}
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
+                    Mark all read
+                  </button>
+                )}
+              </div>
+
+              <div className="my-1 h-px bg-border" />
+
+              {notifications.length === 0 ? (
+                <p className="p-4 text-center text-xs text-muted">No notifications</p>
+              ) : (
+                notifications.map((n) => (
+                  <DropdownMenu.Item
+                    key={n.id}
+                    onSelect={() => markAsRead(n.id)}
+                    className={cn(
+                      "flex flex-col gap-1 rounded-lg px-2.5 py-2 text-left text-xs outline-none transition-colors focus:bg-surface2 cursor-pointer",
+                      !n.read && "bg-primary/5 font-medium"
+                    )}
+                  >
+                    <div className="flex items-start gap-1.5">
+                      <span className={cn(
+                        "h-1.5 w-1.5 shrink-0 rounded-full mt-1.5",
+                        n.type === 'success' && 'bg-success',
+                        n.type === 'warning' && 'bg-warning',
+                        n.type === 'danger' && 'bg-danger',
+                        n.type === 'info' && 'bg-info',
+                      )} />
+                      <div className="flex-1">
+                        <p className="font-semibold text-text">{n.title}</p>
+                        <p className="text-muted line-clamp-2">{n.message}</p>
+                        <p className="text-[10px] text-muted mt-0.5">
+                          {new Date(n.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </DropdownMenu.Item>
+                ))
+              )}
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
 
         {user ? (
           <DropdownMenu.Root>

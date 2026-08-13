@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express'
 import { asyncHandler } from '../../core/asyncHandler.js'
-import { NotFoundError } from '../../core/errors.js'
+import { NotFoundError, ForbiddenError } from '../../core/errors.js'
 import { Notification } from './notification.model.js'
 
 function formatDoc(doc: any) {
@@ -26,9 +26,15 @@ export const listNotifications = asyncHandler(async (req: Request, res: Response
 
 export const markAsRead = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params
+  const notification = await Notification.findById(id)
+  if (!notification) throw new NotFoundError('Notification not found')
+
+  if (notification.userEmail.toLowerCase() !== req.user?.email?.toLowerCase() && !req.user?.roles.includes('admin')) {
+    throw new ForbiddenError('You do not have permission to modify this notification')
+  }
+
   const updated = await Notification.findByIdAndUpdate(id, { read: true }, { new: true }).lean()
-  if (!updated) throw new NotFoundError('Notification not found')
-  res.json({ data: formatDoc(updated), meta: {}, error: null })
+  res.json({ data: formatDoc(updated!), meta: {}, error: null })
 })
 
 export const markAllAsRead = asyncHandler(async (req: Request, res: Response) => {
@@ -41,7 +47,13 @@ export const markAllAsRead = asyncHandler(async (req: Request, res: Response) =>
 
 export const deleteNotification = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params
+  const notification = await Notification.findById(id)
+  if (!notification) throw new NotFoundError('Notification not found')
+
+  if (notification.userEmail.toLowerCase() !== req.user?.email?.toLowerCase() && !req.user?.roles.includes('admin')) {
+    throw new ForbiddenError('You do not have permission to delete this notification')
+  }
+
   const deleted = await Notification.findByIdAndDelete(id).lean()
-  if (!deleted) throw new NotFoundError('Notification not found')
-  res.json({ data: formatDoc(deleted), meta: {}, error: null })
+  res.json({ data: formatDoc(deleted!), meta: {}, error: null })
 })

@@ -29,6 +29,7 @@ export interface AuthUser {
   id: string
   email: string
   name: string
+  phone: string
   roles: Role[]
   status: UserStatus
 }
@@ -70,14 +71,25 @@ export interface PropertyRecord {
   totalUnits?: number
   occupiedUnits?: number
   status: PropertyStatus
+  imageUrl?: string
   images?: string[]
   deletedAt?: string | null
   createdAt: string
   updatedAt: string
+  listingStatus?: string
+  bedrooms?: number
+  bathrooms?: number
+  parking?: number
+  areaSqFt?: number
+  monthlyRent?: number
+  securityDeposit?: number
+  salePrice?: number
+  ownerEmail?: string
 }
 
 export interface CreatePropertyInput {
   ownerId: string
+  ownerEmail?: string
   name: string
   type: PropertyType
   address: Address
@@ -85,6 +97,17 @@ export interface CreatePropertyInput {
   description?: string
   amenities?: string[]
   totalUnits?: number
+  occupiedUnits?: number
+  imageUrl?: string
+  images?: string[]
+  listingStatus?: string
+  bedrooms?: number
+  bathrooms?: number
+  parking?: number
+  areaSqFt?: number
+  monthlyRent?: number
+  securityDeposit?: number
+  salePrice?: number
 }
 
 export interface UpdatePropertyInput {
@@ -96,6 +119,17 @@ export interface UpdatePropertyInput {
   amenities?: string[]
   totalUnits?: number
   status?: PropertyStatus
+  imageUrl?: string
+  images?: string[]
+  listingStatus?: string
+  bedrooms?: number
+  bathrooms?: number
+  parking?: number
+  areaSqFt?: number
+  monthlyRent?: number
+  securityDeposit?: number
+  salePrice?: number
+  ownerEmail?: string
 }
 
 export interface PropertyFilter {

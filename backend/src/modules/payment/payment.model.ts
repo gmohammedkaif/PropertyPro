@@ -9,6 +9,9 @@ const paymentSchema = new Schema(
     amount: { type: Number, required: true, min: 0 },
     dueDate: { type: Date, required: true },
     paidDate: { type: Date, default: null },
+    ownerId: { type: String, default: '', index: true },
+    ownerEmail: { type: String, default: '', lowercase: true, trim: true, index: true },
+    tenancyId: { type: String, default: '', index: true },
     status: {
       type: String,
       enum: ['paid', 'pending', 'overdue', 'partial'],

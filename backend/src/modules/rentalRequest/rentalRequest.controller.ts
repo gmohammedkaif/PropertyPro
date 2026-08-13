@@ -1,11 +1,12 @@
 import type { Request, Response } from 'express'
 import { asyncHandler } from '../../core/asyncHandler.js'
-import { NotFoundError } from '../../core/errors.js'
+import { NotFoundError, ForbiddenError, ConflictError } from '../../core/errors.js'
 import { RentalRequest } from './rentalRequest.model.js'
 import { Tenancy } from '../tenancy/tenancy.model.js'
 import { Payment } from '../payment/payment.model.js'
-import { Notification } from '../notification/notification.model.js'
+import { Notification, createNotificationIdempotent } from '../notification/notification.model.js'
 import { Property } from '../property/models/property.model.js'
+import { User } from '../auth/models/user.model.js'
 
 function formatDoc(doc: any) {
   return {
@@ -30,24 +31,31 @@ function formatDoc(doc: any) {
 
 export const createRentalRequest = asyncHandler(async (req: Request, res: Response) => {
   const tenantId = req.user?.id
-  const tenantEmail = req.body.tenantEmail || req.user?.email || 'tenant@propertypro.app'
+  const tenantEmail = req.user?.email || 'tenant@propertypro.app'
 
   const property = await Property.findById(req.body.propertyId).lean().catch(() => null)
-  const ownerEmail = req.body.ownerEmail || (property ? (property as any).ownerEmail : '') || 'owner@propertypro.com'
-  const ownerId = req.body.ownerId || (property ? (property as any).ownerId : '') || ''
+  if (!property) throw new NotFoundError('Property not found')
+  if (property.status === 'archived') throw new ForbiddenError('This property is archived')
+
+  const ownerId = property.ownerId
+  let ownerEmail = property.ownerEmail
+  if (!ownerEmail) {
+    const ownerUser = await User.findById(ownerId).lean()
+    ownerEmail = ownerUser ? ownerUser.email : 'owner@propertypro.com'
+  }
 
   const doc = await RentalRequest.create({
     propertyId: req.body.propertyId,
-    propertyName: req.body.propertyName || (property ? property.name : 'Rented Property'),
-    propertyType: req.body.propertyType || (property ? property.type : 'apartment'),
+    propertyName: req.body.propertyName || property.name,
+    propertyType: req.body.propertyType || property.type,
     ownerId,
     ownerEmail,
-    tenantId: tenantId || `usr_${Date.now()}`,
+    tenantId,
     tenantEmail,
     fullName: req.body.fullName,
     mobileNumber: req.body.mobileNumber,
     city: req.body.city,
-    monthlyRent: req.body.monthlyRent || (property ? (property as any).monthlyRent : 0) || 0,
+    monthlyRent: req.body.monthlyRent || (property as any).monthlyRent || 0,
     status: 'pending',
     notes: req.body.notes || '',
   })
@@ -103,13 +111,31 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
   const requestDoc = await RentalRequest.findById(id)
   if (!requestDoc) throw new NotFoundError('Rental request not found')
 
+  if (requestDoc.ownerId !== req.user?.id && !req.user?.roles.includes('admin')) {
+    throw new ForbiddenError('You do not have permission to approve this request')
+  }
+
+  if (requestDoc.status !== 'pending') {
+    throw new ConflictError('This request has already been processed')
+  }
+
+  // Check if property has active tenancy
+  const activeTenancy = await Tenancy.findOne({
+    propertyId: requestDoc.propertyId,
+    status: { $in: ['active', 'expiring-soon'] },
+  }).lean()
+  if (activeTenancy) {
+    throw new ConflictError('This property already has an active tenancy lease')
+  }
+
   requestDoc.status = 'approved'
   await requestDoc.save()
 
-  // Calculate 1 year lease dates
-  const startDate = new Date()
-  const endDate = new Date()
-  endDate.setFullYear(endDate.getFullYear() + 1)
+  // Calculate lease dates: prefer values from request body (sent from LeaseCreationModal)
+  const leaseStartRaw = req.body.leaseStart ? new Date(req.body.leaseStart) : new Date()
+  const leaseDurationMonths = Number(req.body.leaseDurationMonths) || 12
+  const leaseEndRaw = new Date(leaseStartRaw)
+  leaseEndRaw.setMonth(leaseEndRaw.getMonth() + leaseDurationMonths)
 
   // 1. Create Tenancy (Lease Document) in MongoDB
   const tenancyDoc = await Tenancy.create({
@@ -120,13 +146,12 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
     propertyName: requestDoc.propertyName,
     unitNumber: req.body.unitNumber || 'Main',
     unitsOccupied: 1,
-    leaseStart: startDate,
-    leaseEnd: endDate,
-    leaseDurationMonths: 12,
-    monthlyRent: requestDoc.monthlyRent || 10000,
-    advanceAmount: (requestDoc.monthlyRent || 10000) * 2,
-    securityDeposit: (requestDoc.monthlyRent || 10000) * 5,
-    leaseNotes: req.body.leaseNotes || 'Standard 12-month residential lease agreement.',
+    leaseStart: leaseStartRaw,
+    leaseEnd: leaseEndRaw,
+    leaseDurationMonths,
+    monthlyRent: Number(req.body.monthlyRent) || requestDoc.monthlyRent || 10000,
+    securityDeposit: Number(req.body.securityDeposit) || (requestDoc.monthlyRent || 10000) * 2,
+    leaseNotes: req.body.leaseNotes || 'Standard lease agreement.',
     ownerEmail: requestDoc.ownerEmail.toLowerCase(),
     ownerId: requestDoc.ownerId,
     requestId: requestDoc._id.toString(),
@@ -146,11 +171,49 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
     status: 'pending',
     type: 'rent',
     notes: 'First month rent invoice',
+    ownerId: requestDoc.ownerId,
+    ownerEmail: requestDoc.ownerEmail.toLowerCase(),
+    tenancyId: tenancyDoc._id.toString(),
   })
 
   // 3. Update Property Occupied Units in MongoDB if property exists
   if (requestDoc.propertyId) {
     await Property.findByIdAndUpdate(requestDoc.propertyId, { $inc: { occupiedUnits: 1 } }).catch(() => null)
+
+    // Auto-reject other pending rental requests for the same property
+    const otherPending = await RentalRequest.find({
+      propertyId: requestDoc.propertyId,
+      _id: { $ne: requestDoc._id },
+      status: 'pending',
+    }).lean().catch(() => [])
+
+    await RentalRequest.updateMany(
+      {
+        propertyId: requestDoc.propertyId,
+        _id: { $ne: requestDoc._id },
+        status: 'pending',
+      },
+      {
+        $set: {
+          status: 'rejected',
+          notes: 'Property leased to another applicant',
+        },
+      },
+    ).catch(() => null)
+
+    for (const otherReq of otherPending) {
+      if (otherReq.tenantEmail) {
+        await createNotificationIdempotent({
+          userEmail: otherReq.tenantEmail,
+          userId: otherReq.tenantId,
+          title: 'Rental Request Status Update ❌',
+          message: `Your rental request for ${otherReq.propertyName} was not accepted because the property has been leased to another applicant.`,
+          type: 'warning',
+          eventType: 'REQUEST_AUTO_REJECTED',
+          relatedEntityId: otherReq._id.toString(),
+        })
+      }
+    }
   }
 
   // 4. Send Notification to Tenant
@@ -177,6 +240,22 @@ export const rejectRentalRequest = asyncHandler(async (req: Request, res: Respon
   const { id } = req.params
   const requestDoc = await RentalRequest.findById(id)
   if (!requestDoc) throw new NotFoundError('Rental request not found')
+
+  if (requestDoc.ownerId !== req.user?.id && !req.user?.roles.includes('admin')) {
+    throw new ForbiddenError('You do not have permission to reject this request')
+  }
+
+  if (requestDoc.status === 'approved') {
+    throw new ConflictError('This request has already been processed')
+  }
+
+  if (requestDoc.status === 'rejected') {
+    if (req.body.notes) {
+      requestDoc.notes = req.body.notes
+      await requestDoc.save()
+    }
+    return res.json({ data: formatDoc(requestDoc), meta: {}, error: null })
+  }
 
   requestDoc.status = 'rejected'
   if (req.body.notes) requestDoc.notes = req.body.notes

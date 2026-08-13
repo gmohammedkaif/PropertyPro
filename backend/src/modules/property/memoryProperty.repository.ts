@@ -224,6 +224,21 @@ export class InMemoryPropertyRepository implements PropertyRepository {
     return { items: slice.slice(0, limit), nextCursor, total }
   }
 
+  async findAll(filter: PropertyFilter): Promise<PropertyListResult> {
+    let items = Array.from(this.properties.values()).filter((p) => !p.deletedAt)
+    items = this.applyFilters(items, filter)
+    items = this.applySort(items, filter)
+    const total = items.length
+    const limit = Math.min(filter.limit ?? 20, 100)
+    const cursor = filter.cursor ? new Date(filter.cursor) : undefined
+    if (cursor && !isNaN(cursor.getTime())) {
+      items = items.filter((p) => new Date(p.createdAt) < cursor)
+    }
+    const slice = items.slice(0, limit + 1)
+    const nextCursor = slice.length > limit ? slice[limit].createdAt : null
+    return { items: slice.slice(0, limit), nextCursor, total }
+  }
+
   async create(input: CreatePropertyInput): Promise<PropertyRecord> {
     const now = new Date().toISOString()
     const record: PropertyRecord = {
@@ -243,9 +258,19 @@ export class InMemoryPropertyRepository implements PropertyRepository {
       description: input.description ?? null,
       amenities: input.amenities ?? [],
       totalUnits: input.totalUnits ?? 0,
-      occupiedUnits: 0,
+      occupiedUnits: input.occupiedUnits ?? 0,
       status: 'active',
-      images: [],
+      listingStatus: input.listingStatus && input.listingStatus !== 'inactive' ? input.listingStatus : 'for-rent',
+      bedrooms: input.bedrooms ?? 0,
+      bathrooms: input.bathrooms ?? 0,
+      parking: input.parking ?? 0,
+      areaSqFt: input.areaSqFt ?? 0,
+      monthlyRent: input.monthlyRent ?? 0,
+      securityDeposit: input.securityDeposit ?? 0,
+      salePrice: input.salePrice ?? 0,
+      imageUrl: input.imageUrl ?? '',
+      ownerEmail: input.ownerEmail ?? '',
+      images: input.images && input.images.length > 0 ? input.images : (input.imageUrl ? [input.imageUrl] : []),
       deletedAt: null,
       createdAt: now,
       updatedAt: now,
@@ -296,7 +321,11 @@ export class InMemoryPropertyRepository implements PropertyRepository {
 
   async findAllPublished(filter: PropertyFilter): Promise<PropertyListResult> {
     let items = Array.from(this.properties.values()).filter(
-      (p) => p.status === 'active' && !p.deletedAt,
+      (p) =>
+        p.status === 'active' &&
+        !p.deletedAt &&
+        (p.listingStatus === 'for-rent' || p.listingStatus === 'for-sale') &&
+        (p.totalUnits <= 0 || p.occupiedUnits < p.totalUnits),
     )
     items = this.applyFilters(items, filter)
     items = this.applySort(items, filter)
@@ -317,6 +346,8 @@ export class InMemoryPropertyRepository implements PropertyRepository {
       (p) =>
         p.status === 'active' &&
         !p.deletedAt &&
+        (p.listingStatus === 'for-rent' || p.listingStatus === 'for-sale') &&
+        (p.totalUnits <= 0 || p.occupiedUnits < p.totalUnits) &&
         (p.name.toLowerCase().includes(q) ||
           p.address.city.toLowerCase().includes(q) ||
           p.address.state.toLowerCase().includes(q) ||
@@ -388,4 +419,11 @@ export class InMemoryPropertyRepository implements PropertyRepository {
 
     return sortedItems
   }
+
+  async listAllProperties(): Promise<PropertyRecord[]> {
+    return Array.from(this.properties.values())
+      .filter((p) => !p.deletedAt)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  }
 }
+

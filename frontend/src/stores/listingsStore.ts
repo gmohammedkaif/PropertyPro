@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { apiClient, type ApiEnvelope } from '@/lib/apiClient'
+import type { PropertyListResult } from '@/shared'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,99 +21,80 @@ export interface ListingRecord {
   updatedAt: string
 }
 
-// ─── Seed data ────────────────────────────────────────────────────────────────
-
-const SEED: ListingRecord[] = [
-  {
-    id: 'lst_001',
-    propertyName: 'Hassan Villa',
-    type: 'rent',
-    status: 'available',
-    price: 45000,
-    bedrooms: 3,
-    bathrooms: 2,
-    areaSqFt: 1800,
-    description: 'Spacious 3BHK villa with premium fixtures and modern amenities.',
-    createdAt: '2026-07-15T10:00:00.000Z',
-    updatedAt: '2026-07-15T10:00:00.000Z',
-  },
-  {
-    id: 'lst_002',
-    propertyName: 'Green Park Residency',
-    type: 'rent',
-    status: 'rented',
-    price: 28000,
-    bedrooms: 2,
-    bathrooms: 1,
-    areaSqFt: 1100,
-    description: 'Cozy 2BHK in a prime residential locality with great connectivity.',
-    createdAt: '2026-06-01T10:00:00.000Z',
-    updatedAt: '2026-07-01T10:00:00.000Z',
-  },
-  {
-    id: 'lst_003',
-    propertyName: 'Sunrise Heights Studio',
-    type: 'rent',
-    status: 'available',
-    price: 18000,
-    bedrooms: 1,
-    bathrooms: 1,
-    areaSqFt: 650,
-    description: 'Modern studio apartment with city views and high-speed internet.',
-    createdAt: '2026-07-20T10:00:00.000Z',
-    updatedAt: '2026-07-20T10:00:00.000Z',
-  },
-  {
-    id: 'lst_004',
-    propertyName: 'Business District Commercial Unit',
-    type: 'sale',
-    status: 'under-offer',
-    price: 8500000,
-    areaSqFt: 2400,
-    description: 'Premium ground-floor commercial space in the central business district.',
-    createdAt: '2026-07-10T10:00:00.000Z',
-    updatedAt: '2026-08-01T10:00:00.000Z',
-  },
-]
+// Seed data not needed for business data store of truth, but initialized empty
+const SEED: ListingRecord[] = []
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 interface ListingsState {
   items: ListingRecord[]
-  add: (listing: Omit<ListingRecord, 'id' | 'createdAt' | 'updatedAt'>) => ListingRecord
-  update: (id: string, changes: Partial<Omit<ListingRecord, 'id' | 'createdAt'>>) => void
+  isLoading: boolean
+  error: Error | null
+  fetch: () => Promise<void>
+  add: (listing: any) => ListingRecord
+  update: (id: string, changes: Partial<any>) => void
   remove: (id: string) => void
 }
 
 export const useListingsStore = create<ListingsState>()(
-  persist(
-    (set) => ({
-      items: SEED,
+  (set) => ({
+    items: [],
+    isLoading: false,
+    error: null,
 
-      add: (listing) => {
-        const now = new Date().toISOString()
-        const record: ListingRecord = {
-          ...listing,
-          id: crypto.randomUUID(),
-          createdAt: now,
-          updatedAt: now,
+    fetch: async () => {
+      set({ isLoading: true })
+      try {
+        const { data } = await apiClient.get<ApiEnvelope<PropertyListResult>>('/properties')
+        if (data.data) {
+          // Filter to properties that have active listing status (for-rent or for-sale)
+          const listed = data.data.items.filter(
+            (p) => (p as any).listingStatus === 'for-rent' || (p as any).listingStatus === 'for-sale' || (p as any).listingStatus === 'occupied'
+          )
+          const mapped = listed.map((p) => ({
+            id: p.id,
+            propertyName: p.name,
+            type: ((p as any).listingStatus === 'for-sale' ? 'sale' : 'rent') as ListingType,
+            status: ((p as any).listingStatus === 'occupied' ? 'rented' : 'available') as ListingStatus,
+            price: (p as any).listingStatus === 'for-sale' ? ((p as any).salePrice || 0) : ((p as any).monthlyRent || 0),
+            bedrooms: (p as any).bedrooms,
+            bathrooms: (p as any).bathrooms,
+            areaSqFt: (p as any).areaSqFt,
+            description: p.description ?? undefined,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+          }))
+          set({ items: mapped, error: null })
         }
-        set((state) => ({ items: [record, ...state.items] }))
-        return record
-      },
+      } catch (err: any) {
+        set({ error: err })
+      } finally {
+        set({ isLoading: false })
+      }
+    },
 
-      update: (id, changes) => {
-        set((state) => ({
-          items: state.items.map((item) =>
-            item.id === id ? { ...item, ...changes, updatedAt: new Date().toISOString() } : item,
-          ),
-        }))
-      },
+    add: (listing) => {
+      const now = new Date().toISOString()
+      const record: ListingRecord = {
+        ...listing,
+        id: listing.id || crypto.randomUUID(),
+        createdAt: listing.createdAt || now,
+        updatedAt: listing.updatedAt || now,
+      }
+      set((state) => ({ items: [record, ...state.items] }))
+      return record
+    },
 
-      remove: (id) => {
-        set((state) => ({ items: state.items.filter((item) => item.id !== id) }))
-      },
-    }),
-    { name: 'propertypro-listings' },
-  ),
+    update: (id, changes) => {
+      set((state) => ({
+        items: state.items.map((item) =>
+          item.id === id ? { ...item, ...changes, updatedAt: new Date().toISOString() } : item,
+        ),
+      }))
+    },
+
+    remove: (id) => {
+      set((state) => ({ items: state.items.filter((item) => item.id !== id) }))
+    },
+  }),
 )

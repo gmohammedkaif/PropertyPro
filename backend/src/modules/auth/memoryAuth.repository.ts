@@ -44,6 +44,7 @@ export class InMemoryAuthRepository implements AuthRepository {
         roles: ['admin'],
         firstName: 'Super',
         lastName: 'Admin',
+        phone: '',
         status: 'active',
         emailVerifiedAt: null,
         createdAt: now,
@@ -67,6 +68,7 @@ export class InMemoryAuthRepository implements AuthRepository {
         roles: ['owner'],
         firstName: 'Dev',
         lastName: 'Owner',
+        phone: '',
         status: 'active',
         emailVerifiedAt: null,
         createdAt: now,
@@ -88,6 +90,7 @@ export class InMemoryAuthRepository implements AuthRepository {
         roles: ['tenant'],
         firstName: 'John',
         lastName: 'Tenant',
+        phone: '',
         status: 'active',
         emailVerifiedAt: null,
         createdAt: now,
@@ -131,6 +134,7 @@ export class InMemoryAuthRepository implements AuthRepository {
       roles: input.roles,
       firstName: input.firstName,
       lastName: input.lastName,
+      phone: '',
       status: input.status ?? 'active',
       emailVerifiedAt: null,
       createdAt: now,
@@ -149,6 +153,21 @@ export class InMemoryAuthRepository implements AuthRepository {
     this.save()
   }
 
+  async updateProfile(userId: string, input: { firstName?: string; lastName?: string; phone?: string }): Promise<UserRecord | null> {
+    const user = this.users.get(userId)
+    if (!user) return null
+    const updated = {
+      ...user,
+      firstName: input.firstName !== undefined ? input.firstName.trim() : user.firstName,
+      lastName: input.lastName !== undefined ? input.lastName.trim() : user.lastName,
+      phone: input.phone !== undefined ? input.phone.trim() : user.phone,
+      updatedAt: new Date().toISOString(),
+    }
+    this.users.set(userId, updated)
+    this.save()
+    return updated
+  }
+
   async updateUserStatus(userId: string, status: UserStatus): Promise<UserRecord | null> {
     const user = this.users.get(userId)
     if (!user) return null
@@ -163,6 +182,11 @@ export class InMemoryAuthRepository implements AuthRepository {
       .filter((u) => u.roles.includes('owner'))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     return records
+  }
+
+  async listAllUsers(): Promise<UserRecord[]> {
+    return Array.from(this.users.values())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }
 
   async createRefreshToken(input: {

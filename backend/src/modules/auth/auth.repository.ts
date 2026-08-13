@@ -16,8 +16,10 @@ export interface AuthRepository {
   findById(id: string): Promise<UserRecord | null>
   createUser(input: CreateUserInput): Promise<UserRecord>
   updatePassword(userId: string, passwordHash: string): Promise<void>
+  updateProfile(userId: string, input: { firstName?: string; lastName?: string; phone?: string }): Promise<UserRecord | null>
   updateUserStatus(userId: string, status: UserStatus): Promise<UserRecord | null>
   listOwnerRequests(): Promise<UserRecord[]>
+  listAllUsers(): Promise<UserRecord[]>
 
   createRefreshToken(input: {
     userId: string

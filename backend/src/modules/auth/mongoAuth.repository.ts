@@ -15,6 +15,18 @@ import type {
 } from './auth.types.js'
 
 function toUserRecord(doc: UserDocument): UserRecord {
+  const createdAtStr = doc.createdAt
+    ? doc.createdAt instanceof Date
+      ? doc.createdAt.toISOString()
+      : new Date(doc.createdAt).toISOString()
+    : new Date().toISOString()
+
+  const updatedAtStr = doc.updatedAt
+    ? doc.updatedAt instanceof Date
+      ? doc.updatedAt.toISOString()
+      : new Date(doc.updatedAt).toISOString()
+    : new Date().toISOString()
+
   return {
     id: doc._id.toString(),
     email: doc.email,
@@ -22,10 +34,15 @@ function toUserRecord(doc: UserDocument): UserRecord {
     roles: doc.roles,
     firstName: doc.profile?.firstName ?? '',
     lastName: doc.profile?.lastName ?? '',
+    phone: (doc as any).phone ?? '',
     status: doc.status,
-    emailVerifiedAt: doc.emailVerifiedAt ? doc.emailVerifiedAt.toISOString() : null,
-    createdAt: doc.createdAt.toISOString(),
-    updatedAt: doc.updatedAt.toISOString(),
+    emailVerifiedAt: doc.emailVerifiedAt
+      ? doc.emailVerifiedAt instanceof Date
+        ? doc.emailVerifiedAt.toISOString()
+        : new Date(doc.emailVerifiedAt).toISOString()
+      : null,
+    createdAt: createdAtStr,
+    updatedAt: updatedAtStr,
   }
 }
 
@@ -90,6 +107,16 @@ export class MongoAuthRepository implements AuthRepository {
     await User.updateOne({ _id: userId }, { $set: { passwordHash } })
   }
 
+  async updateProfile(userId: string, input: { firstName?: string; lastName?: string; phone?: string }): Promise<UserRecord | null> {
+    const update: Record<string, any> = {}
+    if (input.firstName !== undefined) update['profile.firstName'] = input.firstName.trim()
+    if (input.lastName !== undefined) update['profile.lastName'] = input.lastName.trim()
+    if (input.phone !== undefined) update['phone'] = input.phone.trim()
+    if (Object.keys(update).length === 0) return this.findById(userId)
+    const doc = await User.findByIdAndUpdate(userId, { $set: update }, { new: true }).lean()
+    return doc ? toUserRecord(doc as UserDocument) : null
+  }
+
   async updateUserStatus(userId: string, status: UserStatus): Promise<UserRecord | null> {
     const doc = await User.findByIdAndUpdate(userId, { $set: { status } }, { new: true }).lean()
     return doc ? toUserRecord(doc as UserDocument) : null
@@ -97,6 +124,11 @@ export class MongoAuthRepository implements AuthRepository {
 
   async listOwnerRequests(): Promise<UserRecord[]> {
     const docs = await User.find({ roles: 'owner' }).sort({ createdAt: -1 }).lean()
+    return docs.map((doc) => toUserRecord(doc as UserDocument))
+  }
+
+  async listAllUsers(): Promise<UserRecord[]> {
+    const docs = await User.find().sort({ createdAt: -1 }).lean()
     return docs.map((doc) => toUserRecord(doc as UserDocument))
   }
 

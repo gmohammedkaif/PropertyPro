@@ -1,11 +1,13 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { AUTH_STORAGE_KEY, type Role } from '@/shared'
+import { apiClient, type ApiEnvelope } from '@/lib/apiClient'
 
 export interface AuthUser {
   id: string
   email: string
   name: string
+  phone: string
   roles: Role[]
   status: UserStatus
   /** If this user is a tenant, links to their tenancy record id */
@@ -18,6 +20,7 @@ export interface DemoUser {
   id: string
   name: string
   email: string
+  phone?: string
   roles: Role[]
   tenancyId?: string
 }
@@ -26,6 +29,7 @@ export const demoUser: DemoUser = {
   id: 'usr_demo',
   name: 'Alex Morgan',
   email: 'alex@propertypro.app',
+  phone: '+91 98765 43210',
   roles: ['owner', 'agent'],
 }
 
@@ -33,6 +37,7 @@ export const demoTenant: DemoUser = {
   id: 'usr_tenant',
   name: 'John Tenant',
   email: 'tenant@propertypro.app',
+  phone: '+91 98765 43210',
   roles: ['tenant'],
   tenancyId: 'tnc_001',
 }
@@ -45,6 +50,7 @@ interface AuthState {
   status: AuthStatus
   signIn: (user: AuthUser | DemoUser, token?: string) => void
   signOut: () => void
+  refreshMe: () => Promise<void>
 }
 
 // ─── Role helpers ─────────────────────────────────────────────────────────────
@@ -77,6 +83,7 @@ export const useAuthStore = create<AuthState>()(
             id: user.id,
             email: user.email,
             name: user.name,
+            phone: user.phone || '',
             roles: user.roles,
             status: 'active',
             tenancyId: (user as DemoUser).tenancyId,
@@ -86,14 +93,36 @@ export const useAuthStore = create<AuthState>()(
         }),
       signOut: () =>
         set({ user: null, accessToken: null, status: 'unauthenticated' }),
+      refreshMe: async () => {
+        try {
+          const { data } = await apiClient.get<ApiEnvelope<AuthUser>>('/auth/me')
+          const record = data.data
+          if (record) {
+            set((state) => ({
+              user: state.user
+                ? {
+                    ...state.user,
+                    name: record.name,
+                    phone: record.phone || '',
+                    roles: record.roles,
+                    status: record.status,
+                  }
+                : null,
+            }))
+          }
+        } catch (err) {
+          console.error('Failed to refresh user profile:', err)
+        }
+      },
     }),
     {
       name: AUTH_STORAGE_KEY,
       partialize: (state) => ({ user: state.user }),
       onRehydrateStorage: () => (state) => {
-        // After localStorage is read, set status based on whether a user was found
+        // After localStorage is read, set status to loading if user exists (awaiting accessToken refresh),
+        // or unauthenticated if no user was found.
         if (state) {
-          state.status = state.user ? 'authenticated' : 'unauthenticated'
+          state.status = state.user ? 'loading' : 'unauthenticated'
         }
       },
     },

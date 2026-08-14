@@ -6,12 +6,16 @@ import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const selectVariants = cva(
-  'w-full rounded-md border bg-surface text-text shadow-sm transition-all duration-150 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50',
+  'w-full rounded-md border text-text shadow-sm transition-all duration-150 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       intent: {
-        default: 'border-border focus:border-primary/60 focus:ring-focus/30',
-        error: 'border-danger focus:border-danger focus:ring-danger/25',
+        default: [
+          'bg-[var(--color-surface-3)] border-[var(--color-border-strong)]',
+          'hover:bg-[var(--color-surface-4)]',
+          'focus:border-[#2F7F82] focus:ring-2 focus:ring-[rgba(47,127,130,0.15)]',
+        ].join(' '),
+        error: 'bg-[var(--color-surface-3)] border-danger/60 focus:border-danger focus:ring-2 focus:ring-danger/15',
       },
       size: {
         sm: 'h-8 px-3 text-xs',
@@ -25,6 +29,7 @@ const selectVariants = cva(
     },
   },
 )
+
 
 export interface SelectOption {
   value: string
@@ -61,7 +66,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           <select
             ref={ref}
             id={inputId}
-            className={cn(selectVariants({ intent: error ? 'error' : intent, size }), 'appearance-none pr-9', className)}
+            className={cn(selectVariants({ intent: error ? 'error' : intent, size }), 'appearance-none pr-9 transition-all duration-200', className)}
             aria-invalid={!!error}
             aria-describedby={error ? `${inputId}-error` : helper ? `${inputId}-helper` : undefined}
             {...props}

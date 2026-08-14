@@ -57,7 +57,7 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
   }
 
   return (
-    <header className="glass-subtle sticky top-0 z-[var(--z-sticky)] flex h-16 items-center gap-3 border-b border-border px-4 sm:px-6">
+    <header className="sticky top-0 z-[var(--z-sticky)] flex h-16 items-center gap-4 border-b border-border/40 bg-surface/70 px-4 sm:px-6 backdrop-blur-md">
       <button
         type="button"
         aria-label="Open navigation menu"
@@ -81,23 +81,37 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
       </button>
 
       <div className="hidden min-w-0 md:block">
-        <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">Workspace</p>
-        <h1 className="truncate text-lg font-bold font-display text-text sm:text-xl">{title}</h1>
+        <p className="text-[9px] font-extrabold uppercase tracking-[0.15em] text-muted/70">Workspace</p>
+        <h1 className="truncate text-base font-extrabold font-display text-text tracking-tight -mt-0.5">{title}</h1>
       </div>
 
       <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-        <div className="relative hidden md:block">
+        <div className="relative hidden md:block group">
           <Search
-            className="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-muted"
+            className="pointer-events-none absolute inset-y-0 left-3.5 my-auto h-3.5 w-3.5 text-muted transition-colors group-focus-within:text-primary"
             aria-hidden="true"
           />
           <input
             type="search"
-            placeholder="Search…"
+            placeholder={
+              location.pathname.includes('/app/properties') || location.pathname.includes('/app/property')
+                ? 'Search properties...'
+                : location.pathname.includes('/app/tenancies')
+                ? 'Search tenants or leases...'
+                : location.pathname.includes('/app/payments')
+                ? 'Search payments...'
+                : location.pathname.includes('/app/maintenance')
+                ? 'Search maintenance requests...'
+                : location.pathname.includes('/app/analytics')
+                ? 'Search reports...'
+                : location.pathname.includes('/app/settings')
+                ? 'Search settings...'
+                : 'Search your portfolio...'
+            }
             aria-label="Search"
-            className="h-9 w-40 rounded-lg border border-border bg-surface/60 pl-9 pr-12 text-sm text-text outline-none transition-all duration-150 placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-focus/30 lg:w-56"
+            className="h-9 w-40 rounded-xl border border-border bg-surface-2/30 pl-9.5 pr-12 text-xs text-text outline-none transition-all duration-300 placeholder:text-muted/70 focus:border-primary/50 focus:bg-surface focus:ring-4 focus:ring-primary/10 lg:w-56"
           />
-          <kbd className="pointer-events-none absolute inset-y-0 right-2.5 my-auto hidden h-5 items-center rounded border border-border bg-surface2 px-1.5 text-[10px] font-medium text-muted lg:flex">
+          <kbd className="pointer-events-none absolute inset-y-0 right-2.5 my-auto hidden h-5 items-center rounded-md border border-border/50 bg-surface/85 px-1.5 text-[9px] font-bold text-muted lg:flex shadow-sm">
             ⌘K
           </kbd>
         </div>

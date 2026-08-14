@@ -63,7 +63,7 @@ export function Modal({
                 animate={backDrop.visible}
                 exit={backDrop.hidden}
                 transition={{ duration: 0.18, ease: 'easeOut' }}
-                className="fixed inset-0 z-[var(--z-overlay)] bg-black/50 backdrop-blur-sm"
+                className="modal-blur-bg fixed inset-0 z-[var(--z-overlay)]"
               />
             </DialogPrimitive.Overlay>
 
@@ -74,14 +74,16 @@ export function Modal({
                 exit={sheet.exit}
                 transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                 className={cn(
-                  'glass fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[calc(100vw-2rem)] rounded-2xl shadow-2xl',
+                  'bg-[#193347] border border-[rgba(183,199,214,0.18)] backdrop-blur-2xl',
+                  'fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[calc(100vw-2rem)] rounded-2xl',
+                  'shadow-[0_32px_80px_rgba(6,28,44,0.80)]',
                   'flex flex-col max-h-[90vh]',
                   modalSizes({ size }),
                   className,
                 )}
               >
                 {/* Sticky Header */}
-                <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-border/40 shrink-0">
+                <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-[rgba(183,199,214,0.10)] shrink-0">
                   <div className="flex flex-col gap-0.5">
                     {title ? (
                       <DialogPrimitive.Title className="text-base font-semibold tracking-tight text-text">
@@ -99,7 +101,7 @@ export function Modal({
                     <button
                       type="button"
                       aria-label="Close dialog"
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface2 hover:text-text"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-[#263E52] hover:text-text"
                     >
                       <X className="h-4 w-4" aria-hidden="true" />
                     </button>
@@ -113,7 +115,7 @@ export function Modal({
 
                 {/* Sticky Footer */}
                 {footer ? (
-                  <div className="shrink-0 px-6 py-4 border-t border-border/40 flex items-center justify-end gap-2">
+                  <div className="shrink-0 px-6 py-4 border-t border-[rgba(183,199,214,0.10)] flex items-center justify-end gap-2">
                     {footer}
                   </div>
                 ) : null}

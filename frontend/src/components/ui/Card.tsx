@@ -7,9 +7,9 @@ import { cn } from '@/lib/utils'
 const cardVariants = cva('rounded-xl border text-text', {
   variants: {
     variant: {
-      default: 'border-border bg-surface shadow-sm',
+      default: 'border-border bg-surface shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-md',
       glass: 'glass',
-      elevated: 'border-border bg-surface shadow-lg hover:shadow-xl',
+      elevated: 'border-border/60 bg-surface2 shadow-md transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 hover:border-primary/30',
       outline: 'border-borderStrong bg-transparent',
     },
     padding: {

@@ -211,7 +211,7 @@ export function DashboardPage() {
 
       {/* ── Stats Grid ─────────────────────────────────────────────────────────── */}
       {isSuperAdmin ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-6">
           <StatCard title="Total Properties" value={String(adminStats?.totalProperties ?? 0)} icon={Building2} variant="primary" />
           <StatCard title="Rented Properties" value={String(adminStats?.rentedProperties ?? 0)} icon={UserCheck} variant="success" />
           <StatCard title="Available Properties" value={String(adminStats?.availableProperties ?? 0)} icon={Home} variant="secondary" />
@@ -221,7 +221,7 @@ export function DashboardPage() {
           <StatCard title="Active Leases" value={String(adminStats?.activeTenants ?? 0)} icon={UserCheck} variant="success" />
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard title="Total Properties" value={String(totalProperties)} icon={Building2} variant="primary" />
           <StatCard title="For Rent" value={String(forRentCount)} icon={Home} variant="secondary" />
           <StatCard title="For Sale" value={String(forSaleCount)} icon={ShoppingBag} variant="warning" />
@@ -234,9 +234,9 @@ export function DashboardPage() {
       )}
 
       {/* ── Middle Row: Portfolio Overview + Quick Actions ──────────────────────── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Portfolio Overview */}
-        <GlassCard variant="primary" className="lg:col-span-2 p-0">
+        <GlassCard variant="primary" hover={true} className="lg:col-span-2 p-0">
           <GlassCardHeader className="px-5 pt-5 pb-3 mb-0">
             <div className="flex items-center justify-between">
               <div>
@@ -302,16 +302,16 @@ export function DashboardPage() {
             )}
 
             {/* Property Status Breakdown */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-border/40">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-border/40">
               {[
-                { label: 'For Rent', val: forRentCount, color: 'text-sky-400 bg-sky-500/10 border-sky-500/20' },
-                { label: 'For Sale', val: forSaleCount, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
-                { label: 'Occupied', val: occupiedCount, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-                { label: 'Inactive', val: properties.filter(p => p.listingStatus === 'inactive').length, color: 'text-muted bg-surface2/50 border-border/30' },
+                { label: 'For Rent', val: forRentCount, color: 'text-primary bg-primary/10 border-primary/20' },
+                { label: 'For Sale', val: forSaleCount, color: 'text-warning bg-warning/10 border-warning/20' },
+                { label: 'Occupied', val: occupiedCount, color: 'text-success bg-success/10 border-success/20' },
+                { label: 'Inactive', val: properties.filter(p => p.listingStatus === 'inactive').length, color: 'text-muted bg-surface-2 border-border' },
               ].map(({ label, val, color }) => (
-                <div key={label} className={`rounded-xl border px-3 py-2 text-center ${color}`}>
-                  <p className="text-xl font-bold">{val}</p>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider mt-0.5 opacity-80">{label}</p>
+                <div key={label} className={`rounded-xl border px-3 py-2.5 text-center transition-colors duration-200 ${color}`}>
+                  <p className="text-xl font-bold font-display">{val}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider mt-0.5 opacity-80">{label}</p>
                 </div>
               ))}
             </div>
@@ -319,18 +319,18 @@ export function DashboardPage() {
         </GlassCard>
 
         {/* Quick Actions */}
-        <GlassCard className="flex flex-col">
+        <GlassCard hover={true} className="flex flex-col">
           <GlassCardHeader className="mb-0">
             <GlassCardTitle>Quick Actions</GlassCardTitle>
             <GlassCardDescription>Jump into the most common workflows.</GlassCardDescription>
           </GlassCardHeader>
           <GlassCardContent className="mt-3 flex flex-col gap-2 flex-1">
             {[
-              { label: 'Add Property', sub: 'Register a new property', icon: Building2, color: 'bg-sky-500/10 text-sky-400 group-hover:bg-sky-500/20', path: '/app/properties' },
-              { label: 'Tenant Requests', sub: `${pendingRequests} pending review`, icon: ClipboardList, color: 'bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20', path: '/app/tenant-requests' },
-              { label: 'Manage Tenants', sub: `${activeTenants} active tenancies`, icon: Users, color: 'bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20', path: '/app/tenancies' },
-              { label: 'Maintenance', sub: `${openMaintenance} open requests`, icon: Wrench, color: 'bg-orange-500/10 text-orange-400 group-hover:bg-orange-500/20', path: '/app/maintenance' },
-              { label: 'Payments', sub: `${fmtRupee(totalPending)} pending`, icon: DollarSign, color: 'bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20', path: '/app/payments' },
+              { label: 'Add Property', sub: 'Register a new property', icon: Building2, color: 'bg-primary/10 text-primary group-hover:bg-primary/20', path: '/app/properties' },
+              { label: 'Tenant Requests', sub: `${pendingRequests} pending review`, icon: ClipboardList, color: 'bg-warning/10 text-warning group-hover:bg-warning/20', path: '/app/tenant-requests' },
+              { label: 'Manage Tenants', sub: `${activeTenants} active tenancies`, icon: Users, color: 'bg-info/10 text-info group-hover:bg-info/20', path: '/app/tenancies' },
+              { label: 'Maintenance', sub: `${openMaintenance} open requests`, icon: Wrench, color: 'bg-warning/15 text-warning group-hover:bg-warning/25', path: '/app/maintenance' },
+              { label: 'Payments', sub: `${fmtRupee(totalPending)} pending`, icon: DollarSign, color: 'bg-success/10 text-success group-hover:bg-success/20', path: '/app/payments' },
             ].map(({ label, sub, icon: Icon, color, path }) => (
               <button
                 key={label}
@@ -355,9 +355,9 @@ export function DashboardPage() {
       </div>
 
       {/* ── Bottom Row: Recent Payments + Activity ──────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Recent Payments */}
-        <GlassCard className="lg:col-span-2 p-0">
+        <GlassCard hover={true} className="lg:col-span-2 p-0">
           <GlassCardHeader className="px-5 pt-5 pb-3 mb-0">
             <div className="flex items-center justify-between">
               <div>
@@ -405,9 +405,9 @@ export function DashboardPage() {
         </GlassCard>
 
         {/* Right Column: Recent Activity + Notifications */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           {/* Recent Activity */}
-          <GlassCard variant="primary" className="p-0 flex-1">
+          <GlassCard variant="primary" hover={true} className="p-0 flex-1">
             <GlassCardHeader className="px-5 pt-5 pb-3 mb-0">
               <div className="flex items-center justify-between">
                 <GlassCardTitle className="text-base flex items-center gap-2">
@@ -444,7 +444,7 @@ export function DashboardPage() {
 
           {/* Notifications */}
           {myNotifications.length > 0 && (
-            <GlassCard className="p-0">
+            <GlassCard hover={true} className="p-0">
               <GlassCardHeader className="px-4 pt-4 pb-2 mb-0">
                 <GlassCardTitle className="text-sm flex items-center gap-2">
                   <Bell className="h-3.5 w-3.5 text-primary" /> Notifications

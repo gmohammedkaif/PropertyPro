@@ -5,12 +5,19 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const inputVariants = cva(
-  'w-full rounded-md border bg-surface text-text shadow-sm transition-all duration-150 placeholder:text-muted focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50',
+  'w-full rounded-xl border text-text shadow-sm transition-all duration-200 placeholder:text-muted/80 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       intent: {
-        default: 'border-border focus:border-primary/60 focus:ring-focus/30',
-        error: 'border-danger focus:border-danger focus:ring-danger/25',
+        default: [
+          'bg-[var(--color-surface-3)] border-[var(--color-border-strong)]',
+          'hover:bg-[var(--color-surface-4)] hover:border-[rgba(183,199,214,0.25)]',
+          'focus:bg-[var(--color-surface-2)] focus:border-[#2F7F82] focus:ring-4 focus:ring-[rgba(47,127,130,0.15)]',
+        ].join(' '),
+        error: [
+          'bg-[var(--color-surface-3)] border-danger/60',
+          'focus:border-danger focus:bg-[var(--color-surface-2)] focus:ring-4 focus:ring-danger/10',
+        ].join(' '),
       },
       size: {
         sm: 'h-8 px-3 text-xs',
@@ -24,6 +31,7 @@ const inputVariants = cva(
     },
   },
 )
+
 
 export interface InputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>, VariantProps<typeof inputVariants> {
@@ -81,8 +89,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               inputVariants({ intent: error ? 'error' : intent, size }),
               leftIcon && 'pl-10',
               rightSlot && 'pr-10',
-              'bg-black/20 border-border/40 text-text placeholder:text-text/30 hover:bg-black/30 focus:bg-black/40',
-              'focus:ring-2 focus:shadow-md transition-all duration-200',
               className,
             )}
             aria-invalid={!!error}

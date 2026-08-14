@@ -143,7 +143,7 @@ export function SettingsPage() {
   const roleBadge = isAdmin
     ? { label: 'Super Admin', color: 'var(--color-warning, #f59e0b)' }
     : isOwner
-      ? { label: 'Property Owner', color: 'var(--color-accent, #6366f1)' }
+      ? { label: 'Property Owner', color: 'var(--color-primary, #0284c7)' }
       : { label: 'Tenant', color: 'var(--color-success, #10b981)' }
 
   // ── Tabs config ───────────────────────────────────────────────────────────
@@ -158,10 +158,10 @@ export function SettingsPage() {
     <div style={{ padding: '2rem', maxWidth: '900px', margin: '0 auto' }}>
       {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text-primary, #f8fafc)', margin: 0 }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
           Settings
         </h1>
-        <p style={{ color: 'var(--color-text-muted, #94a3b8)', marginTop: '0.25rem', fontSize: '0.9rem' }}>
+        <p style={{ color: 'var(--color-text-muted)', marginTop: '0.25rem', fontSize: '0.9rem' }}>
           Manage your account preferences
         </p>
       </div>
@@ -169,8 +169,8 @@ export function SettingsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '1.5rem', alignItems: 'start' }}>
         {/* ── Sidebar ───────────────────────────────────────────────────── */}
         <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
           borderRadius: '16px',
           overflow: 'hidden',
         }}>
@@ -178,12 +178,12 @@ export function SettingsPage() {
           <div style={{
             padding: '1.5rem',
             textAlign: 'center',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            borderBottom: '1px solid var(--color-border)',
           }}>
             <div style={{ position: 'relative', display: 'inline-block', marginBottom: '0.75rem' }}>
               <div style={{
                 width: 72, height: 72, borderRadius: '50%',
-                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                background: 'linear-gradient(135deg, var(--color-primary, #0284c7), var(--color-primary-strong, #0369a1))',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '1.75rem', fontWeight: 700, color: '#fff',
                 margin: '0 auto',
@@ -200,10 +200,10 @@ export function SettingsPage() {
                 <Camera size={12} />
               </button>
             </div>
-            <div style={{ fontWeight: 600, color: 'var(--color-text-primary, #f8fafc)', fontSize: '0.9rem' }}>
+            <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.9rem' }}>
               {user?.name ?? 'User'}
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted, #94a3b8)', marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
               {user?.email}
             </div>
             <span style={{
@@ -226,8 +226,8 @@ export function SettingsPage() {
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem',
                   padding: '0.65rem 0.85rem', borderRadius: '10px', border: 'none',
-                  background: activeTab === tab.id ? 'rgba(99,102,241,0.15)' : 'transparent',
-                  color: activeTab === tab.id ? '#818cf8' : 'var(--color-text-muted, #94a3b8)',
+                  background: activeTab === tab.id ? 'var(--color-primary-soft)' : 'transparent',
+                  color: activeTab === tab.id ? 'var(--color-primary)' : 'var(--color-text-muted)',
                   cursor: 'pointer', fontSize: '0.85rem', fontWeight: activeTab === tab.id ? 600 : 400,
                   transition: 'all 0.15s', textAlign: 'left', marginBottom: '0.1rem',
                 }}
@@ -261,8 +261,8 @@ export function SettingsPage() {
 
         {/* ── Content ───────────────────────────────────────────────────── */}
         <div style={{
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
           borderRadius: '16px',
           padding: '1.75rem',
         }}>
@@ -270,10 +270,10 @@ export function SettingsPage() {
           {/* ── PROFILE TAB ──────────────────────────────────────────── */}
           {activeTab === 'profile' && (
             <form onSubmit={handleSaveProfile}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary, #f8fafc)', marginTop: 0 }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)', marginTop: 0 }}>
                 Personal Information
               </h2>
-              <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.85rem', marginBottom: '1.5rem', marginTop: '0.25rem' }}>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem', marginTop: '0.25rem' }}>
                 Update your name and contact details.
               </p>
 
@@ -327,10 +327,10 @@ export function SettingsPage() {
           {/* ── PASSWORD TAB ─────────────────────────────────────────── */}
           {activeTab === 'password' && (
             <form onSubmit={handleChangePassword}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary, #f8fafc)', marginTop: 0 }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text)', marginTop: 0 }}>
                 Change Password
               </h2>
-              <p style={{ color: 'var(--color-text-muted, #94a3b8)', fontSize: '0.85rem', marginBottom: '1.5rem', marginTop: '0.25rem' }}>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem', marginTop: '0.25rem' }}>
                 After changing your password you will be signed out.
               </p>
 
@@ -426,7 +426,7 @@ export function SettingsPage() {
                     onClick={() => item.set(!item.value)}
                     style={{
                       width: 44, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer',
-                      background: item.value ? '#6366f1' : 'rgba(255,255,255,0.1)',
+                      background: item.value ? 'var(--color-primary, #0284c7)' : 'rgba(255,255,255,0.1)',
                       position: 'relative', transition: 'background 0.2s', flexShrink: 0,
                     }}
                   >
@@ -528,7 +528,7 @@ export function SettingsPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{
                           width: 36, height: 36, borderRadius: '50%',
-                          background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                          background: 'linear-gradient(135deg, var(--color-primary, #0284c7), var(--color-primary-strong, #0369a1))',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontWeight: 700, color: '#fff', fontSize: '0.9rem',
                         }}>
@@ -578,11 +578,11 @@ const labelStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '0.6rem 0.85rem',
+  padding: '0.65rem 0.85rem',
   borderRadius: '10px',
-  border: '1px solid rgba(255,255,255,0.1)',
-  background: 'rgba(255,255,255,0.05)',
-  color: 'var(--color-text-primary, #f8fafc)',
+  border: '1px solid var(--color-border)',
+  background: 'var(--color-surface-2)',
+  color: 'var(--color-text)',
   fontSize: '0.88rem',
   outline: 'none',
   boxSizing: 'border-box',
@@ -595,7 +595,7 @@ const primaryBtnStyle: React.CSSProperties = {
   padding: '0.65rem 1.4rem',
   borderRadius: '10px',
   border: 'none',
-  background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+  background: 'linear-gradient(135deg, var(--color-primary, #0284c7), var(--color-primary-strong, #0369a1))',
   color: '#fff',
   fontWeight: 600,
   fontSize: '0.88rem',

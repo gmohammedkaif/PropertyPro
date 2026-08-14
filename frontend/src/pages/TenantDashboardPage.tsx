@@ -179,13 +179,21 @@ export function TenantDashboardPage() {
           {/* Current Rental Summary & Quick Buttons */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Current Rental Summary Card */}
-            <GlassCard variant="primary" className="lg:col-span-2 p-0 overflow-hidden relative group">
+            <GlassCard variant="primary" hover={true} className="lg:col-span-2 p-0 overflow-hidden relative group">
               <div className="p-6 flex flex-col sm:flex-row gap-6">
-                {/* Property Image Placeholder / Badge */}
-                <div className="relative h-44 sm:h-auto sm:w-48 rounded-xl overflow-hidden bg-surface2 shrink-0 border border-border/60">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-surface3 flex items-center justify-center">
-                    <Building2 className="h-16 w-16 text-primary/40" />
-                  </div>
+                {/* Property Image / Badge */}
+                <div className="relative h-44 sm:h-44 sm:w-48 rounded-xl overflow-hidden bg-surface-2 shrink-0 border border-border/60">
+                  {myProperty?.imageUrl ? (
+                    <img
+                      src={myProperty.imageUrl}
+                      alt={myTenancy.propertyName}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-surface-3 flex items-center justify-center">
+                      <Building2 className="h-12 w-12 text-primary/30" />
+                    </div>
+                  )}
                   <div className="absolute top-3 left-3">
                     <Badge intent="success" size="sm" className="gap-1 font-semibold shadow-md">
                       <CheckCircle className="h-3 w-3" /> Active Rental
@@ -247,7 +255,7 @@ export function TenantDashboardPage() {
             </GlassCard>
 
             {/* Quick Buttons Card */}
-            <GlassCard className="p-6 flex flex-col justify-between gap-4">
+            <GlassCard hover={true} className="p-6 flex flex-col justify-between gap-4">
               <h3 className="text-base font-bold text-text flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" /> Quick Actions
               </h3>
@@ -303,7 +311,7 @@ export function TenantDashboardPage() {
           {/* Notifications & Recent Activity Grid */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Recent Notifications */}
-            <GlassCard className="p-0 overflow-hidden">
+            <GlassCard hover={true} className="p-0 overflow-hidden">
               <GlassCardHeader className="px-5 pt-5 pb-3">
                 <div className="flex items-center justify-between">
                   <GlassCardTitle className="flex items-center gap-2 text-base">
@@ -346,7 +354,7 @@ export function TenantDashboardPage() {
             </GlassCard>
 
             {/* Recent Rent Activity */}
-            <GlassCard className="p-0 overflow-hidden">
+            <GlassCard hover={true} className="p-0 overflow-hidden">
               <GlassCardHeader className="px-5 pt-5 pb-3">
                 <div className="flex items-center justify-between">
                   <GlassCardTitle className="flex items-center gap-2 text-base">
@@ -395,7 +403,7 @@ export function TenantDashboardPage() {
         /* ---------------------------------------------------- */
         <div className="flex flex-col gap-6">
           {/* Professional Empty State Banner */}
-          <GlassCard variant="primary" className="p-8 text-center relative overflow-hidden">
+          <GlassCard variant="primary" hover={true} className="p-8 text-center relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
               <Building2 className="h-48 w-48 text-primary" />
             </div>
@@ -419,7 +427,7 @@ export function TenantDashboardPage() {
           {(myRequests.length > 0 || myNotifications.length > 0) && (
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {/* My Rental Requests */}
-              <GlassCard className="p-0 overflow-hidden">
+              <GlassCard hover={true} className="p-0 overflow-hidden">
                 <GlassCardHeader className="px-5 pt-5 pb-3">
                   <GlassCardTitle className="text-base flex items-center gap-2">
                     <FileText className="h-4 w-4 text-primary" /> Rental Requests Sent ({myRequests.length})
@@ -452,7 +460,7 @@ export function TenantDashboardPage() {
               </GlassCard>
 
               {/* Notifications */}
-              <GlassCard className="p-0 overflow-hidden">
+              <GlassCard hover={true} className="p-0 overflow-hidden">
                 <GlassCardHeader className="px-5 pt-5 pb-3">
                   <GlassCardTitle className="text-base flex items-center gap-2">
                     <Bell className="h-4 w-4 text-amber-400" /> Notifications & Updates

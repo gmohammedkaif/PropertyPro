@@ -52,7 +52,7 @@ export function Avatar({ name, src, size, ring, status, className }: AvatarProps
       aria-label={name}
       className={cn(
         avatarVariants({ size, ring }),
-        'bg-gradient-to-br from-indigo-500 to-violet-600',
+        'bg-gradient-to-br from-sky-500 to-primary-strong',
         className,
       )}
     >

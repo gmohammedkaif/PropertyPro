@@ -152,8 +152,8 @@ export function EnhancedTable<T extends Record<string, unknown> = Record<string,
                 key={(row as any).id || rowIndex}
                 className={cn(
                   'border-b border-border/40 transition-all duration-200',
-                  hover && 'hover:bg-primary/8 hover:translate-x-1 hover:shadow-md',
-                  isSelected(row) && 'bg-primary/15 border-l-4 border-primary',
+                  hover && 'hover:bg-primary/5 hover:shadow-sm',
+                  isSelected(row) && 'bg-primary/10 border-l-4 border-primary',
                   'group',
                 )}
                 onClick={() => onRowClick?.(row)}

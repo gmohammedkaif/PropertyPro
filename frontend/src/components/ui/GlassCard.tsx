@@ -9,14 +9,14 @@ const glassCardVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border-border/60 bg-surface/60 backdrop-blur-md',
-        primary: 'border-primary/30 bg-gradient-to-br from-surface/80 to-surface2/60 backdrop-blur-md',
-        secondary: 'border-secondary/30 bg-gradient-to-br from-surface/80 to-surface2/60 backdrop-blur-md',
-        success: 'border-success/30 bg-gradient-to-br from-surface/80 to-surface2/60 backdrop-blur-md',
-        warning: 'border-warning/30 bg-gradient-to-br from-surface/80 to-surface2/60 backdrop-blur-md',
-        danger: 'border-danger/30 bg-gradient-to-br from-surface/80 to-surface2/60 backdrop-blur-md',
-        glass: 'border-white/10 bg-white/5 backdrop-blur-xl',
-        elevated: 'border-border/40 bg-surface2/80 backdrop-blur-lg shadow-xl',
+        default:   'border-border/80 bg-surface/95 backdrop-blur-sm shadow-sm',
+        primary:   'border-primary/30 bg-gradient-to-br from-surface to-surface2 backdrop-blur-md',
+        secondary: 'border-[rgba(183,199,214,0.20)] bg-gradient-to-br from-surface to-surface2 backdrop-blur-md',
+        success:   'border-success/25 bg-gradient-to-br from-surface to-surface2 backdrop-blur-md',
+        warning:   'border-warning/30 bg-gradient-to-br from-surface to-surface2 backdrop-blur-md',
+        danger:    'border-danger/30 bg-gradient-to-br from-surface to-surface2 backdrop-blur-md',
+        glass:     'border-[rgba(183,199,214,0.18)] bg-surface/90 backdrop-blur-xl',
+        elevated:  'border-[rgba(183,199,214,0.20)] bg-surface2 shadow-lg',
       },
       size: {
         sm: 'p-4',
@@ -33,32 +33,32 @@ const glassCardVariants = cva(
       {
         variant: 'primary',
         withGlow: true,
-        className: 'shadow-[0_0_30px_rgba(139,92,246,0.2)]',
+        className: 'shadow-[0_0_28px_rgba(47,127,130,0.20)]',
       },
       {
         variant: 'secondary',
         withGlow: true,
-        className: 'shadow-[0_0_30px_rgba(79,140,255,0.2)]',
+        className: 'shadow-[0_0_28px_rgba(183,199,214,0.15)]',
       },
       {
         variant: 'success',
         withGlow: true,
-        className: 'shadow-[0_0_30px_rgba(34,197,94,0.2)]',
+        className: 'shadow-[0_0_28px_rgba(169,216,213,0.18)]',
       },
       {
         variant: 'warning',
         withGlow: true,
-        className: 'shadow-[0_0_30px_rgba(245,158,11,0.2)]',
+        className: 'shadow-[0_0_28px_rgba(232,168,76,0.18)]',
       },
       {
         variant: 'danger',
         withGlow: true,
-        className: 'shadow-[0_0_30px_rgba(239,68,68,0.2)]',
+        className: 'shadow-[0_0_28px_rgba(212,114,106,0.18)]',
       },
       {
         variant: 'glass',
         withGlow: true,
-        className: 'shadow-[0_0_40px_rgba(255,255,255,0.1)]',
+        className: 'shadow-[0_0_36px_rgba(47,127,130,0.14)]',
       },
     ],
     defaultVariants: {
@@ -68,6 +68,7 @@ const glassCardVariants = cva(
     },
   },
 )
+
 
 const hoverEffects =
   'transition-all duration-300 ease-[var(--ease-out)] hover:-translate-y-1 hover:shadow-xl'

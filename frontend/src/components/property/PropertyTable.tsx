@@ -311,49 +311,52 @@ function GridCards({
         return (
           <div
             key={property.id}
-            className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface transition-all duration-300 hover:border-primary/20 hover:shadow-xl hover:-translate-y-1"
+            className="group flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-surface/50 backdrop-blur-sm transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:-translate-y-1 relative"
           >
+            {/* Top lighting element */}
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+
             {/* Property Image Header */}
-            <div className="relative h-48 w-full overflow-hidden bg-surface2">
+            <div className="relative h-48 w-full overflow-hidden bg-surface2/50">
               <img
                 src={imageUrl}
                 alt={property.name}
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <div className="absolute left-4 top-4">
+              <div className="absolute inset-0 bg-gradient-to-t from-[#080b1a]/80 via-transparent to-transparent z-10" />
+              <div className="absolute left-4 top-4 z-20">
                 <StatusBadge status={property.status} />
               </div>
-              <div className="absolute right-4 top-4">
+              <div className="absolute right-4 top-4 z-20">
                 <TypeBadge type={property.type} />
               </div>
             </div>
 
             {/* Content */}
             <div className="flex flex-1 flex-col p-5">
-              <h3 className="font-display text-xl font-bold text-text group-hover:text-primary transition-colors">
+              <h3 className="font-display text-base font-extrabold text-text group-hover:text-primary transition-colors tracking-tight leading-snug">
                 {property.name}
               </h3>
-              <p className="mt-1 text-xs text-muted font-semibold">
+              <p className="mt-1 text-[10px] text-muted font-bold uppercase tracking-wider">
                 {getPropertyUnitLabel(property.name, property.type)}
               </p>
-              <p className="mt-2 text-sm text-text2 line-clamp-2 flex-1">
+              <p className="mt-2.5 text-xs text-text2 line-clamp-2 flex-1 leading-relaxed">
                 {property.address.line1}, {property.address.city}
               </p>
 
               {/* Pricing & Actions */}
-              <div className="mt-5 flex items-center justify-between border-t border-border/60 pt-4">
+              <div className="mt-5 flex items-center justify-between border-t border-border/40 pt-4">
                 <div className="flex flex-col">
-                  <span className="text-[10px] uppercase tracking-wider text-muted">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-muted/70">
                     {(property as any).listingStatus === 'for-sale' ? 'Sale Price' : 'Rent'}
                   </span>
-                  <p className="text-lg font-bold text-text font-display">
+                  <p className="text-base font-extrabold text-text font-display mt-0.5 tracking-tight">
                     {getPropertyRentDisplay(property)}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <Button variant="ghost" size="sm" className="text-xs font-semibold" onClick={() => onView(property.id)}>
+                  <Button variant="ghost" size="sm" className="text-xs font-bold text-primary hover:bg-primary/10 rounded-lg px-3" onClick={() => onView(property.id)}>
                     View Details
                   </Button>
                   {(onEdit || onDelete) && (

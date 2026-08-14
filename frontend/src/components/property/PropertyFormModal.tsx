@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Upload, Image, X } from 'lucide-react'
+import { Upload, Image, X, Building2, DollarSign, MapPin, Sparkles } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -598,12 +598,12 @@ export function PropertyFormModal({
       }
     >
       <form id="property-form" onSubmit={handleSubmit} noValidate>
-        <div className="flex flex-col gap-5">
-          {/* Basic info */}
-          <fieldset className="flex flex-col gap-4">
-            <legend className="mb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
-              Property Details
-            </legend>
+        <div className="flex flex-col gap-6">
+          {/* Section 1: Property Details */}
+          <div className="rounded-2xl border border-border/40 bg-surface/20 p-5 flex flex-col gap-4">
+            <h3 className="text-xs font-bold text-text uppercase tracking-wider flex items-center gap-2 border-b border-border/30 pb-2.5 mb-1.5">
+              <Building2 className="h-4 w-4 text-primary" /> Property Details
+            </h3>
 
             {isSuperAdmin && mode === 'create' && (
               <Select
@@ -630,7 +630,7 @@ export function PropertyFormModal({
               required
             />
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <Select
                 id="property-type"
                 label="Type"
@@ -656,7 +656,7 @@ export function PropertyFormModal({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <Input
                 id="property-bedrooms"
                 label="Bedrooms (BHK)"
@@ -680,7 +680,7 @@ export function PropertyFormModal({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <Input
                 id="property-parking"
                 label="Parking Spaces"
@@ -704,7 +704,29 @@ export function PropertyFormModal({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="property-desc" className="text-xs font-semibold text-text/80 tracking-wide">
+                Description <span className="text-muted font-normal">(optional)</span>
+              </label>
+              <textarea
+                id="property-desc"
+                rows={3}
+                placeholder="Brief description of the property…"
+                value={form.description}
+                onChange={update('description')}
+                disabled={isPending}
+                className="w-full resize-none rounded-xl border border-border/40 bg-surface/50 px-3 py-2 text-sm text-text placeholder:text-text-muted outline-none transition focus:border-primary focus:bg-surface focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+              />
+            </div>
+          </div>
+
+          {/* Section 2: Financial Details */}
+          <div className="rounded-2xl border border-border/40 bg-surface/20 p-5 flex flex-col gap-4">
+            <h3 className="text-xs font-bold text-text uppercase tracking-wider flex items-center gap-2 border-b border-border/30 pb-2.5 mb-1.5">
+              <DollarSign className="h-4 w-4 text-emerald-400" /> Financial Details
+            </h3>
+
+            <div className="grid grid-cols-2 gap-4">
               {property?.listingStatus === 'for-sale' ? (
                 <>
                   <Input
@@ -769,99 +791,13 @@ export function PropertyFormModal({
                 </>
               )}
             </div>
+          </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="property-desc" className="text-xs font-medium text-text2">
-                Description <span className="text-muted">(optional)</span>
-              </label>
-              <textarea
-                id="property-desc"
-                rows={3}
-                placeholder="Brief description of the property…"
-                value={form.description}
-                onChange={update('description')}
-                disabled={isPending}
-                className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-muted outline-none transition focus:border-primary focus:ring-2 focus:ring-focus/30 disabled:cursor-not-allowed disabled:opacity-60"
-              />
-            </div>
-          </fieldset>
-
-          {/* Property Images */}
-          <fieldset className="flex flex-col gap-4 border-t border-border pt-4">
-            <legend className="mb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
-              Property Images
-            </legend>
-            
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-medium text-text2">
-                Upload Photos <span className="text-muted">(max 10, 5MB each)</span>
-              </label>
-              <input
-                type="file"
-                id="property-images"
-                accept="image/*"
-                multiple
-                onChange={handleImageChange}
-                disabled={isPending}
-                className="sr-only"
-                aria-label="Upload property images"
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => document.getElementById('property-images')?.click()}
-                disabled={isPending}
-                className="w-fit"
-              >
-                <Upload className="h-4 w-4" aria-hidden="true" />
-                Select Images
-              </Button>
-              {touched && errors.image && (
-                <p className="text-xs font-semibold text-danger">{errors.image}</p>
-              )}
-            </div>
-
-            {form.imagePreviews.length > 0 && (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-                {form.imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-surface2 border border-border">
-                    <img
-                      src={preview}
-                      alt={`Property image ${index + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
-                      aria-label="Remove image"
-                    >
-                      <X className="h-3.5 w-3.5" aria-hidden="true" />
-                    </button>
-                    {index === 0 && (
-                      <span className="absolute bottom-1 left-1 px-1.5 py-0.5 text-[10px] font-semibold bg-primary text-white rounded">
-                        Cover
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {form.imagePreviews.length === 0 && (
-              <div className="text-center py-8 border-2 border-dashed border-border/50 rounded-xl">
-                <Image className="h-10 w-10 mx-auto text-muted/50 mb-2" aria-hidden="true" />
-                <p className="text-sm text-muted">No images uploaded yet</p>
-                <p className="text-xs text-muted/70 mt-1">Add photos to make your property more attractive</p>
-              </div>
-            )}
-          </fieldset>
-
-          {/* Address */}
-          <fieldset className="flex flex-col gap-3 border-t border-border pt-4">
-            <legend className="mb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
-              Address
-            </legend>
+          {/* Section 3: Location Details */}
+          <div className="rounded-2xl border border-border/40 bg-surface/20 p-5 flex flex-col gap-4">
+            <h3 className="text-xs font-bold text-text uppercase tracking-wider flex items-center gap-2 border-b border-border/30 pb-2.5 mb-1.5">
+              <MapPin className="h-4 w-4 text-cyan-400" /> Location Details
+            </h3>
 
             <Input
               id="property-line1"
@@ -883,7 +819,7 @@ export function PropertyFormModal({
               disabled={isPending}
             />
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <div ref={autocompleteRef} className="relative flex flex-col">
                 <Input
                   id="property-city"
@@ -904,7 +840,7 @@ export function PropertyFormModal({
                 />
 
                 {showSuggestions && (
-                  <div className="absolute left-0 right-0 top-[68px] z-50 max-h-60 overflow-y-auto rounded-lg border border-border bg-surface shadow-xl p-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="absolute left-0 right-0 top-[70px] z-50 max-h-60 overflow-y-auto rounded-xl border border-border bg-surface/90 shadow-2xl p-1.5 backdrop-blur-md animate-in fade-in slide-in-from-top-1 duration-200">
                     <ul role="listbox" className="flex flex-col gap-0.5">
                       {suggestions.map((suggestion, index) => (
                         <li
@@ -914,10 +850,10 @@ export function PropertyFormModal({
                           onClick={() => handleSelectSuggestion(suggestion)}
                           onMouseEnter={() => setSelectedIndex(index)}
                           className={cn(
-                            "px-3 py-2 text-sm text-text rounded-md cursor-pointer transition-colors text-left font-medium",
+                            "px-3.5 py-2 text-sm rounded-lg cursor-pointer transition-all duration-150 text-left font-medium",
                             index === selectedIndex
-                              ? "bg-primary text-white"
-                              : "hover:bg-black/5 dark:hover:bg-white/5"
+                              ? "bg-primary text-white shadow-sm"
+                              : "text-text2 hover:bg-surface-2 hover:text-text"
                           )}
                         >
                           {suggestion.label}
@@ -940,7 +876,7 @@ export function PropertyFormModal({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <Input
                 id="property-postal"
                 label="Postal Code"
@@ -963,7 +899,78 @@ export function PropertyFormModal({
                 required
               />
             </div>
-          </fieldset>
+          </div>
+
+          {/* Section 4: Property Images */}
+          <div className="rounded-2xl border border-border/40 bg-surface/20 p-5 flex flex-col gap-4">
+            <h3 className="text-xs font-bold text-text uppercase tracking-wider flex items-center gap-2 border-b border-border/30 pb-2.5 mb-1.5">
+              <Sparkles className="h-4 w-4 text-amber-400" /> Property Images
+            </h3>
+            
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold text-text/80 tracking-wide">
+                Upload Photos <span className="text-muted font-normal">(max 10, 5MB each)</span>
+              </label>
+              <input
+                type="file"
+                id="property-images"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+                disabled={isPending}
+                className="sr-only"
+                aria-label="Upload property images"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => document.getElementById('property-images')?.click()}
+                disabled={isPending}
+                className="w-fit hover:bg-surface2/80 rounded-lg px-4"
+              >
+                <Upload className="h-4 w-4 mr-2" aria-hidden="true" />
+                Select Images
+              </Button>
+              {touched && errors.image && (
+                <p className="text-xs font-semibold text-danger">{errors.image}</p>
+              )}
+            </div>
+
+            {form.imagePreviews.length > 0 && (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+                {form.imagePreviews.map((preview, index) => (
+                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-surface2/50 border border-border/50 group">
+                    <img
+                      src={preview}
+                      alt={`Property image ${index + 1}`}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors z-20"
+                      aria-label="Remove image"
+                    >
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
+                    </button>
+                    {index === 0 && (
+                      <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 text-[9px] font-bold bg-primary text-white rounded shadow-sm z-20">
+                        Cover
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {form.imagePreviews.length === 0 && (
+              <div className="text-center py-8 border-2 border-dashed border-border/50 rounded-xl bg-surface/10">
+                <Image className="h-10 w-10 mx-auto text-muted/40 mb-2" aria-hidden="true" />
+                <p className="text-sm font-semibold text-muted">No images uploaded yet</p>
+                <p className="text-xs text-muted/60 mt-1">Add photos to make your property more attractive</p>
+              </div>
+            )}
+          </div>
         </div>
       </form>
     </Modal>

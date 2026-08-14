@@ -19,7 +19,7 @@ export function Sidebar({ collapsed, className, onNavigate }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'sidebar-glass fixed inset-y-0 left-0 z-[var(--z-sidebar)] hidden flex-col transition-[width] duration-300 ease-[var(--ease-out-expo)] lg:flex',
+        'sidebar-glass fixed inset-y-0 left-0 h-screen max-h-screen z-[var(--z-sidebar)] hidden flex-col transition-[width] duration-300 ease-[var(--ease-out-expo)] lg:flex',
         collapsed ? 'w-20' : 'w-64',
         className,
       )}
@@ -44,15 +44,15 @@ export function SidebarContent({
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full max-h-full flex-col">
       <Brand collapsed={collapsed} />
 
-      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4" aria-label="Main navigation">
+      <nav className="flex-1 space-y-6 overflow-y-auto px-4 py-6 custom-scrollbar" aria-label="Main navigation">
         {getNavGroups(user?.roles).map((group) => (
-          <div key={group.label} className="space-y-1">
+          <div key={group.label} className="space-y-1.5">
             <p
               className={cn(
-                'px-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted',
+                'px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-muted opacity-80',
                 collapsed && 'sr-only',
               )}
             >
@@ -73,12 +73,12 @@ export function SidebarContent({
         ))}
       </nav>
 
-      <div className="border-t border-border/60 p-3">
+      <div className="border-t border-border/40 p-3 bg-surface-2/20 backdrop-blur-md">
         {user ? (
           <div
             className={cn(
-              'sidebar-item flex items-center gap-2.5 rounded-xl px-2 py-2',
-              collapsed && 'justify-center px-1',
+              'flex items-center gap-3 rounded-xl border border-border/50 bg-surface-2/40 p-2.5 shadow-sm transition-all duration-300 hover:border-primary/30 hover:bg-surface-2/75 hover:shadow-md',
+              collapsed && 'justify-center p-1 border-transparent bg-transparent shadow-none',
             )}
           >
             <Avatar name={user.name} size="sm" status="online" />
@@ -86,12 +86,12 @@ export function SidebarContent({
             {!collapsed ? (
               <>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-text">{user.name}</p>
+                  <p className="truncate text-xs font-bold text-text leading-tight">{user.name}</p>
                   <span className={cn(
-                    'inline-flex items-center gap-1 text-[10px] font-semibold uppercase',
-                    isAdmin(user) ? 'text-sky-400' : 'text-emerald-400'
+                    'inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-widest mt-1',
+                    isAdmin(user) ? 'text-primary' : 'text-emerald-500'
                   )}>
-                    {isAdmin(user) ? <Shield className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                    {isAdmin(user) ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
                     {isAdmin(user) ? 'Admin' : 'Tenant'}
                   </span>
                 </div>
@@ -99,21 +99,12 @@ export function SidebarContent({
                   type="button"
                   aria-label="Sign out"
                   onClick={handleSignOut}
-                  className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }), 'hover:bg-danger/20 hover:text-danger')}
+                  className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }), 'hover:bg-danger/10 hover:text-danger rounded-lg shrink-0 transition-colors duration-200')}
                 >
-                  <LogOut className="h-4 w-4" aria-hidden="true" />
+                  <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               </>
-            ) : (
-              <button
-                type="button"
-                aria-label="Sign out"
-                onClick={handleSignOut}
-                className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }), 'hover:bg-danger/20 hover:text-danger')}
-              >
-                <LogOut className="h-4 w-4" aria-hidden="true" />
-              </button>
-            )}
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -138,29 +129,35 @@ function SidebarLink({
         onClick={onNavigate}
         className={({ isActive }) =>
           cn(
-            'sidebar-item group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
-            collapsed && 'justify-center px-0',
+            'group relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all duration-300 border',
+            collapsed && 'justify-center px-0 mx-auto w-10 h-10',
             isActive
-              ? 'bg-primary text-white shadow-md shadow-primary/20'
-              : 'text-text2 hover:text-text hover:bg-surface2/50',
+              ? 'bg-primary/5 text-primary border-primary/20 shadow-sm shadow-primary/5'
+              : 'text-text2 hover:text-text hover:bg-surface2/60 border-transparent',
           )
         }
       >
         {({ isActive }) => (
           <>
+            {isActive && (
+              <span
+                className="absolute left-0 top-1/4 bottom-1/4 w-1 rounded-r-full bg-primary shadow-[0_0_8px_var(--color-primary)]"
+                aria-hidden="true"
+              />
+            )}
             <item.icon
               aria-hidden="true"
               className={cn(
-                'h-[18px] w-[18px] shrink-0 transition-all duration-300',
-                isActive ? 'text-white' : 'text-muted group-hover:text-text2',
-                'group-hover:scale-110',
+                'h-4.5 w-4.5 shrink-0 transition-all duration-300',
+                isActive ? 'text-primary' : 'text-muted group-hover:text-text2',
+                'group-hover:scale-105',
               )}
             />
 
-            {!collapsed ? <span className="flex-1 truncate">{item.label}</span> : null}
+            {!collapsed ? <span className="flex-1 truncate tracking-wide">{item.label}</span> : null}
 
             {!collapsed && item.badge ? (
-              <Badge intent="primary" size="sm" className="bg-white/20 text-white border-white/20">
+              <Badge intent="primary" size="sm">
                 {item.badge}
               </Badge>
             ) : null}
@@ -175,18 +172,18 @@ function Brand({ collapsed }: { collapsed: boolean }) {
   return (
     <div
       className={cn(
-        'flex h-16 shrink-0 items-center border-b border-border px-4',
+        'flex h-16 shrink-0 items-center border-b border-border/40 px-4',
         collapsed && 'justify-center px-2',
       )}
     >
-      <NavLink to="/app" aria-label="PropManager Pro dashboard" className="flex items-center gap-2.5">
-        <span className="bg-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md shadow-primary/30">
-          <Home className="h-[18px] w-[18px]" aria-hidden="true" />
+      <NavLink to="/app" aria-label="PropManager Pro dashboard" className="flex items-center gap-3 group">
+        <span className="bg-gradient-to-tr from-primary to-primary-strong flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-md shadow-primary/25 transition-transform duration-300 group-hover:scale-105">
+          <Home className="h-5 w-5" aria-hidden="true" />
         </span>
         {!collapsed ? (
           <div className="flex flex-col">
-            <span className="text-sm font-bold tracking-tight text-text">PropManager</span>
-            <span className="text-[10px] font-semibold text-primary-strong tracking-wider uppercase -mt-1">Pro</span>
+            <span className="text-sm font-bold tracking-tight text-text font-display leading-none">PropManager</span>
+            <span className="text-[10px] font-extrabold text-primary-strong tracking-widest uppercase mt-0.5">Pro</span>
           </div>
         ) : null}
       </NavLink>

@@ -5,14 +5,27 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const enhancedInputVariants = cva(
-  'w-full rounded-md border bg-surface/50 backdrop-blur-sm text-text shadow-sm transition-all duration-300 placeholder:text-muted focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+  'w-full rounded-xl border text-text shadow-sm transition-all duration-200 placeholder:text-muted/80 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       intent: {
-        default: 'border-border focus:border-primary/60 focus:ring-2 focus:ring-primary/30',
-        error: 'border-danger focus:border-danger focus:ring-2 focus:ring-danger/25',
-        success: 'border-success focus:border-success focus:ring-2 focus:ring-success/25',
-        warning: 'border-warning focus:border-warning focus:ring-2 focus:ring-warning/25',
+        default: [
+          'bg-[var(--color-surface-3)] border-[var(--color-border-strong)]',
+          'hover:bg-[var(--color-surface-4)] hover:border-[rgba(183,199,214,0.25)]',
+          'focus:bg-[var(--color-surface-2)] focus:border-[#2F7F82] focus:ring-4 focus:ring-[rgba(47,127,130,0.14)]',
+        ].join(' '),
+        error: [
+          'bg-[var(--color-surface-3)] border-danger/60',
+          'focus:border-danger focus:bg-[var(--color-surface-2)] focus:ring-4 focus:ring-danger/10',
+        ].join(' '),
+        success: [
+          'bg-[var(--color-surface-3)] border-success/40',
+          'focus:border-success focus:bg-[var(--color-surface-2)] focus:ring-4 focus:ring-success/10',
+        ].join(' '),
+        warning: [
+          'bg-[var(--color-surface-3)] border-warning/40',
+          'focus:border-warning focus:bg-[var(--color-surface-2)] focus:ring-4 focus:ring-warning/10',
+        ].join(' '),
       },
       size: {
         sm: 'h-8 px-3 text-xs',
@@ -31,6 +44,7 @@ const enhancedInputVariants = cva(
     },
   },
 )
+
 
 export interface EnhancedInputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>, VariantProps<typeof enhancedInputVariants> {
@@ -68,12 +82,12 @@ export const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(
     
     const getFocusColor = () => {
       switch (focusColor) {
-        case 'primary': return 'focus:ring-primary/20 focus:border-primary/70'
-        case 'success': return 'focus:ring-success/20 focus:border-success'
-        case 'warning': return 'focus:ring-warning/20 focus:border-warning'
-        case 'danger': return 'focus:ring-danger/20 focus:border-danger'
-        case 'secondary': return 'focus:ring-secondary/20 focus:border-secondary'
-        default: return 'focus:ring-primary/20 focus:border-primary/70'
+        case 'primary': return 'focus:ring-primary/10 focus:border-primary/60'
+        case 'success': return 'focus:ring-success/10 focus:border-success'
+        case 'warning': return 'focus:ring-warning/10 focus:border-warning'
+        case 'danger': return 'focus:ring-danger/10 focus:border-danger'
+        case 'secondary': return 'focus:ring-secondary/10 focus:border-secondary'
+        default: return 'focus:ring-primary/10 focus:border-primary/60'
       }
     }
 
@@ -101,11 +115,10 @@ export const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              enhancedInputVariants({ intent: intentClass, size, withIcon, className: getFocusColor() }),
+              enhancedInputVariants({ intent: intentClass, size, withIcon }),
+              getFocusColor(),
               leftIcon && 'pl-10',
               rightIcon && 'pr-10',
-              'bg-black/20 border-border/40 text-text placeholder:text-text/30 hover:bg-black/30 focus:bg-black/40',
-              'focus:ring-2 focus:shadow-md transition-all duration-200',
               className,
             )}
             aria-invalid={!!error}

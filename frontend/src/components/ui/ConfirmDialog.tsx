@@ -29,7 +29,7 @@ export function ConfirmDialog() {
                 animate={backDrop.visible}
                 exit={backDrop.hidden}
                 transition={{ duration: 0.18, ease: 'easeOut' }}
-                className="fixed inset-0 z-[var(--z-overlay)] bg-black/60 backdrop-blur-sm"
+                className="modal-blur-bg fixed inset-0 z-[var(--z-overlay)]"
               />
             </DialogPrimitive.Overlay>
 
@@ -39,7 +39,7 @@ export function ConfirmDialog() {
                 animate={sheet.visible}
                 exit={sheet.exit}
                 transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                className="glass fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[calc(100vw-2rem)] max-w-md rounded-2xl p-6 shadow-2xl flex flex-col gap-4 border border-border/40"
+                className="bg-[#193347] border border-[rgba(183,199,214,0.18)] backdrop-blur-2xl fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[calc(100vw-2rem)] max-w-md rounded-2xl p-6 shadow-2xl flex flex-col gap-4"
               >
                 <div className="flex gap-4 items-start">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-danger/10 text-danger border border-danger/20">

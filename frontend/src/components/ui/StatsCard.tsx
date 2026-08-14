@@ -1,7 +1,6 @@
 import { type LucideIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
-import { Card } from '@/components/ui/Card'
 
 export interface StatsCardProps {
   title: string
@@ -12,19 +11,19 @@ export interface StatsCardProps {
 
 export function StatsCard({ title, value, icon: Icon, className }: StatsCardProps) {
   return (
-    <Card className={cn('p-5 transition-all duration-200 hover:shadow-md', className)}>
+    <div className={cn(
+      'stats-card relative flex items-center justify-between rounded-2xl border border-border bg-surface px-5 py-4 transition-all duration-300',
+      className
+    )}>
+      <div className="flex flex-col gap-1 min-w-0">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted truncate">{title}</span>
+        <p className="font-display text-2xl font-bold text-text tabular-nums truncate">{value}</p>
+      </div>
       {Icon ? (
-        <div className="flex items-center gap-3">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-soft text-primary">
-            <Icon className="h-[16px] w-[16px]" aria-hidden="true" />
-          </span>
-          <span className="text-sm font-medium uppercase tracking-[0.06em] text-muted">{title}</span>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/15">
+          <Icon className="h-5 w-5" aria-hidden="true" />
         </div>
-      ) : (
-        <span className="text-sm font-medium uppercase tracking-[0.06em] text-muted">{title}</span>
-      )}
-
-      <p className="tabular mt-2 text-2xl font-bold tracking-tight text-text">{value}</p>
-    </Card>
+      ) : null}
+    </div>
   )
 }

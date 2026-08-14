@@ -268,7 +268,7 @@ export function RegisterPage() {
               checked={termsAccepted}
               onChange={(e) => setTermsAccepted(e.target.checked)}
               onBlur={() => handleBlur('terms')}
-              className="mt-0.5 h-4.5 w-4.5 rounded border-border/40 bg-black/30 text-primary focus:ring-primary/20 focus:ring-2 focus:ring-offset-0 transition-all cursor-pointer accent-primary"
+              className="mt-0.5 h-4.5 w-4.5 rounded border-border/40 bg-surface/50 text-primary focus:ring-primary/20 focus:ring-2 focus:ring-offset-0 transition-all cursor-pointer accent-primary"
             />
             <span className="text-text2 group-hover:text-text transition-colors duration-200 leading-normal">
               I agree to the{' '}

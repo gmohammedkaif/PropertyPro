@@ -9,13 +9,13 @@ const enhancedCardVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border-border bg-surface/60',
-        glass: 'border-white/10 bg-white/5',
-        elevated: 'border-border/60 bg-surface2/80 shadow-lg',
-        primary: 'border-primary/30 bg-gradient-to-br from-surface/80 to-surface2/60',
-        success: 'border-success/30 bg-gradient-to-br from-surface/80 to-surface2/60',
-        warning: 'border-warning/30 bg-gradient-to-br from-surface/80 to-surface2/60',
-        danger: 'border-danger/30 bg-gradient-to-br from-surface/80 to-surface2/60',
+        default:  'border-[rgba(183,199,214,0.15)] bg-[#193347]',
+        glass:    'border-[rgba(183,199,214,0.18)] bg-[#193347]/90 backdrop-blur-xl',
+        elevated: 'border-[rgba(183,199,214,0.20)] bg-[#263E52] shadow-lg',
+        primary:  'border-primary/30 bg-gradient-to-br from-[#193347] to-[#263E52]',
+        success:  'border-success/25 bg-gradient-to-br from-[#193347] to-[#263E52]',
+        warning:  'border-warning/30 bg-gradient-to-br from-[#193347] to-[#263E52]',
+        danger:   'border-danger/30 bg-gradient-to-br from-[#193347] to-[#263E52]',
       },
       size: {
         sm: 'p-4',
@@ -24,7 +24,7 @@ const enhancedCardVariants = cva(
         xl: 'p-8',
       },
       hover: {
-        true: 'transition-all duration-300 ease-[var(--ease-out-expo)] hover:-translate-y-1 hover:shadow-xl',
+        true: 'transition-all duration-300 ease-[var(--ease-out-expo)] hover:-translate-y-1 hover:shadow-[0_8px_28px_rgba(6,28,44,0.55)] hover:border-[rgba(183,199,214,0.18)]',
         false: '',
       },
     },
@@ -35,6 +35,7 @@ const enhancedCardVariants = cva(
     },
   },
 )
+
 
 export interface EnhancedCardProps
   extends HTMLAttributes<HTMLDivElement>,

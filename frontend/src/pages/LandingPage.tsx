@@ -78,7 +78,7 @@ export function LandingPage() {
       {/* Ambient gradient blobs */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-40 left-1/2 h-[560px] w-[900px] -translate-x-1/2 rounded-full bg-gradient-to-br from-primary/25 via-violet-500/15 to-transparent blur-3xl"
+        className="pointer-events-none absolute -top-40 left-1/2 h-[560px] w-[900px] -translate-x-1/2 rounded-full bg-gradient-to-br from-primary/25 via-cyan-500/10 to-transparent blur-3xl"
       />
       <div
         aria-hidden="true"
@@ -130,13 +130,13 @@ export function LandingPage() {
 
             <motion.h1
               variants={fadeUp}
-              className="text-4xl font-extrabold leading-[1.05] tracking-tight text-text sm:text-5xl lg:text-6xl"
+              className="text-4xl font-extrabold font-display leading-[1.05] tracking-tighter text-text sm:text-5xl lg:text-6xl"
             >
               Real estate & property management,{' '}
               <span className="text-gradient">beautifully unified</span>
             </motion.h1>
 
-            <motion.p variants={fadeUp} className="max-w-md text-base text-text2 sm:text-lg">
+            <motion.p variants={fadeUp} className="max-w-md text-base text-text2 sm:text-lg font-sans leading-relaxed">
               Own, sell, rent, and maintain — PropertyPro brings owners, agents, buyers, tenants,
               and staff into one polished, secure workspace.
             </motion.p>
@@ -188,18 +188,18 @@ export function LandingPage() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.35 + index * 0.1, duration: 0.3 }}
-                    className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-sm transition-transform duration-150 hover:-translate-y-0.5"
+                    className="flex items-center gap-3 rounded-xl border border-border/80 bg-surface/80 p-3 shadow-sm transition-all duration-300 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5"
                   >
-                    <div className="bg-brand-gradient flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-white/90">
+                    <div className="bg-brand-gradient flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-white/90 shadow-sm shadow-primary/20">
                       <Building2 className="h-5 w-5" aria-hidden="true" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-text">{listing.title}</p>
+                      <p className="truncate text-sm font-bold text-text">{listing.title}</p>
                       <p className="truncate text-xs text-muted">
                         {listing.area} · {listing.beds}
                       </p>
                     </div>
-                    <p className="tabular shrink-0 text-sm font-bold text-primary">
+                    <p className="tabular shrink-0 text-sm font-extrabold text-primary">
                       {listing.price}
                     </p>
                   </motion.div>
@@ -264,21 +264,21 @@ export function LandingPage() {
 
           <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: (index % 3) * 0.08, duration: 0.35 }}
-                className="rounded-2xl border border-border bg-surface p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                  <feature.icon className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <h3 className="mt-4 text-base font-semibold text-text">{feature.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">{feature.description}</p>
-              </motion.div>
-            ))}
+                  <motion.div
+                    key={feature.title}
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: (index % 3) * 0.08, duration: 0.35 }}
+                    className="rounded-2xl border border-border/80 bg-surface/50 p-6 shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:-translate-y-1 hover:bg-surface"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/25">
+                      <feature.icon className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <h3 className="mt-4 text-base font-bold text-text tracking-tight">{feature.title}</h3>
+                    <p className="mt-1.5 text-xs leading-relaxed text-muted">{feature.description}</p>
+                  </motion.div>
+                ))}
           </div>
         </section>
       </main>

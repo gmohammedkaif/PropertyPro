@@ -9,6 +9,7 @@ export default {
         surface: 'var(--color-surface)',
         surface2: 'var(--color-surface-2)',
         surface3: 'var(--color-surface-3)',
+        surface4: 'var(--color-surface-4)',
         border: 'var(--color-border)',
         borderStrong: 'var(--color-border-strong)',
         text: 'var(--color-text)',
@@ -47,7 +48,17 @@ export default {
           soft: 'var(--color-info-soft)',
         },
         focus: 'var(--color-focus)',
+        /* Ocean Palette statics */
+        'pp-teal':    '#2F7F82',
+        'pp-teal-lt': '#3E9295',
+        'pp-seafoam': '#A9D8D5',
+        'pp-ice':     '#C7DCE8',
+        'pp-powder':  '#B7C7D6',
+        'pp-ocean':   '#0A2638',
+        'pp-nato':    '#193347',
+        'pp-charcoal':'#17212B',
       },
+
       fontFamily: {
         sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         display: ['var(--font-display)', 'serif'],
@@ -81,8 +92,8 @@ export default {
           '50%': { opacity: '0.8' },
         },
         'glow-pulse': {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(2, 132, 199, 0.4)' },
-          '50%': { boxShadow: '0 0 40px rgba(2, 132, 199, 0.8)' },
+          '0%, 100%': { boxShadow: '0 0 20px rgba(47, 127, 130, 0.28)' },
+          '50%': { boxShadow: '0 0 40px rgba(47, 127, 130, 0.52)' },
         },
       },
       animation: {

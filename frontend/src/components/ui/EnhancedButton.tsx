@@ -22,26 +22,32 @@ export const EnhancedButton = forwardRef<HTMLButtonElement, EnhancedButtonProps>
     { className, variant, size, loading, disabled, children, glowIntensity = 'medium', leftIcon, rightIcon, shimmer = false, ...props },
     ref,
   ) => {
-    const glowClass = glowIntensity === 'high' ? 'shadow-lg shadow-primary/40' : glowIntensity === 'medium' ? 'shadow-md shadow-primary/30' : 'shadow-sm'
-    
+    const glowClass = glowIntensity === 'high'
+      ? 'shadow-[0_0_28px_rgba(47,127,130,0.35)]'
+      : glowIntensity === 'medium'
+      ? 'shadow-[0_0_18px_rgba(47,127,130,0.25)]'
+      : 'shadow-sm'
+
     const variantClasses = {
-      primary: 'gradient-btn',
-      secondary: 'bg-surface2/80 backdrop-blur-sm border border-border text-text hover:bg-surface2',
-      ghost: 'hover:bg-surface2/50 text-text2 hover:text-text',
-      danger: 'bg-danger/90 backdrop-blur-sm border border-danger/30 text-white hover:bg-danger',
-      glass: 'glass text-text hover:glass-hover',
+      primary:   'gradient-btn',
+      secondary: 'bg-[#193347] border border-[rgba(183,199,214,0.15)] text-[#B7C7D6] hover:bg-[#263E52] hover:border-[rgba(183,199,214,0.25)] hover:text-[#F4F7F8]',
+      outline:   'border border-[rgba(183,199,214,0.20)] text-[#91A1B2] hover:bg-[#193347] hover:text-[#B7C7D6] hover:border-[rgba(183,199,214,0.30)]',
+      ghost:     'text-[#91A1B2] hover:bg-[#193347] hover:text-[#B7C7D6]',
+      danger:    'bg-[#D4726A] text-white hover:bg-[#C4605A] border border-[rgba(212,114,106,0.25)]',
+      glass:     'bg-[rgba(38,62,82,0.55)] border border-[rgba(183,199,214,0.12)] text-text hover:bg-[rgba(51,75,96,0.65)] hover:border-[rgba(183,199,214,0.22)] backdrop-blur-sm',
     }
     
     const baseClasses = cn(
-      'relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium overflow-hidden',
-      'transition-all duration-300 ease-[var(--ease-out)]',
+      'relative inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold overflow-hidden',
+      'transition-all duration-200 ease-[var(--ease-out)]',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
       'disabled:pointer-events-none disabled:opacity-50 select-none',
       'group/btn',
-      glowClass,
-      variantClasses[variant as keyof typeof variantClasses] || '',
+      /* Default to primary (teal gradient) if no variant or unrecognized variant */
+      variantClasses[(variant ?? 'primary') as keyof typeof variantClasses] ?? variantClasses.primary,
       className,
     )
+
     
     return (
       <motion.button

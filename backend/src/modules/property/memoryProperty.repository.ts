@@ -371,6 +371,18 @@ export class InMemoryPropertyRepository implements PropertyRepository {
     if (filter.status) items = items.filter((p) => p.status === filter.status)
     if (filter.city) items = items.filter((p) => p.address.city.toLowerCase() === filter.city!.toLowerCase())
     if (filter.state) items = items.filter((p) => p.address.state.toLowerCase() === filter.state!.toLowerCase())
+    if (filter.ownerId) items = items.filter((p) => p.ownerId === filter.ownerId)
+    if (filter.search) {
+      const q = filter.search.toLowerCase()
+      items = items.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.address.line1.toLowerCase().includes(q) ||
+          p.address.city.toLowerCase().includes(q) ||
+          p.address.state.toLowerCase().includes(q) ||
+          (p.description ?? '').toLowerCase().includes(q)
+      )
+    }
     return items
   }
 

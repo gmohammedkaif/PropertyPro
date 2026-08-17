@@ -228,6 +228,15 @@ export class MongoPropertyRepository implements PropertyRepository {
     if (filter.city) query['address.city'] = filter.city
     if (filter.state) query['address.state'] = filter.state
     if (filter.ownerId) query.ownerId = filter.ownerId
+    if (filter.search) {
+      query.$or = [
+        { name: { $regex: filter.search, $options: 'i' } },
+        { 'address.line1': { $regex: filter.search, $options: 'i' } },
+        { 'address.city': { $regex: filter.search, $options: 'i' } },
+        { 'address.state': { $regex: filter.search, $options: 'i' } },
+        { description: { $regex: filter.search, $options: 'i' } },
+      ]
+    }
   }
 
   private buildSort(filter: PropertyFilter): Record<string, 1 | -1> {

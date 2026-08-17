@@ -8,7 +8,7 @@ import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const modalVariants = cva(
-  'glass fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[calc(100vw-2rem)] max-h-[90vh] flex flex-col transform-gpu',
+  'fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[calc(100vw-2rem)] max-h-[90vh] flex flex-col bg-surface border border-border',
   {
     variants: {
       size: {
@@ -93,11 +93,11 @@ export function EnhancedModal({
                 animate={sheetVariants.visible}
                 exit={sheetVariants.exit}
                 transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                className={cn(modalVariants({ size, withGlow }), 'modal-glass', className)}
+                className={cn(modalVariants({ size, withGlow }), className)}
                 onClick={(e) => e.stopPropagation()}
               >
                 {(title || description) && (
-                  <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-border/40 shrink-0">
+                  <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-border shrink-0">
                     <div className="flex-1">
                       {title && (
                         <DialogPrimitive.Title className="text-base font-semibold tracking-tight text-text">
@@ -115,7 +115,7 @@ export function EnhancedModal({
                         <button
                           type="button"
                           aria-label="Close modal"
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-all duration-200 hover:bg-surface2 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-all duration-150 hover:bg-surface3 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                         >
                           <X className="h-4 w-4" aria-hidden="true" />
                         </button>
@@ -129,7 +129,7 @@ export function EnhancedModal({
                 </div>
 
                 {footer && (
-                  <div className="shrink-0 px-6 py-4 border-t border-border/40 flex items-center justify-end gap-2">
+                  <div className="shrink-0 px-6 py-4 border-t border-border flex items-center justify-end gap-2">
                     {footer}
                   </div>
                 )}

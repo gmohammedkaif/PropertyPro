@@ -5,18 +5,18 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const glassCardVariants = cva(
-  'rounded-xl border relative overflow-hidden',
+  'rounded-2xl border relative overflow-hidden',
   {
     variants: {
       variant: {
-        default:   'border-border/80 bg-surface/95 backdrop-blur-sm shadow-sm',
-        primary:   'border-primary/30 bg-gradient-to-br from-surface to-surface2 backdrop-blur-md',
-        secondary: 'border-[rgba(183,199,214,0.20)] bg-gradient-to-br from-surface to-surface2 backdrop-blur-md',
-        success:   'border-success/25 bg-gradient-to-br from-surface to-surface2 backdrop-blur-md',
-        warning:   'border-warning/30 bg-gradient-to-br from-surface to-surface2 backdrop-blur-md',
-        danger:    'border-danger/30 bg-gradient-to-br from-surface to-surface2 backdrop-blur-md',
-        glass:     'border-[rgba(183,199,214,0.18)] bg-surface/90 backdrop-blur-xl',
-        elevated:  'border-[rgba(183,199,214,0.20)] bg-surface2 shadow-lg',
+        default:   'border-border bg-surface shadow-sm',
+        primary:   'border-primary/20 bg-surface shadow-sm',
+        secondary: 'border-border bg-surface shadow-sm',
+        success:   'border-success/20 bg-surface shadow-sm',
+        warning:   'border-warning/20 bg-surface shadow-sm',
+        danger:    'border-danger/20 bg-surface shadow-sm',
+        glass:     'border-border bg-surface shadow-sm',
+        elevated:  'border-border bg-surface shadow-md',
       },
       size: {
         sm: 'p-4',
@@ -29,38 +29,7 @@ const glassCardVariants = cva(
         false: '',
       },
     },
-    compoundVariants: [
-      {
-        variant: 'primary',
-        withGlow: true,
-        className: 'shadow-[0_0_28px_rgba(47,127,130,0.20)]',
-      },
-      {
-        variant: 'secondary',
-        withGlow: true,
-        className: 'shadow-[0_0_28px_rgba(183,199,214,0.15)]',
-      },
-      {
-        variant: 'success',
-        withGlow: true,
-        className: 'shadow-[0_0_28px_rgba(169,216,213,0.18)]',
-      },
-      {
-        variant: 'warning',
-        withGlow: true,
-        className: 'shadow-[0_0_28px_rgba(232,168,76,0.18)]',
-      },
-      {
-        variant: 'danger',
-        withGlow: true,
-        className: 'shadow-[0_0_28px_rgba(212,114,106,0.18)]',
-      },
-      {
-        variant: 'glass',
-        withGlow: true,
-        className: 'shadow-[0_0_36px_rgba(47,127,130,0.14)]',
-      },
-    ],
+    compoundVariants: [],
     defaultVariants: {
       variant: 'default',
       size: 'md',
@@ -71,7 +40,7 @@ const glassCardVariants = cva(
 
 
 const hoverEffects =
-  'transition-all duration-300 ease-[var(--ease-out)] hover:-translate-y-1 hover:shadow-xl'
+  'transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md hover:border-borderStrong cursor-pointer'
 
 export interface GlassCardProps
   extends HTMLAttributes<HTMLDivElement>,

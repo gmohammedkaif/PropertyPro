@@ -20,7 +20,7 @@ export function Sidebar({ collapsed, className, onNavigate }: SidebarProps) {
     <aside
       className={cn(
         'sidebar-glass fixed inset-y-0 left-0 h-screen max-h-screen z-[var(--z-sidebar)] hidden flex-col transition-[width] duration-300 ease-[var(--ease-out-expo)] lg:flex',
-        collapsed ? 'w-20' : 'w-64',
+        collapsed ? 'w-[4.5rem]' : 'w-60',
         className,
       )}
     >
@@ -47,19 +47,19 @@ export function SidebarContent({
     <div className="flex h-full max-h-full flex-col">
       <Brand collapsed={collapsed} />
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-4 py-6 custom-scrollbar" aria-label="Main navigation">
+      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-5 custom-scrollbar" aria-label="Main navigation">
         {getNavGroups(user?.roles).map((group) => (
-          <div key={group.label} className="space-y-1.5">
+          <div key={group.label} className="space-y-0.5">
             <p
               className={cn(
-                'px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-muted opacity-80',
+                'px-3 mb-1.5 text-[10px] font-bold uppercase tracking-[0.10em] text-muted',
                 collapsed && 'sr-only',
               )}
             >
               {group.label}
             </p>
 
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {group.items.map((item) => (
                 <SidebarLink
                   key={item.href}
@@ -73,12 +73,13 @@ export function SidebarContent({
         ))}
       </nav>
 
-      <div className="border-t border-border/40 p-3 bg-surface-2/20 backdrop-blur-md">
+      {/* User area at bottom */}
+      <div className="border-t border-border p-3">
         {user ? (
           <div
             className={cn(
-              'flex items-center gap-3 rounded-xl border border-border/50 bg-surface-2/40 p-2.5 shadow-sm transition-all duration-300 hover:border-primary/30 hover:bg-surface-2/75 hover:shadow-md',
-              collapsed && 'justify-center p-1 border-transparent bg-transparent shadow-none',
+              'flex items-center gap-2.5 rounded-xl p-2 transition-colors duration-150',
+              collapsed && 'justify-center p-1.5',
             )}
           >
             <Avatar name={user.name} size="sm" status="online" />
@@ -86,10 +87,10 @@ export function SidebarContent({
             {!collapsed ? (
               <>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-bold text-text leading-tight">{user.name}</p>
+                  <p className="truncate text-xs font-semibold text-text leading-tight">{user.name}</p>
                   <span className={cn(
-                    'inline-flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-widest mt-1',
-                    isAdmin(user) ? 'text-primary' : 'text-emerald-500'
+                    'inline-flex items-center gap-1 text-[10px] font-semibold mt-0.5',
+                    isAdmin(user) ? 'text-primary' : 'text-success'
                   )}>
                     {isAdmin(user) ? <Shield className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
                     {isAdmin(user) ? 'Admin' : 'Tenant'}
@@ -99,7 +100,7 @@ export function SidebarContent({
                   type="button"
                   aria-label="Sign out"
                   onClick={handleSignOut}
-                  className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }), 'hover:bg-danger/10 hover:text-danger rounded-lg shrink-0 transition-colors duration-200')}
+                  className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }), 'hover:bg-danger/10 hover:text-danger rounded-lg shrink-0 transition-colors duration-150')}
                 >
                   <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
@@ -129,32 +130,25 @@ function SidebarLink({
         onClick={onNavigate}
         className={({ isActive }) =>
           cn(
-            'group relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all duration-300 border',
+            'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
             collapsed && 'justify-center px-0 mx-auto w-10 h-10',
             isActive
-              ? 'bg-primary/5 text-primary border-primary/20 shadow-sm shadow-primary/5'
-              : 'text-text2 hover:text-text hover:bg-surface2/60 border-transparent',
+              ? 'bg-primary/[0.08] text-primary font-semibold'
+              : 'text-text2 hover:text-text hover:bg-surface3',
           )
         }
       >
         {({ isActive }) => (
           <>
-            {isActive && (
-              <span
-                className="absolute left-0 top-1/4 bottom-1/4 w-1 rounded-r-full bg-primary shadow-[0_0_8px_var(--color-primary)]"
-                aria-hidden="true"
-              />
-            )}
             <item.icon
               aria-hidden="true"
               className={cn(
-                'h-4.5 w-4.5 shrink-0 transition-all duration-300',
+                'h-[18px] w-[18px] shrink-0 transition-colors duration-150',
                 isActive ? 'text-primary' : 'text-muted group-hover:text-text2',
-                'group-hover:scale-105',
               )}
             />
 
-            {!collapsed ? <span className="flex-1 truncate tracking-wide">{item.label}</span> : null}
+            {!collapsed ? <span className="flex-1 truncate">{item.label}</span> : null}
 
             {!collapsed && item.badge ? (
               <Badge intent="primary" size="sm">
@@ -172,18 +166,18 @@ function Brand({ collapsed }: { collapsed: boolean }) {
   return (
     <div
       className={cn(
-        'flex h-16 shrink-0 items-center border-b border-border/40 px-4',
+        'flex h-14 shrink-0 items-center border-b border-border px-4',
         collapsed && 'justify-center px-2',
       )}
     >
-      <NavLink to="/app" aria-label="PropManager Pro dashboard" className="flex items-center gap-3 group">
-        <span className="bg-gradient-to-tr from-primary to-primary-strong flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-md shadow-primary/25 transition-transform duration-300 group-hover:scale-105">
-          <Home className="h-5 w-5" aria-hidden="true" />
+      <NavLink to="/app" aria-label="PropManager Pro dashboard" className="flex items-center gap-2.5 group">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-white shadow-sm transition-transform duration-150 group-hover:scale-105">
+          <Home className="h-4 w-4" aria-hidden="true" />
         </span>
         {!collapsed ? (
           <div className="flex flex-col">
-            <span className="text-sm font-bold tracking-tight text-text font-display leading-none">PropManager</span>
-            <span className="text-[10px] font-extrabold text-primary-strong tracking-widest uppercase mt-0.5">Pro</span>
+            <span className="text-[13px] font-bold tracking-tight text-text leading-none">PropManager</span>
+            <span className="text-[10px] font-bold text-primary tracking-wider uppercase mt-0.5">Pro</span>
           </div>
         ) : null}
       </NavLink>

@@ -6,21 +6,21 @@ import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const selectVariants = cva(
-  'w-full rounded-md border text-text shadow-sm transition-all duration-150 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+  'w-full rounded-lg border text-text shadow-sm transition-all duration-150 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       intent: {
         default: [
-          'bg-[var(--color-surface-3)] border-[var(--color-border-strong)]',
-          'hover:bg-[var(--color-surface-4)]',
-          'focus:border-[#2F7F82] focus:ring-2 focus:ring-[rgba(47,127,130,0.15)]',
+          'bg-surface border-border',
+          'hover:border-borderStrong',
+          'focus:border-primary focus:ring-2 focus:ring-primary/20',
         ].join(' '),
-        error: 'bg-[var(--color-surface-3)] border-danger/60 focus:border-danger focus:ring-2 focus:ring-danger/15',
+        error: 'bg-surface border-danger/60 focus:border-danger focus:ring-2 focus:ring-danger/15',
       },
       size: {
         sm: 'h-8 px-3 text-xs',
         md: 'h-10 px-3.5 text-sm',
-        lg: 'h-12 px-4 text-base',
+        lg: 'h-11 px-4 text-sm',
       },
     },
     defaultVariants: {

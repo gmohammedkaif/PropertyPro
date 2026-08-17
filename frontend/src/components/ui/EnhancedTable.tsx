@@ -62,7 +62,7 @@ export function EnhancedTable<T extends Record<string, unknown> = Record<string,
 
   if (loading) {
     return (
-      <div className="enhanced-table glass rounded-xl border border-border/60 bg-surface/60 backdrop-blur-sm">
+      <div className="enhanced-table border border-border bg-surface rounded-xl">
         <div className="p-8 text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <p className="mt-4 text-muted">Loading data...</p>
@@ -73,9 +73,9 @@ export function EnhancedTable<T extends Record<string, unknown> = Record<string,
 
   if (error) {
     return (
-      <div className="enhanced-table glass rounded-xl border border-danger/40 bg-danger-soft/20 backdrop-blur-sm">
+      <div className="enhanced-table border border-danger/20 bg-danger-soft/20 rounded-xl">
         <div className="p-8 text-center">
-          <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-danger/20 text-danger">
+          <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-danger/10 text-danger">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -85,7 +85,7 @@ export function EnhancedTable<T extends Record<string, unknown> = Record<string,
           {onRetry && (
             <button
               onClick={onRetry}
-              className="rounded-lg bg-primary/90 px-6 py-2.5 text-sm font-medium text-white shadow-lg shadow-primary/30 transition-all hover:bg-primary hover:shadow-xl hover:shadow-primary/40 active:translate-y-0"
+              className="rounded-lg bg-danger px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-danger/90 active:translate-y-0"
             >
               Retry
             </button>
@@ -96,10 +96,10 @@ export function EnhancedTable<T extends Record<string, unknown> = Record<string,
   }
 
   return (
-    <div className={cn('enhanced-table glass rounded-xl border border-border/60 bg-surface/60 backdrop-blur-sm overflow-hidden', className)} {...props}>
+    <div className={cn('enhanced-table border border-border bg-surface rounded-xl overflow-hidden shadow-sm', className)} {...props}>
       <div className="overflow-x-auto custom-scrollbar">
         <table className="w-full border-collapse">
-          <thead className="bg-surface2/50 backdrop-blur-md">
+          <thead className="bg-surface3">
             <tr>
               {selectable && (
                 <th className="w-12 px-4 py-4 text-left">
@@ -151,9 +151,9 @@ export function EnhancedTable<T extends Record<string, unknown> = Record<string,
               <tr
                 key={(row as any).id || rowIndex}
                 className={cn(
-                  'border-b border-border/40 transition-all duration-200',
-                  hover && 'hover:bg-primary/5 hover:shadow-sm',
-                  isSelected(row) && 'bg-primary/10 border-l-4 border-primary',
+                  'border-b border-border/60 transition-all duration-150',
+                  hover && 'hover:bg-surface3',
+                  isSelected(row) && 'bg-primary-soft border-l-2 border-primary',
                   'group',
                 )}
                 onClick={() => onRowClick?.(row)}

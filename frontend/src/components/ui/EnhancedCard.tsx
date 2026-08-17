@@ -5,17 +5,17 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const enhancedCardVariants = cva(
-  'rounded-xl border backdrop-blur-sm',
+  'rounded-2xl border',
   {
     variants: {
       variant: {
-        default:  'border-[rgba(183,199,214,0.15)] bg-[#193347]',
-        glass:    'border-[rgba(183,199,214,0.18)] bg-[#193347]/90 backdrop-blur-xl',
-        elevated: 'border-[rgba(183,199,214,0.20)] bg-[#263E52] shadow-lg',
-        primary:  'border-primary/30 bg-gradient-to-br from-[#193347] to-[#263E52]',
-        success:  'border-success/25 bg-gradient-to-br from-[#193347] to-[#263E52]',
-        warning:  'border-warning/30 bg-gradient-to-br from-[#193347] to-[#263E52]',
-        danger:   'border-danger/30 bg-gradient-to-br from-[#193347] to-[#263E52]',
+        default:  'border-border bg-surface',
+        glass:    'border-border bg-surface shadow-sm',
+        elevated: 'border-border bg-surface shadow-md',
+        primary:  'border-primary/20 bg-primary/5',
+        success:  'border-success/20 bg-success/5',
+        warning:  'border-warning/20 bg-warning/5',
+        danger:   'border-danger/20 bg-danger/5',
       },
       size: {
         sm: 'p-4',
@@ -24,7 +24,7 @@ const enhancedCardVariants = cva(
         xl: 'p-8',
       },
       hover: {
-        true: 'transition-all duration-300 ease-[var(--ease-out-expo)] hover:-translate-y-1 hover:shadow-[0_8px_28px_rgba(6,28,44,0.55)] hover:border-[rgba(183,199,214,0.18)]',
+        true: 'transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md hover:border-borderStrong cursor-pointer',
         false: '',
       },
     },

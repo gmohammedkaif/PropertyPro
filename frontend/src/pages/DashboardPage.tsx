@@ -211,14 +211,18 @@ export function DashboardPage() {
 
       {/* ── Stats Grid ─────────────────────────────────────────────────────────── */}
       {isSuperAdmin ? (
-        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-6">
-          <StatCard title="Total Properties" value={String(adminStats?.totalProperties ?? 0)} icon={Building2} variant="primary" />
-          <StatCard title="Rented Properties" value={String(adminStats?.rentedProperties ?? 0)} icon={UserCheck} variant="success" />
-          <StatCard title="Available Properties" value={String(adminStats?.availableProperties ?? 0)} icon={Home} variant="secondary" />
-          <StatCard title="Properties for Sale" value={String(adminStats?.propertiesForSale ?? 0)} icon={ShoppingBag} variant="warning" />
-          <StatCard title="Total Owners" value={String(adminStats?.totalOwners ?? 0)} icon={Users} variant="primary" />
-          <StatCard title="Total Tenants" value={String(adminStats?.totalTenants ?? 0)} icon={Users} variant="secondary" />
-          <StatCard title="Active Leases" value={String(adminStats?.activeTenants ?? 0)} icon={UserCheck} variant="success" />
+        <div className="flex flex-col gap-5 w-full">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard title="Total Properties" value={String(adminStats?.totalProperties ?? 0)} icon={Building2} variant="primary" />
+            <StatCard title="Rented Properties" value={String(adminStats?.rentedProperties ?? 0)} icon={UserCheck} variant="success" />
+            <StatCard title="Available Properties" value={String(adminStats?.availableProperties ?? 0)} icon={Home} variant="secondary" />
+            <StatCard title="Properties for Sale" value={String(adminStats?.propertiesForSale ?? 0)} icon={ShoppingBag} variant="warning" />
+          </div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:max-w-[75%]">
+            <StatCard title="Total Owners" value={String(adminStats?.totalOwners ?? 0)} icon={Users} variant="primary" />
+            <StatCard title="Total Tenants" value={String(adminStats?.totalTenants ?? 0)} icon={Users} variant="secondary" />
+            <StatCard title="Active Leases" value={String(adminStats?.activeTenants ?? 0)} icon={UserCheck} variant="success" />
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 lg:grid-cols-4">

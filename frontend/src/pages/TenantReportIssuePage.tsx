@@ -230,7 +230,7 @@ export function TenantReportIssuePage() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   required
-                  className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-muted outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+                  className="glass-input w-full resize-none min-h-[100px]"
                 />
               </div>
 

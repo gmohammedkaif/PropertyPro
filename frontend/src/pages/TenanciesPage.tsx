@@ -737,7 +737,7 @@ export function TenanciesPage() {
         >
           <div className="flex flex-col gap-3 mt-2">
             <textarea
-              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-muted outline-none transition focus:border-primary focus:ring-2 focus:ring-focus/30"
+              className="glass-input w-full resize-none min-h-[100px]"
               rows={4}
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}

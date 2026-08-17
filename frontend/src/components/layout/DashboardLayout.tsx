@@ -37,10 +37,10 @@ export function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-bg">
-      {/* Ambient brand glow */}
+      {/* Ambient crimson brand mesh */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-x-0 top-0 z-0 h-72 bg-gradient-to-br from-primary/15 via-transparent to-transparent"
+        className="pointer-events-none fixed inset-0 z-0 bg-mesh opacity-70"
       />
 
       <Sidebar collapsed={collapsed} />

@@ -39,7 +39,7 @@ export function ConfirmDialog() {
                 animate={sheet.visible}
                 exit={sheet.exit}
                 transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                className="bg-[#193347] border border-[rgba(183,199,214,0.18)] backdrop-blur-2xl fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[calc(100vw-2rem)] max-w-md rounded-2xl p-6 shadow-2xl flex flex-col gap-4"
+                className="bg-surface border border-border fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[calc(100vw-2rem)] max-w-md rounded-2xl p-6 shadow-xl flex flex-col gap-4"
               >
                 <div className="flex gap-4 items-start">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-danger/10 text-danger border border-danger/20">

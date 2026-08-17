@@ -57,7 +57,7 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
   }
 
   return (
-    <header className="sticky top-0 z-[var(--z-sticky)] flex h-16 items-center gap-4 border-b border-border/40 bg-surface/70 px-4 sm:px-6 backdrop-blur-md">
+    <header className="sticky top-0 z-[var(--z-sticky)] flex h-14 items-center gap-3 border-b border-border bg-surface px-4 sm:px-6">
       <button
         type="button"
         aria-label="Open navigation menu"
@@ -81,14 +81,13 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
       </button>
 
       <div className="hidden min-w-0 md:block">
-        <p className="text-[9px] font-extrabold uppercase tracking-[0.15em] text-muted/70">Workspace</p>
-        <h1 className="truncate text-base font-extrabold font-display text-text tracking-tight -mt-0.5">{title}</h1>
+        <h1 className="truncate text-sm font-bold text-text tracking-tight">{title}</h1>
       </div>
 
       <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
         <div className="relative hidden md:block group">
           <Search
-            className="pointer-events-none absolute inset-y-0 left-3.5 my-auto h-3.5 w-3.5 text-muted transition-colors group-focus-within:text-primary"
+            className="pointer-events-none absolute inset-y-0 left-4 my-auto h-4 w-4 text-muted transition-colors group-focus-within:text-primary"
             aria-hidden="true"
           />
           <input
@@ -109,9 +108,9 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
                 : 'Search your portfolio...'
             }
             aria-label="Search"
-            className="h-9 w-40 rounded-xl border border-border bg-surface-2/30 pl-9.5 pr-12 text-xs text-text outline-none transition-all duration-300 placeholder:text-muted/70 focus:border-primary/50 focus:bg-surface focus:ring-4 focus:ring-primary/10 lg:w-56"
+            className="glass-input h-9 w-40 pl-11 pr-12 text-xs lg:w-56 !bg-surface2"
           />
-          <kbd className="pointer-events-none absolute inset-y-0 right-2.5 my-auto hidden h-5 items-center rounded-md border border-border/50 bg-surface/85 px-1.5 text-[9px] font-bold text-muted lg:flex shadow-sm">
+          <kbd className="pointer-events-none absolute inset-y-0 right-2.5 my-auto hidden h-5 items-center rounded border border-border bg-surface3 px-1.5 text-[9px] font-bold text-muted lg:flex shadow-sm">
             ⌘K
           </kbd>
         </div>

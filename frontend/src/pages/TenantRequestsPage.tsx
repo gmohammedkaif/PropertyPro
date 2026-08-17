@@ -16,6 +16,8 @@ import {
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/Badge'
+import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
 import { EnhancedButton } from '@/components/ui/EnhancedButton'
 import { Modal } from '@/components/ui/EnhancedModal'
 import { useToast } from '@/hooks/useToast'
@@ -234,7 +236,7 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
             placeholder="Any special conditions, maintenance responsibilities, parking rules…"
             value={leaseNotes}
             onChange={(e) => setLeaseNotes(e.target.value)}
-            className="resize-none rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-muted outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
+            className="glass-input w-full resize-none min-h-[80px]"
           />
         </div>
       </form>
@@ -445,14 +447,13 @@ export function TenantRequestsPage() {
 
       {/* Filter Bar */}
       <div className="glass rounded-xl border border-border/50 px-4 py-3 flex flex-col sm:flex-row items-center gap-3">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
-          <input
+        <div className="flex-1 w-full">
+          <Input
             type="text"
             placeholder="Search by tenant, property, city or email…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-9 pr-4 rounded-lg bg-surface2/60 border border-border/40 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+            leftIcon={<Search className="h-4 w-4" aria-hidden="true" />}
           />
         </div>
         <div className="flex items-center gap-2">
@@ -549,36 +550,35 @@ export function TenantRequestsPage() {
                     {/* Actions */}
                     <td className="py-4 px-5 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button
+                        <Button
                           type="button"
+                          variant="secondary"
+                          size="sm"
                           onClick={() => { setSelectedRequest(req); setDetailsOpen(true) }}
-                          className="flex items-center gap-1 text-xs text-muted hover:text-primary border border-border/50 hover:border-primary/40 rounded-lg px-2.5 py-1.5 transition-all"
                         >
                           <Eye className="h-3.5 w-3.5" /> View
-                        </button>
+                        </Button>
                         {req.status === 'pending' && (
                           <>
-                            <EnhancedButton
+                            <Button
                               type="button"
                               variant="primary"
                               size="sm"
-                              className="h-8 px-3 text-xs"
                               onClick={() => handleApproveClick(req)}
                               disabled={Object.values(rejectingIds).some(Boolean)}
                             >
                               <CheckCircle2 className="h-3.5 w-3.5" /> Approve
-                            </EnhancedButton>
-                            <EnhancedButton
+                            </Button>
+                            <Button
                               type="button"
                               variant="danger"
                               size="sm"
-                              className="h-8 px-3 text-xs"
                               onClick={() => handleRejectClick(req)}
                               loading={rejectingIds[req.id]}
                               disabled={Object.values(rejectingIds).some(Boolean)}
                             >
                               <XCircle className="h-3.5 w-3.5" /> Reject
-                            </EnhancedButton>
+                            </Button>
                           </>
                         )}
                         {req.status !== 'pending' && (

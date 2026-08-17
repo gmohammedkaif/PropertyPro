@@ -279,18 +279,10 @@ function getPropertyRentDisplay(property: PropertyRecord): string {
   return 'Not specified'
 }
 
-function getPropertyUnitLabel(name: string, type: PropertyType): string {
-  const clean = name.toLowerCase()
-  if (clean.includes('zaid manzil')) return 'House · 43/18'
-  if (clean.includes('urban nest')) return 'Apartment · D-402'
-  if (clean.includes('sai enclave')) return 'House · 43/65'
-  if (clean.includes('bluestone')) return 'Apartment · C-345'
-  if (clean.includes('green valley')) return 'Villa · b-234'
-  if (clean.includes('sunrise')) return 'Apartment · A-204'
-  
-  // fallback
-  const typeLabel = PROPERTY_TYPE_LABELS[type] || 'Property'
-  return `${typeLabel} · Unit 1`
+function getPropertyUnitLabel(property: PropertyRecord): string {
+  const typeLabel = PROPERTY_TYPE_LABELS[property.type] || 'Property'
+  const units = property.totalUnits !== undefined && property.totalUnits !== null ? property.totalUnits : 1
+  return `${typeLabel} · ${units} ${units === 1 ? 'Unit' : 'Units'}`
 }
 
 function GridCards({
@@ -338,7 +330,7 @@ function GridCards({
                 {property.name}
               </h3>
               <p className="mt-1 text-[10px] text-muted font-bold uppercase tracking-wider">
-                {getPropertyUnitLabel(property.name, property.type)}
+                {getPropertyUnitLabel(property)}
               </p>
               <p className="mt-2.5 text-xs text-text2 line-clamp-2 flex-1 leading-relaxed">
                 {property.address.line1}, {property.address.city}

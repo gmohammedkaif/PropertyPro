@@ -527,7 +527,7 @@ export function MaintenancePage() {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-text2">Issue Description</label>
+            <label className="text-xs font-semibold text-text/80 tracking-wide">Issue Description</label>
             <textarea
               className="glass-input w-full resize-none min-h-[100px]"
               rows={3}

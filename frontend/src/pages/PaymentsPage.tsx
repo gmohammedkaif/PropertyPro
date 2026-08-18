@@ -452,7 +452,7 @@ export function PaymentsPage() {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-text2">Notes</label>
+            <label className="text-xs font-semibold text-text/80 tracking-wide">Notes</label>
             <textarea
               className="glass-input w-full resize-none min-h-[100px]"
               rows={3}

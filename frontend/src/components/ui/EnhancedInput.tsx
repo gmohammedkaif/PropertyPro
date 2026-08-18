@@ -82,12 +82,12 @@ export const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(
     
     const getFocusColor = () => {
       switch (focusColor) {
-        case 'primary': return 'focus:ring-primary/10 focus:border-primary/60'
-        case 'success': return 'focus:ring-success/10 focus:border-success'
-        case 'warning': return 'focus:ring-warning/10 focus:border-warning'
-        case 'danger': return 'focus:ring-danger/10 focus:border-danger'
-        case 'secondary': return 'focus:ring-secondary/10 focus:border-secondary'
-        default: return 'focus:ring-primary/10 focus:border-primary/60'
+        case 'primary': return 'focus:ring-2 focus:ring-primary/20 focus:border-primary/60'
+        case 'success': return 'focus:ring-2 focus:ring-success/20 focus:border-success'
+        case 'warning': return 'focus:ring-2 focus:ring-warning/20 focus:border-warning'
+        case 'danger': return 'focus:ring-2 focus:ring-danger/20 focus:border-danger'
+        case 'secondary': return 'focus:ring-2 focus:ring-secondary/20 focus:border-secondary'
+        default: return 'focus:ring-2 focus:ring-primary/20 focus:border-primary/60'
       }
     }
 

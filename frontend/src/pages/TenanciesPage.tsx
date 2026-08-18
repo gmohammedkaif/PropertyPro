@@ -525,7 +525,7 @@ export function TenanciesPage() {
             <legend className="text-xs font-semibold text-muted uppercase tracking-wider">Lease Details</legend>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-text2">
+                <label className="text-xs font-semibold text-text/80 tracking-wide">
                   Property <span className="text-danger">*</span>
                 </label>
                 <select
@@ -557,7 +557,7 @@ export function TenanciesPage() {
             </div>
             {selectedProperty && isUnitBased(selectedProperty.type) && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-text2">
+                <label className="text-xs font-semibold text-text/80 tracking-wide">
                   Units Requested
                   <span className="ml-2 text-muted font-normal">(max {availableUnits(selectedProperty)})</span>
                 </label>
@@ -610,7 +610,7 @@ export function TenanciesPage() {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-text2">Status</label>
+              <label className="text-xs font-semibold text-text/80 tracking-wide">Status</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as TenancyStatus)}

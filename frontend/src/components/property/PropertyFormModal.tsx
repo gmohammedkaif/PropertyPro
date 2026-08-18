@@ -705,7 +705,7 @@ export function PropertyFormModal({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="property-desc" className="text-xs font-medium text-text2">
+              <label htmlFor="property-desc" className="text-xs font-semibold text-text/80 tracking-wide">
                 Description <span className="text-muted font-normal">(optional)</span>
               </label>
               <textarea

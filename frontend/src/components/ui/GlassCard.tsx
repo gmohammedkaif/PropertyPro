@@ -5,7 +5,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const glassCardVariants = cva(
-  'rounded-2xl border relative overflow-hidden',
+  'rounded-xl border relative overflow-hidden',
   {
     variants: {
       variant: {

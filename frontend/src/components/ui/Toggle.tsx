@@ -21,6 +21,7 @@ export function Toggle({ options, value, onChange, size = 'md', className }: Tog
     <div
       className={cn(
         'inline-flex items-center gap-0.55 rounded-md border border-border bg-surface p-1 text-sm font-medium',
+        size === 'sm' ? 'h-9' : 'h-10',
         className,
       )}
     >
@@ -36,7 +37,7 @@ export function Toggle({ options, value, onChange, size = 'md', className }: Tog
               isActive
                 ? 'bg-primary text-white shadow-sm'
                 : 'text-text2 hover:bg-surface2 hover:text-text',
-              size === 'sm' ? 'h-7 px-2.5' : 'h-9 px-3',
+              size === 'sm' ? 'h-7 px-2.5' : 'h-8 px-3.5',
             )}
           >
             {option.icon ? <span className="flex items-center">{option.icon}</span> : null}

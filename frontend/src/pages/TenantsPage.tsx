@@ -3,6 +3,7 @@ import { Users, Search, Mail, Key } from 'lucide-react'
 import { Spinner } from '@/components/ui/Spinner'
 import { useAdminTenants } from '@/hooks/useAdmin'
 import { EnhancedInput } from '@/components/ui/EnhancedInput'
+import { Badge } from '@/components/ui/Badge'
 
 export function TenantsPage() {
   const { data: tenants = [], isLoading } = useAdminTenants()
@@ -102,25 +103,29 @@ export function TenantsPage() {
                       </div>
                     </td>
                     <td className="py-4 px-6">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide ${
-                        tenant.status === 'active'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                          : tenant.status === 'rejected'
-                          ? 'bg-red-500/10 text-red-400 border border-red-500/20'
-                          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                      }`}>
+                      <Badge
+                        intent={
+                          tenant.status === 'active'
+                            ? 'success'
+                            : tenant.status === 'rejected'
+                            ? 'danger'
+                            : 'warning'
+                        }
+                        size="sm"
+                        className="uppercase tracking-wide"
+                      >
                         {tenant.status}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="py-4 px-6">
                       {tenant.hasActiveLease ? (
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 w-fit">
+                        <Badge intent="success" size="sm">
                           <Key className="h-3 w-3" /> Active Tenant
-                        </span>
+                        </Badge>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-surface2/60 text-muted border border-border/40 w-fit">
+                        <Badge intent="neutral" size="sm">
                           Registered
-                        </span>
+                        </Badge>
                       )}
                     </td>
                   </tr>

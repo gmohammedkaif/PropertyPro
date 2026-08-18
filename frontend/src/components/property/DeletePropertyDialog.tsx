@@ -49,11 +49,11 @@ export function DeletePropertyDialog({
     const { id, name } = property
 
     try {
-      // Optimistic: close dialog immediately
+      await deleteProperty.mutateAsync(id)
+
+      // Only AFTER the delete mutation succeeds:
       onOpenChange(false)
       onDeleted?.(id)
-
-      await deleteProperty.mutateAsync(id)
 
       toast.success('Property deleted', {
         description: `"${name}" has been removed.`,

@@ -60,9 +60,9 @@ export function BrowsePage() {
         id: p.id,
         name: p.name,
         price: p.listingStatus === 'for-sale' ? (p.salePrice || 0) : (p.monthlyRent || 0),
-        bedrooms: p.bedrooms || (p.type === 'house' ? 3 : p.type === 'apartment' ? 2 : 1),
-        bathrooms: p.bathrooms || (p.type === 'house' ? 3 : 2),
-        areaSqFt: p.areaSqFt || (p.type === 'house' ? 2200 : 1200),
+        bedrooms: p.bedrooms,
+        bathrooms: p.bathrooms,
+        areaSqFt: p.areaSqFt,
         description: p.description,
         type: 'local' as const,
         listingType: p.listingStatus === 'for-sale' ? ('sale' as const) : ('rent' as const),
@@ -94,7 +94,8 @@ export function BrowsePage() {
       }
 
       // Bedroom filter
-      if (bedroomFilter && item.bedrooms) {
+      if (bedroomFilter) {
+        if (item.bedrooms === undefined || item.bedrooms === null) return false
         if (bedroomFilter === '4') {
           if (item.bedrooms < 4) return false
         } else if (item.bedrooms !== parseInt(bedroomFilter)) {
@@ -359,24 +360,18 @@ function ListingCard({ item, onClick }: ListingCardProps) {
         
         {/* Features */}
         <div className="mt-4 flex flex-wrap items-center gap-3 pt-3 border-t border-border/50">
-          {item.bedrooms && (
-            <span className="flex items-center gap-1 text-xs text-muted">
-              <Key className="h-3 w-3" aria-hidden="true" />
-              {item.bedrooms} BHK
-            </span>
-          )}
-          {item.bathrooms && (
-            <span className="flex items-center gap-1 text-xs text-muted">
-              <Bath className="h-3 w-3" aria-hidden="true" />
-              {item.bathrooms} Bath
-            </span>
-          )}
-          {item.areaSqFt && (
-            <span className="flex items-center gap-1 text-xs text-muted">
-              <Square className="h-3 w-3" aria-hidden="true" />
-              {item.areaSqFt.toLocaleString()} sq ft
-            </span>
-          )}
+          <span className="flex items-center gap-1 text-xs text-muted">
+            <Key className="h-3 w-3" aria-hidden="true" />
+            {item.bedrooms !== undefined && item.bedrooms !== null ? `${item.bedrooms} BHK` : 'Not specified'}
+          </span>
+          <span className="flex items-center gap-1 text-xs text-muted">
+            <Bath className="h-3 w-3" aria-hidden="true" />
+            {item.bathrooms !== undefined && item.bathrooms !== null ? `${item.bathrooms} Bath` : 'Not specified'}
+          </span>
+          <span className="flex items-center gap-1 text-xs text-muted">
+            <Square className="h-3 w-3" aria-hidden="true" />
+            {item.areaSqFt !== undefined && item.areaSqFt !== null ? `${item.areaSqFt.toLocaleString()} sq ft` : 'Not specified'}
+          </span>
         </div>
       </div>
     </div>

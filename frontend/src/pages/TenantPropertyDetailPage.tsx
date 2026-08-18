@@ -91,10 +91,10 @@ export function TenantPropertyDetailPage() {
 
   const propertyName = listing?.propertyName ?? localProperty?.name ?? 'Property'
   const price = listing?.price ?? (localProperty ? (localProperty.listingStatus === 'for-sale' ? localProperty.salePrice : localProperty.monthlyRent) : 0) ?? 0
-  const bedrooms = localProperty?.bedrooms ?? listing?.bedrooms ?? 0
-  const bathrooms = localProperty?.bathrooms ?? listing?.bathrooms ?? 0
-  const parking = localProperty?.parking ?? 0
-  const areaSqFt = localProperty?.areaSqFt ?? listing?.areaSqFt ?? 0
+  const bedrooms = localProperty?.bedrooms ?? listing?.bedrooms
+  const bathrooms = localProperty?.bathrooms ?? listing?.bathrooms
+  const parking = localProperty?.parking
+  const areaSqFt = localProperty?.areaSqFt ?? listing?.areaSqFt
   const description = listing?.description ?? localProperty?.description ?? 'Spacious, well-lit residential unit situated in a prime locality with top amenities.'
   const propertyType = listing?.type ?? 'rent'
   const status = listing?.status ?? 'available'
@@ -224,10 +224,10 @@ export function TenantPropertyDetailPage() {
             </GlassCardHeader>
             <GlassCardContent>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-                <SpecBox icon={<Key className="h-5 w-5 text-primary" />} label="Bedrooms" value={bedrooms > 0 ? `${bedrooms} BHK` : 'Not specified'} />
-                <SpecBox icon={<span className="text-lg">🛁</span>} label="Bathrooms" value={bathrooms > 0 ? `${bathrooms} Baths` : 'Not specified'} />
-                <SpecBox icon={<Car className="h-5 w-5 text-emerald-400" />} label="Parking" value={parking > 0 ? `${parking} Spaces` : 'Not specified'} />
-                <SpecBox icon={<span className="text-lg">📐</span>} label="Total Area" value={areaSqFt > 0 ? `${areaSqFt} sq ft` : 'Not specified'} />
+                <SpecBox icon={<Key className="h-5 w-5 text-primary" />} label="Bedrooms" value={bedrooms !== undefined && bedrooms !== null ? `${bedrooms} BHK` : 'Not specified'} />
+                <SpecBox icon={<span className="text-lg">🛁</span>} label="Bathrooms" value={bathrooms !== undefined && bathrooms !== null ? `${bathrooms} Baths` : 'Not specified'} />
+                <SpecBox icon={<Car className="h-5 w-5 text-emerald-400" />} label="Parking" value={parking !== undefined && parking !== null ? `${parking} Spaces` : 'Not specified'} />
+                <SpecBox icon={<span className="text-lg">📐</span>} label="Total Area" value={areaSqFt !== undefined && areaSqFt !== null ? `${areaSqFt} sq ft` : 'Not specified'} />
                 <SpecBox icon={<MapPin className="h-5 w-5 text-sky-400" />} label="City" value={propertyCity || 'Not specified'} />
               </div>
             </GlassCardContent>

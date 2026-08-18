@@ -119,9 +119,9 @@ export function TenantDashboardPage() {
       type: 'rent' as const,
       propertyType: p.type,
       price: p.monthlyRent || 0,
-      bedrooms: p.bedrooms || (p.type === 'house' ? 3 : p.type === 'apartment' ? 2 : 1),
-      bathrooms: p.bathrooms || (p.type === 'house' ? 3 : 2),
-      areaSqFt: p.areaSqFt || (p.type === 'house' ? 2200 : 1200),
+      bedrooms: p.bedrooms,
+      bathrooms: p.bathrooms,
+      areaSqFt: p.areaSqFt,
       city: p.address.city,
       ownerName: 'House Owner',
       status: 'available',
@@ -138,9 +138,9 @@ export function TenantDashboardPage() {
       type: 'sale' as const,
       propertyType: p.type,
       price: p.salePrice || 0,
-      bedrooms: p.bedrooms || 3,
-      bathrooms: p.bathrooms || 2,
-      areaSqFt: p.areaSqFt || 1500,
+      bedrooms: p.bedrooms,
+      bathrooms: p.bathrooms,
+      areaSqFt: p.areaSqFt,
       city: p.address.city,
       ownerName: 'House Owner',
       status: 'available',
@@ -662,13 +662,11 @@ function PropertyDisplayCard({
 
         <div className="mt-3 py-2 border-t border-border/40 flex items-center justify-between text-xs text-muted">
           <div className="flex items-center gap-3">
-            {bedrooms && (
-              <span className="flex items-center gap-1">
-                <Key className="h-3 w-3 text-primary" /> {bedrooms} BHK
-              </span>
-            )}
-            {bathrooms && <span>🛁 {bathrooms} Bath</span>}
-            {areaSqFt && <span>📐 {areaSqFt} sq ft</span>}
+            <span className="flex items-center gap-1">
+              <Key className="h-3 w-3 text-primary" /> {bedrooms !== undefined && bedrooms !== null ? `${bedrooms} BHK` : 'Not specified'}
+            </span>
+            <span>🛁 {bathrooms !== undefined && bathrooms !== null ? `${bathrooms} Bath` : 'Not specified'}</span>
+            <span>📐 {areaSqFt !== undefined && areaSqFt !== null ? `${areaSqFt} sq ft` : 'Not specified'}</span>
           </div>
         </div>
 

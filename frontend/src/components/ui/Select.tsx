@@ -6,7 +6,7 @@ import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const selectVariants = cva(
-  'w-full rounded-lg border text-text shadow-sm transition-all duration-150 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+  'w-full rounded-md border text-text shadow-sm transition-all duration-150 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-surface3 disabled:text-muted',
   {
     variants: {
       intent: {
@@ -57,7 +57,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label ? (
-          <label htmlFor={inputId} className="text-xs font-medium text-text2">
+          <label htmlFor={inputId} className="text-xs font-semibold text-text/80 tracking-wide">
             {label}
           </label>
         ) : null}

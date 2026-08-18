@@ -83,6 +83,10 @@ export default {
         shimmer: {
           '100%': { transform: 'translateX(100%)' },
         },
+        'btn-shimmer': {
+          '0%': { transform: 'translateX(-150%) skewX(12deg)' },
+          '100%': { transform: 'translateX(150%) skewX(12deg)' },
+        },
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-10px)' },
@@ -98,6 +102,7 @@ export default {
       },
       animation: {
         shimmer: 'shimmer 1.5s infinite',
+        'btn-shimmer': 'btn-shimmer 2s infinite linear',
         float: 'float 6s ease-in-out infinite',
         'pulse-subtle': 'pulse-subtle 3s ease-in-out infinite',
         glow: 'glow-pulse 4s ease-in-out infinite',

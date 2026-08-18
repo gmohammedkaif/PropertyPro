@@ -87,7 +87,7 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
       <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
         <div className="relative hidden md:block group">
           <Search
-            className="pointer-events-none absolute inset-y-0 left-4 my-auto h-4 w-4 text-muted transition-colors group-focus-within:text-primary"
+            className="pointer-events-none absolute inset-y-0 left-3.5 my-auto h-4 w-4 text-muted transition-colors group-focus-within:text-primary"
             aria-hidden="true"
           />
           <input
@@ -108,7 +108,7 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
                 : 'Search your portfolio...'
             }
             aria-label="Search"
-            className="glass-input h-9 w-40 pl-11 pr-12 text-xs lg:w-56 !bg-surface2"
+            className="glass-input h-9 w-40 pl-12 pr-12 text-xs lg:w-56 !bg-surface2"
           />
           <kbd className="pointer-events-none absolute inset-y-0 right-2.5 my-auto hidden h-5 items-center rounded border border-border bg-surface3 px-1.5 text-[9px] font-bold text-muted lg:flex shadow-sm">
             ⌘K

@@ -75,7 +75,7 @@ export function Modal({
                 transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                 className={cn(
                   'bg-surface border border-border',
-                  'fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[calc(100vw-2rem)] rounded-2xl',
+                  'fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[calc(100vw-2rem)] rounded-xl',
                   'shadow-xl',
                   'flex flex-col max-h-[90vh]',
                   modalSizes({ size }),
@@ -101,7 +101,7 @@ export function Modal({
                     <button
                       type="button"
                       aria-label="Close dialog"
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface3 hover:text-text"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted transition-all duration-150 hover:bg-surface3 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                     >
                       <X className="h-4 w-4" aria-hidden="true" />
                     </button>

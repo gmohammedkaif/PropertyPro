@@ -5,7 +5,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const enhancedInputVariants = cva(
-  'w-full rounded-lg border text-text transition-all duration-150 placeholder:text-muted focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+  'w-full rounded-md border text-text transition-all duration-150 placeholder:text-muted focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-surface3 disabled:text-muted',
   {
     variants: {
       intent: {
@@ -117,8 +117,8 @@ export const EnhancedInput = forwardRef<HTMLInputElement, EnhancedInputProps>(
             className={cn(
               enhancedInputVariants({ intent: intentClass, size, withIcon }),
               getFocusColor(),
-              leftIcon && 'pl-11',
-              rightIcon && 'pr-10',
+              leftIcon && 'pl-12',
+              rightIcon && 'pr-12',
               className,
             )}
             aria-invalid={!!error}

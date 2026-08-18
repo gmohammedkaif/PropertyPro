@@ -49,7 +49,7 @@ export const EnhancedButton = forwardRef<HTMLButtonElement, EnhancedButtonProps>
         {...props}
       >
         {shimmer && (
-          <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 group-hover/btn:animate-shimmer" />
+          <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 group-hover/btn:animate-btn-shimmer" />
         )}
         
         {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}

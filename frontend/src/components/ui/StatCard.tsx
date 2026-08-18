@@ -27,7 +27,7 @@ export function StatCard({
 
   return (
     <div className={cn(
-      'stats-card relative flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 transition-all duration-200 min-h-[110px]',
+      'stats-card relative flex flex-col justify-between rounded-xl border border-border bg-surface p-5 transition-all duration-200 h-28 hover:-translate-y-0.5 hover:shadow-md hover:border-borderStrong select-none',
       className
     )}>
       <div className="flex items-start justify-between gap-4 w-full">
@@ -38,7 +38,7 @@ export function StatCard({
           </div>
         ) : null}
       </div>
-      <div className="mt-auto pt-3">
+      <div className="mt-auto pt-2">
         <p className="font-display text-2xl font-bold text-text tabular-nums leading-none">{value}</p>
       </div>
     </div>

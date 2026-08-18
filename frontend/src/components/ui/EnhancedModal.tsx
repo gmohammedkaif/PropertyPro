@@ -12,12 +12,12 @@ const modalVariants = cva(
   {
     variants: {
       size: {
-        sm: 'max-w-sm rounded-2xl',
-        md: 'max-w-md rounded-2xl',
-        lg: 'max-w-lg rounded-2xl',
-        xl: 'max-w-xl rounded-2xl',
-        '2xl': 'max-w-2xl rounded-2xl',
-        full: 'max-w-[95vw] rounded-2xl',
+        sm: 'max-w-sm rounded-xl',
+        md: 'max-w-md rounded-xl',
+        lg: 'max-w-lg rounded-xl',
+        xl: 'max-w-xl rounded-xl',
+        '2xl': 'max-w-2xl rounded-xl',
+        full: 'max-w-[95vw] rounded-xl',
       },
       withGlow: {
         true: 'shadow-xl',

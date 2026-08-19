@@ -89,37 +89,70 @@ export const createTenancy = asyncHandler(async (req: Request, res: Response) =>
     throw new ForbiddenError('You do not have permission to manage this property')
   }
 
-  // Check if property has active tenancy
+  const targetUnitNumber = req.body.unitNumber || 'Main'
+
+  // 1. Check in-memory unit availability first
   const activeTenancy = await Tenancy.findOne({
     propertyId: req.body.propertyId,
+    unitNumber: targetUnitNumber,
     status: { $in: ['active', 'expiring-soon'] },
   }).lean()
+
   if (activeTenancy) {
-    throw new ConflictError('This property already has an active tenancy lease')
+    throw new ConflictError(`Unit "${targetUnitNumber}" already has an active tenancy lease`)
   }
 
-  const doc = await Tenancy.create({
-    tenantName: req.body.tenantName,
-    tenantEmail: req.body.tenantEmail.toLowerCase(),
-    tenantPhone: req.body.tenantPhone || '',
-    propertyId: req.body.propertyId,
-    propertyName: req.body.propertyName || property.name,
-    unitNumber: req.body.unitNumber || 'Main',
-    unitsOccupied: req.body.unitsOccupied || 1,
-    leaseStart: new Date(req.body.leaseStart),
-    leaseEnd: new Date(req.body.leaseEnd),
-    leaseDurationMonths: req.body.leaseDurationMonths || 12,
-    monthlyRent: req.body.monthlyRent,
-    securityDeposit: req.body.securityDeposit || req.body.monthlyRent * 2,
-    leaseNotes: req.body.leaseNotes || '',
-    ownerEmail: ownerEmail.toLowerCase(),
-    ownerId,
-    status: 'active',
-  })
-
-  // Increment occupied units
+  // 2. Atomically reserve property capacity using $expr check
+  let updatedProp: any = null
   if (req.body.propertyId) {
-    await Property.findByIdAndUpdate(req.body.propertyId, { $inc: { occupiedUnits: 1 } }).catch(() => null)
+    updatedProp = await Property.findOneAndUpdate(
+      {
+        _id: req.body.propertyId,
+        $expr: { $lt: ['$occupiedUnits', { $ifNull: ['$totalUnits', 1] }] },
+      },
+      { $inc: { occupiedUnits: 1 } },
+      { new: true },
+    )
+
+    if (!updatedProp) {
+      throw new ConflictError('This property is already fully occupied')
+    }
+  }
+
+  // 3. Create Tenancy document with E11000 duplicate index catch
+  let doc: any = null
+  try {
+    doc = await Tenancy.create({
+      tenantName: req.body.tenantName,
+      tenantEmail: req.body.tenantEmail.toLowerCase(),
+      tenantPhone: req.body.tenantPhone || '',
+      propertyId: req.body.propertyId,
+      propertyName: req.body.propertyName || property.name,
+      unitNumber: targetUnitNumber,
+      unitsOccupied: req.body.unitsOccupied || 1,
+      leaseStart: new Date(req.body.leaseStart),
+      leaseEnd: new Date(req.body.leaseEnd),
+      leaseDurationMonths: req.body.leaseDurationMonths || 12,
+      monthlyRent: req.body.monthlyRent,
+      securityDeposit: req.body.securityDeposit || req.body.monthlyRent * 2,
+      leaseNotes: req.body.leaseNotes || '',
+      ownerEmail: ownerEmail.toLowerCase(),
+      ownerId,
+      status: 'active',
+    })
+  } catch (createErr: any) {
+    if (updatedProp && req.body.propertyId) {
+      await Property.findByIdAndUpdate(req.body.propertyId, { $inc: { occupiedUnits: -1 } }).catch(() => null)
+    }
+    const isDuplicateKey =
+      createErr?.code === 11000 ||
+      createErr?.cause?.code === 11000 ||
+      (typeof createErr?.message === 'string' && createErr.message.includes('E11000'))
+
+    if (isDuplicateKey) {
+      throw new ConflictError(`Unit "${targetUnitNumber}" already has an active tenancy lease`)
+    }
+    throw createErr
   }
 
   res.status(201).json({ data: formatDoc(doc), meta: {}, error: null })

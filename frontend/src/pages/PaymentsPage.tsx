@@ -53,7 +53,13 @@ function getTransactionId(id: string): string {
 export function PaymentsPage() {
   const user = useAuthStore((state) => state.user)
   const toast = useToast()
-  const { items: allPayments, add, update, remove, processPayment, fetch: fetchPayments } = usePaymentsStore()
+  const fetchPayments = usePaymentsStore((state) => state.fetch)
+  const allPayments = usePaymentsStore((state) => state.items)
+  const add = usePaymentsStore((state) => state.add)
+  const update = usePaymentsStore((state) => state.update)
+  const remove = usePaymentsStore((state) => state.remove)
+  const processPayment = usePaymentsStore((state) => state.processPayment)
+
   const { items: properties } = useLocalPropertiesStore()
   const { items: tenancies } = useTenanciesStore()
 

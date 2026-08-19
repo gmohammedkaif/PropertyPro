@@ -284,6 +284,13 @@ export function PropertyDetailPage() {
     }
   }
 
+  const statusCfg = (property.status && STATUS_CONFIG[property.status])
+    ? STATUS_CONFIG[property.status]
+    : { label: property.status ? String(property.status).charAt(0).toUpperCase() + String(property.status).slice(1) : 'Active', intent: 'success' as const }
+  const typeLabel = (property.type && TYPE_LABELS[property.type])
+    ? TYPE_LABELS[property.type]
+    : (property.type ? String(property.type).charAt(0).toUpperCase() + String(property.type).slice(1) : 'Apartment')
+
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300 max-w-6xl mx-auto">
       {/* ─── Top Bar Navigation & Actions ─────────────────────────────────── */}
@@ -293,11 +300,11 @@ export function PropertyDetailPage() {
         </Button>
 
         <div className="flex items-center gap-3">
-          <Badge intent={STATUS_CONFIG[property.status].intent} size="md">
-            {STATUS_CONFIG[property.status].label}
+          <Badge intent={statusCfg.intent} size="md">
+            {statusCfg.label}
           </Badge>
           <Badge intent="neutral" size="md">
-            {TYPE_LABELS[property.type]}
+            {typeLabel}
           </Badge>
           <Badge intent={isSale ? 'success' : 'primary'} size="md">
             {isSale ? 'For Sale' : 'For Rent'}

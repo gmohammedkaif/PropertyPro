@@ -135,18 +135,11 @@ export class MongoPropertyRepository implements PropertyRepository {
   }
 
   async findAllPublished(filter: PropertyFilter): Promise<PropertyListResult> {
-    // Get property IDs that currently have active tenancies — these must NEVER appear as available
-    const occupiedByTenancy = await getActiveTenantPropertyIds()
-
     const query: Record<string, unknown> = {
       status: 'active',
       deletedAt: null,
       listingStatus: { $in: ['for-rent', 'for-sale'] },
-    }
-
-    // Exclude properties with active tenancies from marketplace listings
-    if (occupiedByTenancy.length > 0) {
-      query._id = { $nin: occupiedByTenancy }
+      $expr: { $lt: ['$occupiedUnits', { $ifNull: ['$totalUnits', 1] }] },
     }
 
     this.applyFilters(query, filter)
@@ -185,18 +178,12 @@ export class MongoPropertyRepository implements PropertyRepository {
   }
 
   async search(query: string, filter: PropertyFilter): Promise<PropertyListResult> {
-    // Get property IDs that currently have active tenancies
-    const occupiedByTenancy = await getActiveTenantPropertyIds()
-
     const q: Record<string, unknown> = {
       $text: { $search: query },
       status: 'active',
       deletedAt: null,
       listingStatus: { $in: ['for-rent', 'for-sale'] },
-    }
-
-    if (occupiedByTenancy.length > 0) {
-      q._id = { $nin: occupiedByTenancy }
+      $expr: { $lt: ['$occupiedUnits', { $ifNull: ['$totalUnits', 1] }] },
     }
 
     const sort = filter.sort === 'relevance' ? { score: { $meta: 'textScore' } } : this.buildSort(filter)

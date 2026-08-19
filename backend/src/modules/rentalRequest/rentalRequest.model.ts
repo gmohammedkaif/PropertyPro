@@ -13,6 +13,7 @@ const rentalRequestSchema = new Schema(
     mobileNumber: { type: String, required: true, trim: true },
     city: { type: String, required: true, trim: true },
     monthlyRent: { type: Number, default: 0 },
+    unitNumber: { type: String, default: 'Main', trim: true },
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],

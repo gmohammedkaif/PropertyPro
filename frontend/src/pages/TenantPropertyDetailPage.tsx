@@ -28,6 +28,8 @@ import { useRentalRequestsStore } from '@/stores/rentalRequestsStore'
 import { useNotificationsStore } from '@/stores/notificationsStore'
 import { useToast } from '@/hooks/useToast'
 
+import { derivePropertyUnits } from '@/lib/unitUtils'
+
 function formatRupee(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n)
 }
@@ -69,6 +71,16 @@ export function TenantPropertyDetailPage() {
   const [mobileNumber, setMobileNumber] = useState('')
   const [city, setCity] = useState(localProperty?.address.city ?? 'Hyderabad')
   const [submitting, setSubmitting] = useState(false)
+  const [selectedUnitNumber, setSelectedUnitNumber] = useState<string>('')
+
+  // Available units calculation
+  const unitsList = localProperty
+    ? derivePropertyUnits(
+        { id: localProperty.id, type: localProperty.type, totalUnits: localProperty.totalUnits ?? 1 },
+        tenancies
+      )
+    : []
+  const availableUnitsList = unitsList.filter((u) => u.status === 'AVAILABLE')
 
   // Check if tenant already has an active tenancy for this property
   const existingTenancy = tenancies.find(
@@ -109,6 +121,14 @@ export function TenantPropertyDetailPage() {
       navigate('/login')
       return
     }
+    const avail = localProperty
+      ? derivePropertyUnits(
+          { id: localProperty.id, type: localProperty.type, totalUnits: localProperty.totalUnits ?? 1 },
+          tenancies
+        ).filter((u) => u.status === 'AVAILABLE')
+      : []
+
+    setSelectedUnitNumber(avail[0]?.unitNumber ?? 'Main')
     setFullName(user.name)
     setRequestModalOpen(true)
   }
@@ -117,6 +137,10 @@ export function TenantPropertyDetailPage() {
     e.preventDefault()
     if (!fullName.trim() || !mobileNumber.trim() || !city.trim()) {
       toast.error('Please fill in all required fields.')
+      return
+    }
+    if (availableUnitsList.length === 0) {
+      toast.error('No units currently available for rent in this property.')
       return
     }
 
@@ -133,13 +157,14 @@ export function TenantPropertyDetailPage() {
         mobileNumber: mobileNumber.trim(),
         city: city.trim(),
         monthlyRent: price,
+        unitNumber: selectedUnitNumber || availableUnitsList[0]?.unitNumber || 'Main',
       })
 
       // Create notification for tenant
       addNotification({
         userEmail: user?.email ?? '',
         title: 'Rental Request Submitted',
-        message: `Your request for ${propertyName} has been sent to the property owner for review.`,
+        message: `Your request for ${propertyName} (Unit: ${selectedUnitNumber || 'Main'}) has been sent to the property owner for review.`,
         type: 'info',
       })
 
@@ -347,6 +372,31 @@ export function TenantPropertyDetailPage() {
           </div>
 
           <form onSubmit={handleSubmitRentalRequest} className="flex flex-col gap-4 mt-2">
+            {availableUnitsList.length === 0 ? (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300 flex items-center gap-2">
+                <Shield className="h-4 w-4 shrink-0 text-amber-400" />
+                <span>No units currently available for rent in this property.</span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-text/80 tracking-wide">
+                  Select Unit / Floor <span className="text-danger">*</span>
+                </label>
+                <select
+                  value={selectedUnitNumber}
+                  onChange={(e) => setSelectedUnitNumber(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition focus:border-primary focus:ring-2 focus:ring-focus/30"
+                >
+                  {availableUnitsList.map((u) => (
+                    <option key={u.unitNumber} value={u.unitNumber}>
+                      {u.unitNumber} ({u.floor}) — Available
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <Input
               label="Full Name"
               value={fullName}
@@ -376,7 +426,12 @@ export function TenantPropertyDetailPage() {
               <Button type="button" variant="ghost" onClick={() => setRequestModalOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" loading={submitting}>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={submitting}
+                disabled={availableUnitsList.length === 0 || !selectedUnitNumber}
+              >
                 Submit Request
               </Button>
             </div>

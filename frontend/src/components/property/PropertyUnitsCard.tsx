@@ -67,7 +67,7 @@ export function PropertyUnitsCard({
         </div>
 
         {/* Overview Stats Badges */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-surface2/40 px-2.5 py-1 text-xs font-semibold">
             <span className="text-muted">Total:</span>
             <span className="text-text font-bold">{units.length}</span>
@@ -84,7 +84,7 @@ export function PropertyUnitsCard({
       </GlassCardHeader>
 
       <GlassCardContent className="pt-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {units.map((unit) => {
             const isOccupied = unit.status === 'OCCUPIED'
 
@@ -99,17 +99,17 @@ export function PropertyUnitsCard({
               >
                 {/* Card Header: Unit Number & Badge */}
                 <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2.5">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                         isOccupied ? 'bg-amber-500/20 text-amber-400' : 'bg-primary/10 text-primary'
                       }`}
                     >
                       <DoorOpen className="h-4 w-4" />
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-text">{unit.unitNumber}</h4>
-                      <p className="text-[10px] text-muted">{unit.floor}</p>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-text truncate">{unit.unitNumber}</h4>
+                      <p className="text-[10px] text-muted truncate">{unit.floor}</p>
                     </div>
                   </div>
 

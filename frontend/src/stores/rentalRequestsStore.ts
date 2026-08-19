@@ -17,6 +17,7 @@ export interface RentalRequestRecord {
   mobileNumber: string
   city: string
   monthlyRent?: number
+  unitNumber?: string
   status: RentalRequestStatus
   notes?: string
   createdAt: string
@@ -36,6 +37,7 @@ interface RentalRequestsState {
     mobileNumber: string
     city: string
     monthlyRent?: number
+    unitNumber?: string
     notes?: string
   }) => Promise<RentalRequestRecord>
   approveRequest: (id: string, leaseDetails: {

@@ -22,6 +22,7 @@ function formatDoc(doc: any) {
     mobileNumber: doc.mobileNumber,
     city: doc.city,
     monthlyRent: doc.monthlyRent,
+    unitNumber: doc.unitNumber || 'Main',
     status: doc.status,
     notes: doc.notes,
     createdAt: doc.createdAt ? doc.createdAt.toISOString() : new Date().toISOString(),
@@ -70,6 +71,7 @@ export const createRentalRequest = asyncHandler(async (req: Request, res: Respon
     mobileNumber: req.body.mobileNumber,
     city: req.body.city,
     monthlyRent: req.body.monthlyRent || (property as any).monthlyRent || 0,
+    unitNumber: req.body.unitNumber || 'Main',
     status: 'pending',
     notes: req.body.notes || '',
   })

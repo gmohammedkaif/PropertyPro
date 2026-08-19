@@ -83,18 +83,21 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
   const [leaseDuration, setLeaseDuration] = useState('12')
   const [monthlyRent, setMonthlyRent] = useState(String(request.monthlyRent ?? 18000))
   const [securityDeposit, setSecurityDeposit] = useState(String((request.monthlyRent ?? 18000) * 2))
+  const requestedUnitValid = request.unitNumber && availableUnitsList.some((u) => u.unitNumber === request.unitNumber)
   const [unitNumber, setUnitNumber] = useState(
-    availableUnitsList.length > 0 ? availableUnitsList[0].unitNumber : 'Main'
+    requestedUnitValid ? request.unitNumber! : availableUnitsList.length > 0 ? availableUnitsList[0].unitNumber : 'Main'
   )
   const [leaseNotes, setLeaseNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Update default unitNumber if property loaded
+  // Update default unitNumber if property loaded or tenant requested a specific unit
   useEffect(() => {
-    if (availableUnitsList.length > 0 && (unitNumber === 'Main' || !unitNumber)) {
+    if (request.unitNumber && availableUnitsList.some((u) => u.unitNumber === request.unitNumber)) {
+      setUnitNumber(request.unitNumber)
+    } else if (availableUnitsList.length > 0 && (unitNumber === 'Main' || !unitNumber)) {
       setUnitNumber(availableUnitsList[0].unitNumber)
     }
-  }, [request.propertyId, availableUnitsList.length])
+  }, [request.propertyId, request.unitNumber, availableUnitsList.length])
 
   const computedEnd = (() => {
     if (!leaseStart) return ''

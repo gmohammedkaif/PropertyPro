@@ -38,6 +38,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
 import { useTenanciesStore } from '@/stores/tenanciesStore'
 import { useRentalRequestsStore } from '@/stores/rentalRequestsStore'
+import { derivePropertyUnits } from '@/lib/unitUtils'
 import { cn } from '@/lib/utils'
 import type { PropertyRecord, PropertyStatus, PropertyType } from '@/shared'
 
@@ -208,6 +209,14 @@ export function PropertyDetailPage() {
     ? (property.salePrice && property.salePrice > 0 ? property.salePrice : 0)
     : (property.monthlyRent && property.monthlyRent > 0 ? property.monthlyRent : 0)
 
+  // Available units calculation for Request For Rent modal
+  const unitsList = derivePropertyUnits(
+    { id: property.id, type: property.type, totalUnits: property.totalUnits ?? 1 },
+    tenancies
+  )
+  const availableUnitsList = unitsList.filter((u) => u.status === 'AVAILABLE')
+  const [selectedUnitNumber, setSelectedUnitNumber] = useState<string>('')
+
   // Handle Rental Request Modal Open
   const handleOpenRequestModal = () => {
     if (!user) {
@@ -215,6 +224,12 @@ export function PropertyDetailPage() {
       navigate('/login')
       return
     }
+    const avail = derivePropertyUnits(
+      { id: property.id, type: property.type, totalUnits: property.totalUnits ?? 1 },
+      tenancies
+    ).filter((u) => u.status === 'AVAILABLE')
+
+    setSelectedUnitNumber(avail[0]?.unitNumber ?? 'Main')
     setRequestForm({
       fullName: user.name ?? '',
       mobileNumber: '',
@@ -228,6 +243,10 @@ export function PropertyDetailPage() {
   // Handle Rental Request Form Submission with Inline Zod Validation
   const handleSubmitRentalRequest = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (availableUnitsList.length === 0) {
+      toast.error('No units available for rent in this property')
+      return
+    }
     setRequestTouched(true)
 
     const validationResult = rentalRequestSchema.safeParse(requestForm)
@@ -252,6 +271,7 @@ export function PropertyDetailPage() {
         mobileNumber: requestForm.mobileNumber.trim(),
         city: requestForm.city.trim(),
         monthlyRent: displayPrice,
+        unitNumber: selectedUnitNumber || availableUnitsList[0]?.unitNumber || 'Main',
       })
 
       toast.success('Rental Request Sent!', {
@@ -626,6 +646,31 @@ export function PropertyDetailPage() {
           </div>
 
           <form onSubmit={handleSubmitRentalRequest} noValidate className="flex flex-col gap-4 mt-2">
+            {availableUnitsList.length === 0 ? (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 text-amber-400" />
+                <span>No units currently available for rent in this property.</span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-text/80 tracking-wide">
+                  Select Unit / Floor <span className="text-danger">*</span>
+                </label>
+                <select
+                  value={selectedUnitNumber}
+                  onChange={(e) => setSelectedUnitNumber(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition focus:border-primary focus:ring-2 focus:ring-focus/30"
+                >
+                  {availableUnitsList.map((u) => (
+                    <option key={u.unitNumber} value={u.unitNumber}>
+                      {u.unitNumber} ({u.floor}) — Available
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <Input
               label="Full Name"
               value={requestForm.fullName}
@@ -655,7 +700,12 @@ export function PropertyDetailPage() {
               <Button type="button" variant="ghost" onClick={() => setRequestModalOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" loading={requestSubmitting}>
+              <Button
+                type="submit"
+                variant="primary"
+                loading={requestSubmitting}
+                disabled={availableUnitsList.length === 0 || !selectedUnitNumber}
+              >
                 Submit Request
               </Button>
             </div>

@@ -44,6 +44,20 @@ export const createRentalRequest = asyncHandler(async (req: Request, res: Respon
     ownerEmail = ownerUser ? ownerUser.email : 'owner@propertypro.com'
   }
 
+  // Prevent duplicate pending rental requests from the same tenant for this property
+  const existingPending = await RentalRequest.findOne({
+    propertyId: req.body.propertyId,
+    $or: [
+      { tenantId: tenantId || '' },
+      { tenantEmail: tenantEmail.toLowerCase() },
+    ],
+    status: 'pending',
+  }).lean()
+
+  if (existingPending) {
+    throw new ConflictError('You already have a pending rental request for this property')
+  }
+
   const doc = await RentalRequest.create({
     propertyId: req.body.propertyId,
     propertyName: req.body.propertyName || property.name,

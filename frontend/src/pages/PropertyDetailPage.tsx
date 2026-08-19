@@ -515,8 +515,22 @@ export function PropertyDetailPage() {
                 </div>
               </div>
 
-              {/* Status-aware Rental Request CTA */}
-              {existingTenancy ? (
+              {/* Status-aware Rental Request / Owner Action CTA */}
+              {isOwnerOrAdmin ? (
+                <div className="flex flex-col gap-2">
+                  <Badge intent="neutral" size="md" className="py-2.5 justify-center text-sm font-semibold">
+                    {isOwner ? 'You own this property' : 'Property Management'}
+                  </Badge>
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    className="w-full font-bold"
+                    onClick={() => setEditOpen(true)}
+                  >
+                    <Edit className="h-4 w-4" /> Edit Property Details
+                  </Button>
+                </div>
+              ) : existingTenancy ? (
                 <Badge intent="success" size="md" className="py-2.5 justify-center text-sm font-semibold">
                   This is your current residence
                 </Badge>

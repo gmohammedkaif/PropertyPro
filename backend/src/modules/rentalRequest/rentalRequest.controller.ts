@@ -133,13 +133,26 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
     throw new ConflictError('This request has already been processed')
   }
 
-  // Check if property has active tenancy
-  const activeTenancy = await Tenancy.findOne({
+  // Check property capacity and unit availability
+  const targetUnitNumber = req.body.unitNumber || 'Main'
+  const propertyDoc = await Property.findById(requestDoc.propertyId).lean().catch(() => null)
+  
+  if (propertyDoc) {
+    const totalUnits = propertyDoc.totalUnits && propertyDoc.totalUnits > 0 ? propertyDoc.totalUnits : 1
+    const occupiedUnits = propertyDoc.occupiedUnits || 0
+    if (occupiedUnits >= totalUnits) {
+      throw new ConflictError('This property is already fully occupied')
+    }
+  }
+
+  const activeUnitTenancy = await Tenancy.findOne({
     propertyId: requestDoc.propertyId,
+    unitNumber: targetUnitNumber,
     status: { $in: ['active', 'expiring-soon'] },
   }).lean()
-  if (activeTenancy) {
-    throw new ConflictError('This property already has an active tenancy lease')
+
+  if (activeUnitTenancy) {
+    throw new ConflictError(`Unit "${targetUnitNumber}" already has an active tenancy lease`)
   }
 
   requestDoc.status = 'approved'
@@ -158,7 +171,7 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
     tenantPhone: requestDoc.mobileNumber,
     propertyId: requestDoc.propertyId,
     propertyName: requestDoc.propertyName,
-    unitNumber: req.body.unitNumber || 'Main',
+    unitNumber: targetUnitNumber,
     unitsOccupied: 1,
     leaseStart: leaseStartRaw,
     leaseEnd: leaseEndRaw,
@@ -192,40 +205,49 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
 
   // 3. Update Property Occupied Units in MongoDB if property exists
   if (requestDoc.propertyId) {
-    await Property.findByIdAndUpdate(requestDoc.propertyId, { $inc: { occupiedUnits: 1 } }).catch(() => null)
+    const updatedProp = await Property.findByIdAndUpdate(
+      requestDoc.propertyId,
+      { $inc: { occupiedUnits: 1 } },
+      { new: true }
+    ).catch(() => null)
 
-    // Auto-reject other pending rental requests for the same property
-    const otherPending = await RentalRequest.find({
-      propertyId: requestDoc.propertyId,
-      _id: { $ne: requestDoc._id },
-      status: 'pending',
-    }).lean().catch(() => [])
+    const totalCapacity = updatedProp?.totalUnits && updatedProp.totalUnits > 0 ? updatedProp.totalUnits : 1
+    const currentOccupied = updatedProp?.occupiedUnits || 1
 
-    await RentalRequest.updateMany(
-      {
+    // ONLY auto-reject remaining pending rental requests when the property becomes fully occupied
+    if (currentOccupied >= totalCapacity) {
+      const otherPending = await RentalRequest.find({
         propertyId: requestDoc.propertyId,
         _id: { $ne: requestDoc._id },
         status: 'pending',
-      },
-      {
-        $set: {
-          status: 'rejected',
-          notes: 'Property leased to another applicant',
-        },
-      },
-    ).catch(() => null)
+      }).lean().catch(() => [])
 
-    for (const otherReq of otherPending) {
-      if (otherReq.tenantEmail) {
-        await createNotificationIdempotent({
-          userEmail: otherReq.tenantEmail,
-          userId: otherReq.tenantId,
-          title: 'Rental Request Status Update ❌',
-          message: `Your rental request for ${otherReq.propertyName} was not accepted because the property has been leased to another applicant.`,
-          type: 'warning',
-          eventType: 'REQUEST_AUTO_REJECTED',
-          relatedEntityId: otherReq._id.toString(),
-        })
+      await RentalRequest.updateMany(
+        {
+          propertyId: requestDoc.propertyId,
+          _id: { $ne: requestDoc._id },
+          status: 'pending',
+        },
+        {
+          $set: {
+            status: 'rejected',
+            notes: 'Property is fully occupied',
+          },
+        },
+      ).catch(() => null)
+
+      for (const otherReq of otherPending) {
+        if (otherReq.tenantEmail) {
+          await createNotificationIdempotent({
+            userEmail: otherReq.tenantEmail,
+            userId: otherReq.tenantId,
+            title: 'Rental Request Status Update ❌',
+            message: `Your rental request for ${otherReq.propertyName} was not accepted because the property has been leased to another applicant.`,
+            type: 'warning',
+            eventType: 'REQUEST_AUTO_REJECTED',
+            relatedEntityId: otherReq._id.toString(),
+          })
+        }
       }
     }
   }

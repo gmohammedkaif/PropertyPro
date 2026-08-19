@@ -59,6 +59,7 @@ interface LeaseModalProps {
     leaseDurationMonths: number
     monthlyRent: number
     securityDeposit: number
+    unitNumber?: string
     leaseNotes: string
   }) => void
 }
@@ -68,6 +69,7 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
   const [leaseDuration, setLeaseDuration] = useState('12')
   const [monthlyRent, setMonthlyRent] = useState(String(request.monthlyRent ?? 18000))
   const [securityDeposit, setSecurityDeposit] = useState(String((request.monthlyRent ?? 18000) * 2))
+  const [unitNumber, setUnitNumber] = useState('Main')
   const [leaseNotes, setLeaseNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -87,6 +89,7 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
       leaseDurationMonths: Number(leaseDuration),
       monthlyRent: Number(monthlyRent),
       securityDeposit: Number(securityDeposit),
+      unitNumber: unitNumber.trim() || 'Main',
       leaseNotes,
     })
     setSubmitting(false)
@@ -175,6 +178,20 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
             Lease End Date: <span className="font-bold ml-1">{fmt(computedEnd)}</span>
           </div>
         )}
+
+        {/* Unit Identifier */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-text2 uppercase tracking-wider">
+            Unit Number / Identifier
+          </label>
+          <input
+            type="text"
+            placeholder="e.g. Main or A-101"
+            value={unitNumber}
+            onChange={(e) => setUnitNumber(e.target.value)}
+            className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
+          />
+        </div>
 
         {/* Financial Details */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -398,6 +415,7 @@ export function TenantRequestsPage() {
     leaseDurationMonths: number
     monthlyRent: number
     securityDeposit: number
+    unitNumber?: string
     leaseNotes: string
   }) => {
     if (!pendingApproval) return
@@ -409,6 +427,7 @@ export function TenantRequestsPage() {
         leaseDurationMonths: lease.leaseDurationMonths,
         monthlyRent: lease.monthlyRent,
         securityDeposit: lease.securityDeposit,
+        unitNumber: lease.unitNumber,
         leaseNotes: lease.leaseNotes || undefined,
       })
       // Sync requests, properties, leases, and payments

@@ -43,6 +43,7 @@ interface RentalRequestsState {
     leaseDurationMonths: number
     monthlyRent: number
     securityDeposit: number
+    unitNumber?: string
     leaseNotes?: string
   }) => Promise<void>
   rejectRequest: (id: string) => Promise<void>

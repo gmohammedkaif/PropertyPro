@@ -2,10 +2,11 @@ import type { Request, Response } from 'express'
 import { logger } from '../../core/logger.js'
 
 import { asyncHandler } from '../../core/asyncHandler.js'
-import { ForbiddenError, ConflictError, BadRequestError } from '../../core/errors.js'
+import { ForbiddenError, ConflictError, BadRequestError, NotFoundError } from '../../core/errors.js'
 import { Tenancy } from '../tenancy/tenancy.model.js'
 import { propertyService } from './property.service.js'
 import { uploadPropertyImageToImageKit } from './imagekit.service.js'
+import { User } from '../auth/models/user.model.js'
 import {
   createPropertySchema,
   updatePropertySchema,
@@ -149,4 +150,33 @@ export const autocompleteLocation = asyncHandler(async (req: Request, res: Respo
     logger.error(error, 'Error fetching location autocomplete suggestions')
     res.json({ data: [], meta: {}, error: null })
   }
+})
+
+export const getPropertyOwner = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = propertyIdSchema.parse(req.params)
+  const property = await propertyService.findById(id)
+
+  let ownerName = 'Owner information unavailable'
+  let ownerPhone = ''
+
+  if (property.ownerId) {
+    const ownerUser = await User.findById(property.ownerId).lean()
+    if (ownerUser) {
+      const firstName = ownerUser.profile?.firstName || ''
+      const lastName = ownerUser.profile?.lastName || ''
+      ownerName = [firstName, lastName].filter(Boolean).join(' ') || ownerUser.email.split('@')[0]
+      ownerPhone = ownerUser.phone || ''
+    }
+  }
+
+  res.json({
+    data: {
+      id: property.ownerId,
+      name: ownerName,
+      phone: ownerPhone,
+      email: property.ownerEmail || '',
+    },
+    meta: {},
+    error: null,
+  })
 })

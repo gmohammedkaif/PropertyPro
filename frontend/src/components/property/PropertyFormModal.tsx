@@ -37,6 +37,7 @@ interface FormData {
   images: File[]
   imagePreviews: string[]
   ownerId?: string
+  amenities: string[]
 }
 
 interface FormErrors {
@@ -153,6 +154,7 @@ function defaultForm(property?: PropertyRecord): FormData {
       images: [],
       imagePreviews: property.imageUrl ? [property.imageUrl] : (property.images ?? []),
       ownerId: property.ownerId,
+      amenities: property.amenities ?? [],
     }
   }
   return {
@@ -176,8 +178,24 @@ function defaultForm(property?: PropertyRecord): FormData {
     images: [],
     imagePreviews: [],
     ownerId: '',
+    amenities: [],
   }
 }
+
+const AVAILABLE_AMENITIES = [
+  '24/7 Power Backup',
+  'High Speed Wifi',
+  'Elevator / Lift',
+  'Gym & Fitness',
+  'Covered Parking',
+  'Gated Community',
+  'Swimming Pool',
+  'CCTV Surveillance',
+  'Water Supply 24h',
+  'Security Guard',
+  'Visitor Parking',
+  'Clubhouse',
+]
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -462,6 +480,7 @@ export function PropertyFormModal({
           address: addressPayload,
           imageUrl: uploadedImageUrl!,
           images: [uploadedImageUrl!],
+          amenities: Array.from(new Set(form.amenities)),
         })
 
         // 2. Sync to local store so offline/local views match MongoDB state
@@ -517,6 +536,7 @@ export function PropertyFormModal({
             securityDeposit,
             salePrice,
             address: addressPayload,
+            amenities: Array.from(new Set(form.amenities)),
             ...(uploadedImageUrl ? { imageUrl: uploadedImageUrl, images: [uploadedImageUrl] } : {}),
           },
         })
@@ -717,6 +737,48 @@ export function PropertyFormModal({
                 disabled={isPending}
                 className="glass-input w-full resize-none min-h-[100px]"
               />
+            </div>
+          </div>
+
+          {/* Section: Amenities & Facilities */}
+          <div className="rounded-2xl border border-border/40 bg-surface/20 p-5 flex flex-col gap-4">
+            <h3 className="text-xs font-bold text-text uppercase tracking-wider flex items-center gap-2 border-b border-border/30 pb-2.5 mb-1.5">
+              <Sparkles className="h-4 w-4 text-emerald-400" /> Amenities & Facilities
+            </h3>
+
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+              {AVAILABLE_AMENITIES.map((amenity) => {
+                const isSelected = form.amenities.includes(amenity)
+                return (
+                  <button
+                    key={amenity}
+                    type="button"
+                    onClick={() => {
+                      setForm((prev) => {
+                        const exists = prev.amenities.includes(amenity)
+                        const next = exists
+                          ? prev.amenities.filter((a) => a !== amenity)
+                          : [...prev.amenities, amenity]
+                        return { ...prev, amenities: Array.from(new Set(next)) }
+                      })
+                    }}
+                    disabled={isPending}
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition-all text-left ${
+                      isSelected
+                        ? 'border-primary/50 bg-primary/10 text-primary font-semibold shadow-sm'
+                        : 'border-border/40 bg-surface2/30 text-text hover:border-border'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      readOnly
+                      className="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary/20"
+                    />
+                    <span className="truncate">{amenity}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 

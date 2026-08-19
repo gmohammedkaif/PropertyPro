@@ -147,7 +147,7 @@ export function TenantRentPage() {
                       </Badge>
                     </div>
                     <p className="text-xs text-muted mt-0.5">
-                      Owner: <strong className="text-text">{prop ? 'House Owner' : 'Property Manager'}</strong> · Unit: {tenancy.unitNumber ?? 'Main'}
+                      Owner: <strong className="text-text">{tenancy.ownerEmail || prop?.ownerEmail || 'Owner'}</strong> · Unit: {tenancy.unitNumber ?? 'Main'}
                     </p>
                   </div>
 

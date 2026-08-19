@@ -7,6 +7,7 @@ import {
   getProperties,
   searchProperties,
   getProperty,
+  getPropertyOwner,
   createProperty,
   updateProperty,
   deleteProperty,
@@ -41,6 +42,7 @@ router.get('/properties', authenticate, propertyLimiter, getProperties)
 router.get('/properties/search', propertyLimiter, searchProperties)
 router.get('/properties/autocomplete', authenticate, propertyLimiter, autocompleteLocation)
 router.get('/properties/:id', propertyLimiter, getProperty)
+router.get('/properties/:id/owner', propertyLimiter, getPropertyOwner)
 
 router.post('/properties/upload-image', authenticate, authorize('owner', 'admin', 'agent'), propertyLimiter, uploadPropertyImage)
 router.post('/properties', authenticate, authorize('owner', 'admin', 'agent'), propertyLimiter, createProperty)

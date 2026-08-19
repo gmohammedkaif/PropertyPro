@@ -94,7 +94,7 @@ export const router = createBrowserRouter([
       // Shared — both roles can access
       { path: 'properties', element: <PropertyListPage /> },
       { path: 'properties/:id', element: <PropertyDetailPage /> },
-      { path: 'property/:id', element: <TenantPropertyDetailPage /> },
+      { path: 'property/:id', element: <PropertyDetailPage /> },
       { path: 'settings', element: <SettingsPage /> },
 
       // ── Super Admin Only routes ───────────────────────────────────────────

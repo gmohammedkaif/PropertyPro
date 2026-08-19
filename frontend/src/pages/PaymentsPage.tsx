@@ -57,9 +57,9 @@ export function PaymentsPage() {
   const { items: properties } = useLocalPropertiesStore()
   const { items: tenancies } = useTenanciesStore()
 
-  useState(() => {
+  useEffect(() => {
     fetchPayments()
-  })
+  }, [fetchPayments])
 
   const userEmail = user?.email?.toLowerCase() ?? ''
   const userId = user?.id ?? ''

@@ -51,6 +51,27 @@ export function useProperty(id: string, enabled = true) {
   })
 }
 
+export interface PropertyOwnerInfo {
+  id: string
+  name: string
+  phone: string
+  email: string
+}
+
+export function usePropertyOwner(id: string, enabled = true) {
+  return useQuery({
+    queryKey: [...propertyKeys.detail(id), 'owner'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiEnvelope<PropertyOwnerInfo>>(`/properties/${id}/owner`)
+      if (!data.data) throw new Error('Malformed owner response')
+      return data.data
+    },
+    enabled: enabled && !!id,
+    staleTime: 120_000,
+    retry: 1,
+  })
+}
+
 export function useSearchProperties(query?: string, filter?: PropertyFilter) {
   return useQuery({
     queryKey: [...propertyKeys.all, 'search', query, filter],

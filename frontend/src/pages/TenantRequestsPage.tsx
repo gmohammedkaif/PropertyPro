@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/useToast'
 import { useRentalRequestsStore, type RentalRequestRecord } from '@/stores/rentalRequestsStore'
 import { useTenanciesStore } from '@/stores/tenanciesStore'
 import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
+import { derivePropertyUnits } from '@/lib/unitUtils'
 import { usePaymentsStore } from '@/stores/paymentsStore'
 import { useNotificationsStore } from '@/stores/notificationsStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -65,13 +66,35 @@ interface LeaseModalProps {
 }
 
 function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalProps) {
+  const { items: properties } = useLocalPropertiesStore()
+  const { items: tenancies } = useTenanciesStore()
+
+  const targetProperty = properties.find(
+    (p) => p.id === request.propertyId || p.name?.toLowerCase() === request.propertyName?.toLowerCase()
+  )
+
+  const derivedUnits = targetProperty
+    ? derivePropertyUnits(targetProperty, tenancies)
+    : []
+
+  const availableUnitsList = derivedUnits.filter((u) => u.status === 'AVAILABLE')
+
   const [leaseStart, setLeaseStart] = useState(new Date().toISOString().split('T')[0])
   const [leaseDuration, setLeaseDuration] = useState('12')
   const [monthlyRent, setMonthlyRent] = useState(String(request.monthlyRent ?? 18000))
   const [securityDeposit, setSecurityDeposit] = useState(String((request.monthlyRent ?? 18000) * 2))
-  const [unitNumber, setUnitNumber] = useState('Main')
+  const [unitNumber, setUnitNumber] = useState(
+    availableUnitsList.length > 0 ? availableUnitsList[0].unitNumber : 'Main'
+  )
   const [leaseNotes, setLeaseNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  // Update default unitNumber if property loaded
+  useEffect(() => {
+    if (availableUnitsList.length > 0 && (unitNumber === 'Main' || !unitNumber)) {
+      setUnitNumber(availableUnitsList[0].unitNumber)
+    }
+  }, [request.propertyId, availableUnitsList.length])
 
   const computedEnd = (() => {
     if (!leaseStart) return ''
@@ -165,8 +188,8 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
               className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
             >
               <option value="6">6 Months</option>
+              <option value="11">11 Months</option>
               <option value="12">12 Months (1 Year)</option>
-              <option value="18">18 Months</option>
               <option value="24">24 Months (2 Years)</option>
             </select>
           </div>
@@ -182,15 +205,29 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
         {/* Unit Identifier */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold text-text2 uppercase tracking-wider">
-            Unit Number / Identifier
+            Assign Property Unit / Identifier
           </label>
-          <input
-            type="text"
-            placeholder="e.g. Main or A-101"
-            value={unitNumber}
-            onChange={(e) => setUnitNumber(e.target.value)}
-            className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
-          />
+          {availableUnitsList.length > 0 ? (
+            <select
+              value={unitNumber}
+              onChange={(e) => setUnitNumber(e.target.value)}
+              className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
+            >
+              {availableUnitsList.map((u) => (
+                <option key={u.unitNumber} value={u.unitNumber}>
+                  {u.unitNumber} ({u.floor}) — Available
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              placeholder="e.g. Main or A-101"
+              value={unitNumber}
+              onChange={(e) => setUnitNumber(e.target.value)}
+              className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
+            />
+          )}
         </div>
 
         {/* Financial Details */}

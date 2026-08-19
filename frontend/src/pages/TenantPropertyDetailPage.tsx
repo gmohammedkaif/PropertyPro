@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/ui/GlassCard'
 import { Modal } from '@/components/ui/Modal'
+import { PropertyUnitsCard } from '@/components/property/PropertyUnitsCard'
 import { useAuthStore } from '@/stores/authStore'
 import { useListingsStore } from '@/stores/listingsStore'
 import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
@@ -259,6 +260,9 @@ export function TenantPropertyDetailPage() {
               </div>
             </GlassCardContent>
           </GlassCard>
+
+          {/* Real Property Units Management Card */}
+          {localProperty && <PropertyUnitsCard property={localProperty} tenancies={tenancies} />}
         </div>
 
         {/* Right Column: Owner Info & Rental Request CTA */}

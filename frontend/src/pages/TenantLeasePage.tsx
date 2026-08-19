@@ -11,9 +11,10 @@ import {
   AlertTriangle,
   ArrowRight,
   Sparkles,
+  DoorOpen,
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 
+import { useNavigate } from 'react-router-dom'
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/ui/GlassCard'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -150,12 +151,12 @@ export function TenantLeasePage() {
           </GlassCardHeader>
           <GlassCardContent className="space-y-3">
             <LeaseRow label="Property Name" value={myTenancy.propertyName} icon={<Home className="h-4 w-4 text-primary" />} />
+            <LeaseRow label="Assigned Unit" value={myTenancy.unitNumber || 'Main'} icon={<DoorOpen className="h-4 w-4 text-purple-400" />} />
             <LeaseRow label="Owner Name" value={myProperty ? 'House Owner' : 'Property Owner'} icon={<User className="h-4 w-4 text-emerald-400" />} />
             <LeaseRow label="Tenant Name" value={myTenancy.tenantName} icon={<User className="h-4 w-4 text-sky-400" />} />
             <LeaseRow label="Tenant Email" value={myTenancy.tenantEmail} icon={<User className="h-4 w-4" />} />
-            <LeaseRow label="Tenant Phone" value={myTenancy.tenantPhone} icon={<User className="h-4 w-4" />} />
+            <LeaseRow label="Tenant Phone" value={myTenancy.tenantPhone || 'Not provided'} icon={<User className="h-4 w-4" />} />
             <LeaseRow label="Lease Status" value={myTenancy.status.toUpperCase()} icon={<CheckCircle className="h-4 w-4 text-emerald-400" />} />
-            <LeaseRow label="Renewal Status" value="Eligible for Renewal" icon={<Sparkles className="h-4 w-4 text-amber-400" />} />
           </GlassCardContent>
         </GlassCard>
       </div>

@@ -64,6 +64,13 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
     throw new ForbiddenError('You do not have permission to modify this property')
   }
   const input = updatePropertySchema.parse(req.body)
+
+  if (input.totalUnits !== undefined && input.totalUnits < (existing.occupiedUnits || 0)) {
+    throw new ConflictError(
+      `Cannot reduce total units below the currently occupied count (${existing.occupiedUnits}). Please terminate active tenancies before reducing units.`
+    )
+  }
+
   const property = await propertyService.update(id, input)
   res.json({ data: property, meta: {}, error: null })
 })

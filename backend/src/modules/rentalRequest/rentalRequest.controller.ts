@@ -135,16 +135,8 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
 
   // Check property capacity and unit availability
   const targetUnitNumber = req.body.unitNumber || 'Main'
-  const propertyDoc = await Property.findById(requestDoc.propertyId).lean().catch(() => null)
-  
-  if (propertyDoc) {
-    const totalUnits = propertyDoc.totalUnits && propertyDoc.totalUnits > 0 ? propertyDoc.totalUnits : 1
-    const occupiedUnits = propertyDoc.occupiedUnits || 0
-    if (occupiedUnits >= totalUnits) {
-      throw new ConflictError('This property is already fully occupied')
-    }
-  }
 
+  // 1. Check in-memory unit availability first for fast fail
   const activeUnitTenancy = await Tenancy.findOne({
     propertyId: requestDoc.propertyId,
     unitNumber: targetUnitNumber,
@@ -155,66 +147,98 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
     throw new ConflictError(`Unit "${targetUnitNumber}" already has an active tenancy lease`)
   }
 
-  requestDoc.status = 'approved'
-  await requestDoc.save()
+  // 2. Atomically reserve property capacity in MongoDB using $expr check
+  let updatedProp: any = null
+  if (requestDoc.propertyId) {
+    updatedProp = await Property.findOneAndUpdate(
+      {
+        _id: requestDoc.propertyId,
+        $expr: { $lt: ['$occupiedUnits', { $ifNull: ['$totalUnits', 1] }] },
+      },
+      { $inc: { occupiedUnits: 1 } },
+      { new: true },
+    )
 
-  // Calculate lease dates: prefer values from request body (sent from LeaseCreationModal)
+    if (!updatedProp) {
+      throw new ConflictError('This property is already fully occupied')
+    }
+  }
+
+  // Calculate lease dates
   const leaseStartRaw = req.body.leaseStart ? new Date(req.body.leaseStart) : new Date()
   const leaseDurationMonths = Number(req.body.leaseDurationMonths) || 12
   const leaseEndRaw = new Date(leaseStartRaw)
   leaseEndRaw.setMonth(leaseEndRaw.getMonth() + leaseDurationMonths)
 
-  // 1. Create Tenancy (Lease Document) in MongoDB
-  const tenancyDoc = await Tenancy.create({
-    tenantName: requestDoc.fullName,
-    tenantEmail: requestDoc.tenantEmail.toLowerCase(),
-    tenantPhone: requestDoc.mobileNumber,
-    propertyId: requestDoc.propertyId,
-    propertyName: requestDoc.propertyName,
-    unitNumber: targetUnitNumber,
-    unitsOccupied: 1,
-    leaseStart: leaseStartRaw,
-    leaseEnd: leaseEndRaw,
-    leaseDurationMonths,
-    monthlyRent: Number(req.body.monthlyRent) || requestDoc.monthlyRent || 10000,
-    securityDeposit: Number(req.body.securityDeposit) || (requestDoc.monthlyRent || 10000) * 2,
-    leaseNotes: req.body.leaseNotes || 'Standard lease agreement.',
-    ownerEmail: requestDoc.ownerEmail.toLowerCase(),
-    ownerId: requestDoc.ownerId,
-    requestId: requestDoc._id.toString(),
-    status: 'active',
-  })
+  // 3. Create Tenancy, Payment, and update Request status with complete rollback cleanup
+  let tenancyDoc: any = null
+  try {
+    tenancyDoc = await Tenancy.create({
+      tenantName: requestDoc.fullName,
+      tenantEmail: requestDoc.tenantEmail.toLowerCase(),
+      tenantPhone: requestDoc.mobileNumber,
+      propertyId: requestDoc.propertyId,
+      propertyName: requestDoc.propertyName,
+      unitNumber: targetUnitNumber,
+      unitsOccupied: 1,
+      leaseStart: leaseStartRaw,
+      leaseEnd: leaseEndRaw,
+      leaseDurationMonths,
+      monthlyRent: Number(req.body.monthlyRent) || requestDoc.monthlyRent || 10000,
+      securityDeposit: Number(req.body.securityDeposit) || (requestDoc.monthlyRent || 10000) * 2,
+      leaseNotes: req.body.leaseNotes || 'Standard lease agreement.',
+      ownerEmail: requestDoc.ownerEmail.toLowerCase(),
+      ownerId: requestDoc.ownerId,
+      requestId: requestDoc._id.toString(),
+      status: 'active',
+    })
 
-  // 2. Create Initial Rent Payment Invoice in MongoDB
-  const dueDate = new Date()
-  dueDate.setDate(dueDate.getDate() + 5)
-  await Payment.create({
-    tenantName: requestDoc.fullName,
-    tenantEmail: requestDoc.tenantEmail.toLowerCase(),
-    propertyId: requestDoc.propertyId,
-    propertyName: requestDoc.propertyName,
-    amount: requestDoc.monthlyRent || 10000,
-    dueDate,
-    status: 'pending',
-    type: 'rent',
-    notes: 'First month rent invoice',
-    ownerId: requestDoc.ownerId,
-    ownerEmail: requestDoc.ownerEmail.toLowerCase(),
-    tenancyId: tenancyDoc._id.toString(),
-  })
+    // Create Initial Rent Payment Invoice in MongoDB
+    const dueDate = new Date()
+    dueDate.setDate(dueDate.getDate() + 5)
+    await Payment.create({
+      tenantName: requestDoc.fullName,
+      tenantEmail: requestDoc.tenantEmail.toLowerCase(),
+      propertyId: requestDoc.propertyId,
+      propertyName: requestDoc.propertyName,
+      amount: requestDoc.monthlyRent || 10000,
+      dueDate,
+      status: 'pending',
+      type: 'rent',
+      notes: 'First month rent invoice',
+      ownerId: requestDoc.ownerId,
+      ownerEmail: requestDoc.ownerEmail.toLowerCase(),
+      tenancyId: tenancyDoc._id.toString(),
+    })
 
-  // 3. Update Property Occupied Units in MongoDB if property exists
-  if (requestDoc.propertyId) {
-    const updatedProp = await Property.findByIdAndUpdate(
-      requestDoc.propertyId,
-      { $inc: { occupiedUnits: 1 } },
-      { new: true }
-    ).catch(() => null)
+    requestDoc.status = 'approved'
+    await requestDoc.save()
+  } catch (err: any) {
+    // Roll back created tenancy & associated payment if any subsequent step failed
+    if (tenancyDoc?._id) {
+      await Tenancy.findByIdAndDelete(tenancyDoc._id).catch(() => null)
+      await Payment.deleteMany({ tenancyId: tenancyDoc._id.toString() }).catch(() => null)
+    }
+    // Roll back capacity reservation
+    if (updatedProp && requestDoc.propertyId) {
+      await Property.findByIdAndUpdate(requestDoc.propertyId, { $inc: { occupiedUnits: -1 } }).catch(() => null)
+    }
+    const isDuplicateKey =
+      err?.code === 11000 ||
+      err?.cause?.code === 11000 ||
+      (typeof err?.message === 'string' && err.message.includes('E11000'))
 
-    const totalCapacity = updatedProp?.totalUnits && updatedProp.totalUnits > 0 ? updatedProp.totalUnits : 1
-    const currentOccupied = updatedProp?.occupiedUnits || 1
+    if (isDuplicateKey) {
+      throw new ConflictError(`Unit "${targetUnitNumber}" already has an active tenancy lease`)
+    }
+    throw err
+  }
 
-    // ONLY auto-reject remaining pending rental requests when the property becomes fully occupied
+  // 5. ONLY auto-reject remaining pending rental requests when property becomes fully occupied
+  if (requestDoc.propertyId && updatedProp) {
+    const totalCapacity = updatedProp.totalUnits && updatedProp.totalUnits > 0 ? updatedProp.totalUnits : 1
+    const currentOccupied = updatedProp.occupiedUnits || 1
+
     if (currentOccupied >= totalCapacity) {
       const otherPending = await RentalRequest.find({
         propertyId: requestDoc.propertyId,

@@ -28,6 +28,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/ui/GlassCard'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
+import { PropertyUnitsCard } from '@/components/property/PropertyUnitsCard'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { PropertyFormModal } from '@/components/property/PropertyFormModal'
 import { DeletePropertyDialog } from '@/components/property/DeletePropertyDialog'
@@ -456,6 +457,9 @@ export function PropertyDetailPage() {
               )}
             </GlassCardContent>
           </GlassCard>
+
+          {/* Real Property Units Management Card */}
+          <PropertyUnitsCard property={property} tenancies={tenancies} />
 
           {/* Full Address Card */}
           <GlassCard>

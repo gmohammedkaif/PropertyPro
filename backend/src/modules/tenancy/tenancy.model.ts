@@ -35,6 +35,13 @@ const tenancySchema = new Schema(
 
 tenancySchema.index({ tenantEmail: 1, status: 1 })
 tenancySchema.index({ ownerEmail: 1, status: 1 })
+tenancySchema.index(
+  { propertyId: 1, unitNumber: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: { $in: ['active', 'expiring-soon'] } },
+  },
+)
 
 export type TenancyDocument = InferSchemaType<typeof tenancySchema> & {
   _id: import('mongoose').Types.ObjectId

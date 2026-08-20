@@ -67,10 +67,10 @@ interface LocalPropertiesState {
   add: (item: Omit<LocalProperty, 'createdAt'>) => void
   update: (id: string, patch: Partial<LocalProperty>) => void
   remove: (id: string) => void
-  incrementOccupied: (propertyId: string) => void
-  decrementOccupied: (propertyId: string) => void
-  occupyUnits: (propertyId: string) => void
-  freeUnits: (propertyId: string) => void
+  incrementOccupied: (propertyId: string, count?: number) => void
+  decrementOccupied: (propertyId: string, count?: number) => void
+  occupyUnits: (propertyId: string, count?: number) => void
+  freeUnits: (propertyId: string, count?: number) => void
   setListingStatus: (propertyId: string, status: LocalPropertyListingStatus) => void
 }
 
@@ -149,11 +149,12 @@ export const useLocalPropertiesStore = create<LocalPropertiesState>()((set) => (
     }))
   },
 
-  incrementOccupied: (propertyId) => {
+  incrementOccupied: (propertyId, count = 1) => {
+    const inc = Math.max(1, count || 1)
     set((state) => ({
       items: state.items.map((p) => {
         if (p.id !== propertyId) return p
-        const nextOccupied = Math.min(p.totalUnits, p.occupiedUnits + 1)
+        const nextOccupied = Math.min(p.totalUnits, p.occupiedUnits + inc)
         const nextListing: LocalPropertyListingStatus =
           nextOccupied >= p.totalUnits ? 'occupied' : p.listingStatus
         return { ...p, occupiedUnits: nextOccupied, listingStatus: nextListing }
@@ -161,11 +162,12 @@ export const useLocalPropertiesStore = create<LocalPropertiesState>()((set) => (
     }))
   },
 
-  decrementOccupied: (propertyId) => {
+  decrementOccupied: (propertyId, count = 1) => {
+    const dec = Math.max(1, count || 1)
     set((state) => ({
       items: state.items.map((p) => {
         if (p.id !== propertyId) return p
-        const nextOccupied = Math.max(0, p.occupiedUnits - 1)
+        const nextOccupied = Math.max(0, p.occupiedUnits - dec)
         const nextListing: LocalPropertyListingStatus =
           nextOccupied < p.totalUnits && p.listingStatus === 'occupied' ? 'for-rent' : p.listingStatus
         return { ...p, occupiedUnits: nextOccupied, listingStatus: nextListing }
@@ -173,11 +175,12 @@ export const useLocalPropertiesStore = create<LocalPropertiesState>()((set) => (
     }))
   },
 
-  occupyUnits: (propertyId) => {
+  occupyUnits: (propertyId, count = 1) => {
+    const inc = Math.max(1, count || 1)
     set((state) => ({
       items: state.items.map((p) => {
         if (p.id !== propertyId) return p
-        const nextOccupied = Math.min(p.totalUnits, p.occupiedUnits + 1)
+        const nextOccupied = Math.min(p.totalUnits, p.occupiedUnits + inc)
         const nextListing: LocalPropertyListingStatus =
           nextOccupied >= p.totalUnits ? 'occupied' : p.listingStatus
         return { ...p, occupiedUnits: nextOccupied, listingStatus: nextListing }
@@ -185,11 +188,12 @@ export const useLocalPropertiesStore = create<LocalPropertiesState>()((set) => (
     }))
   },
 
-  freeUnits: (propertyId) => {
+  freeUnits: (propertyId, count = 1) => {
+    const dec = Math.max(1, count || 1)
     set((state) => ({
       items: state.items.map((p) => {
         if (p.id !== propertyId) return p
-        const nextOccupied = Math.max(0, p.occupiedUnits - 1)
+        const nextOccupied = Math.max(0, p.occupiedUnits - dec)
         const nextListing: LocalPropertyListingStatus =
           nextOccupied < p.totalUnits && p.listingStatus === 'occupied' ? 'for-rent' : p.listingStatus
         return { ...p, occupiedUnits: nextOccupied, listingStatus: nextListing }

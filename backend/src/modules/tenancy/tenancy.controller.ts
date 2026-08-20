@@ -90,6 +90,7 @@ export const createTenancy = asyncHandler(async (req: Request, res: Response) =>
   }
 
   const targetUnitNumber = req.body.unitNumber || 'Main'
+  const countToOccupy = Math.max(1, Number(req.body.unitsOccupied) || 1)
 
   // 1. Check in-memory unit availability first
   const activeTenancy = await Tenancy.findOne({
@@ -108,14 +109,14 @@ export const createTenancy = asyncHandler(async (req: Request, res: Response) =>
     updatedProp = await Property.findOneAndUpdate(
       {
         _id: req.body.propertyId,
-        $expr: { $lt: ['$occupiedUnits', { $ifNull: ['$totalUnits', 1] }] },
+        $expr: { $lte: [{ $add: ['$occupiedUnits', countToOccupy] }, { $ifNull: ['$totalUnits', 1] }] },
       },
-      { $inc: { occupiedUnits: 1 } },
+      { $inc: { occupiedUnits: countToOccupy } },
       { new: true },
     )
 
     if (!updatedProp) {
-      throw new ConflictError('This property is already fully occupied')
+      throw new ConflictError('This property does not have enough available unit capacity')
     }
   }
 
@@ -129,7 +130,7 @@ export const createTenancy = asyncHandler(async (req: Request, res: Response) =>
       propertyId: req.body.propertyId,
       propertyName: req.body.propertyName || property.name,
       unitNumber: targetUnitNumber,
-      unitsOccupied: req.body.unitsOccupied || 1,
+      unitsOccupied: countToOccupy,
       leaseStart: new Date(req.body.leaseStart),
       leaseEnd: new Date(req.body.leaseEnd),
       leaseDurationMonths: req.body.leaseDurationMonths || 12,
@@ -142,7 +143,7 @@ export const createTenancy = asyncHandler(async (req: Request, res: Response) =>
     })
   } catch (createErr: any) {
     if (updatedProp && req.body.propertyId) {
-      await Property.findByIdAndUpdate(req.body.propertyId, { $inc: { occupiedUnits: -1 } }).catch(() => null)
+      await Property.findByIdAndUpdate(req.body.propertyId, { $inc: { occupiedUnits: -countToOccupy } }).catch(() => null)
     }
     const isDuplicateKey =
       createErr?.code === 11000 ||
@@ -189,7 +190,8 @@ export const deleteTenancy = asyncHandler(async (req: Request, res: Response) =>
     if (tenancy.propertyId) {
       const property = await Property.findById(tenancy.propertyId)
       if (property && property.occupiedUnits > 0) {
-        property.occupiedUnits = Math.max(0, property.occupiedUnits - (tenancy.unitsOccupied || 1))
+        const countToFree = Math.max(1, Number(tenancy.unitsOccupied) || 1)
+        property.occupiedUnits = Math.max(0, property.occupiedUnits - countToFree)
         await property.save()
       }
     }

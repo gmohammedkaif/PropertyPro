@@ -141,7 +141,8 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
   }
 
   // Check property capacity and unit availability
-  const targetUnitNumber = req.body.unitNumber || 'Main'
+  const targetUnitNumber = req.body.unitNumber || requestDoc.unitNumber || 'Main'
+  const countToOccupy = Math.max(1, Number(req.body.unitsOccupied) || Number((requestDoc as any).unitsOccupied) || 1)
 
   // 1. Check in-memory unit availability first for fast fail
   const activeUnitTenancy = await Tenancy.findOne({
@@ -160,14 +161,14 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
     updatedProp = await Property.findOneAndUpdate(
       {
         _id: requestDoc.propertyId,
-        $expr: { $lt: ['$occupiedUnits', { $ifNull: ['$totalUnits', 1] }] },
+        $expr: { $lte: [{ $add: ['$occupiedUnits', countToOccupy] }, { $ifNull: ['$totalUnits', 1] }] },
       },
-      { $inc: { occupiedUnits: 1 } },
+      { $inc: { occupiedUnits: countToOccupy } },
       { new: true },
     )
 
     if (!updatedProp) {
-      throw new ConflictError('This property is already fully occupied')
+      throw new ConflictError('This property does not have enough available unit capacity')
     }
   }
 
@@ -192,7 +193,7 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
       propertyId: requestDoc.propertyId,
       propertyName: requestDoc.propertyName,
       unitNumber: targetUnitNumber,
-      unitsOccupied: 1,
+      unitsOccupied: countToOccupy,
       leaseStart: leaseStartRaw,
       leaseEnd: leaseEndRaw,
       leaseDurationMonths,
@@ -233,7 +234,7 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
     }
     // Roll back capacity reservation
     if (updatedProp && requestDoc.propertyId) {
-      await Property.findByIdAndUpdate(requestDoc.propertyId, { $inc: { occupiedUnits: -1 } }).catch(() => null)
+      await Property.findByIdAndUpdate(requestDoc.propertyId, { $inc: { occupiedUnits: -countToOccupy } }).catch(() => null)
     }
     const isDuplicateKey =
       err?.code === 11000 ||

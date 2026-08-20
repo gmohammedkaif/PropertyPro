@@ -25,6 +25,7 @@ const userSchema = new Schema(
       lastName: { type: String, trim: true, default: '' },
     },
     phone: { type: String, trim: true, default: '' },
+    avatarUrl: { type: String, trim: true, default: '' },
     familyMembers: { type: [familyMemberSchema], default: [] },
     status: {
       type: String,

@@ -35,6 +35,7 @@ function toUserRecord(doc: UserDocument): UserRecord {
     firstName: doc.profile?.firstName ?? '',
     lastName: doc.profile?.lastName ?? '',
     phone: (doc as any).phone ?? '',
+    avatarUrl: (doc as any).avatarUrl ?? '',
     status: doc.status,
     emailVerifiedAt: doc.emailVerifiedAt
       ? doc.emailVerifiedAt instanceof Date
@@ -107,11 +108,12 @@ export class MongoAuthRepository implements AuthRepository {
     await User.updateOne({ _id: userId }, { $set: { passwordHash } })
   }
 
-  async updateProfile(userId: string, input: { firstName?: string; lastName?: string; phone?: string }): Promise<UserRecord | null> {
+  async updateProfile(userId: string, input: { firstName?: string; lastName?: string; phone?: string; avatarUrl?: string }): Promise<UserRecord | null> {
     const update: Record<string, any> = {}
     if (input.firstName !== undefined) update['profile.firstName'] = input.firstName.trim()
     if (input.lastName !== undefined) update['profile.lastName'] = input.lastName.trim()
     if (input.phone !== undefined) update['phone'] = input.phone.trim()
+    if (input.avatarUrl !== undefined) update['avatarUrl'] = input.avatarUrl.trim()
     if (Object.keys(update).length === 0) return this.findById(userId)
     const doc = await User.findByIdAndUpdate(userId, { $set: update }, { new: true }).lean()
     return doc ? toUserRecord(doc as UserDocument) : null

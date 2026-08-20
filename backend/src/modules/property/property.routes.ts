@@ -44,7 +44,7 @@ router.get('/properties/autocomplete', authenticate, propertyLimiter, autocomple
 router.get('/properties/:id', propertyLimiter, getProperty)
 router.get('/properties/:id/owner', propertyLimiter, getPropertyOwner)
 
-router.post('/properties/upload-image', authenticate, authorize('owner', 'admin', 'agent'), propertyLimiter, uploadPropertyImage)
+router.post('/properties/upload-image', authenticate, propertyLimiter, uploadPropertyImage)
 router.post('/properties', authenticate, authorize('owner', 'admin', 'agent'), propertyLimiter, createProperty)
 router.patch('/properties/:id', authenticate, authorize('owner', 'admin', 'agent'), propertyLimiter, updateProperty)
 router.delete('/properties/:id', authenticate, authorize('owner', 'admin', 'agent'), propertyLimiter, deleteProperty)

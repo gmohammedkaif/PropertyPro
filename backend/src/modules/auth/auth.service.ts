@@ -218,13 +218,13 @@ export class AuthService {
     return toAuthUser(user)
   }
 
-  updateProfile = async (userId: string, input: { name?: string; phone?: string }): Promise<AuthUser> => {
+  updateProfile = async (userId: string, input: { name?: string; phone?: string; avatarUrl?: string }): Promise<AuthUser> => {
     const user = await this.repository.findById(userId)
     if (!user) {
       throw new UnauthorizedError('Account not found.')
     }
 
-    const profileInput: { firstName?: string; lastName?: string; phone?: string } = {}
+    const profileInput: { firstName?: string; lastName?: string; phone?: string; avatarUrl?: string } = {}
     if (input.name !== undefined) {
       const parts = input.name.trim().split(/\s+/)
       profileInput.firstName = parts[0] || ''
@@ -232,6 +232,9 @@ export class AuthService {
     }
     if (input.phone !== undefined) {
       profileInput.phone = input.phone.trim()
+    }
+    if (input.avatarUrl !== undefined) {
+      profileInput.avatarUrl = input.avatarUrl.trim()
     }
 
     const updated = await this.repository.updateProfile(userId, profileInput)
@@ -299,5 +302,6 @@ function toAuthUser(user: UserRecord): AuthUser {
     phone: user.phone || '',
     roles: user.roles,
     status: user.status,
+    avatarUrl: user.avatarUrl || '',
   }
 }

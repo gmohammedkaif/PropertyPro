@@ -133,7 +133,7 @@ describe('Marketplace & Property Availability Tests', () => {
       ownerId: 'usr_owner_t2',
       ownerEmail: 'owner_t2@pro.com',
       name: 'Kensington Court',
-      type: 'mixed',
+      type: 'resort',
       address: {
         line1: '10 Queens Way',
         city: 'Mumbai',

@@ -9,6 +9,7 @@ export interface UserRecord {
   firstName: string
   lastName: string
   phone: string
+  avatarUrl?: string
   status: UserStatus
   emailVerifiedAt: string | null
   createdAt: string

@@ -197,7 +197,7 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
                 aria-label="Account menu"
                 className="ml-1 cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-focus"
               >
-                <Avatar name={user.name} size="md" />
+                <Avatar name={user.name} src={user.avatarUrl} size="md" />
               </button>
             </DropdownMenu.Trigger>
 
@@ -208,7 +208,7 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
                 className="glass z-[var(--z-dropdown)] w-56 rounded-xl p-1.5 shadow-lg"
               >
                 <div className="flex items-center gap-2.5 px-2.5 py-2">
-                  <Avatar name={user.name} size="sm" />
+                  <Avatar name={user.name} src={user.avatarUrl} size="sm" />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-text">{user.name}</p>
                     <p className="truncate text-xs text-muted">{user.email}</p>

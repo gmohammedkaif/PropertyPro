@@ -156,7 +156,7 @@ export function TenanciesPage() {
     if (confirmed) {
       try {
         await remove(id)
-        freeUnits(propertyId, units)
+        freeUnits(propertyId)
         toast.success('Lease record removed successfully')
       } catch (err: any) {
         toast.error('Failed to end lease')
@@ -212,7 +212,7 @@ export function TenanciesPage() {
         toast.success('Tenancy details updated')
       } else {
         await add(payload)
-        occupyUnits(prop.id, units)
+        occupyUnits(prop.id)
         toast.success('New tenancy lease activated')
       }
       setModalOpen(false)

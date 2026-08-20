@@ -12,12 +12,57 @@ import {
   Users,
   Plus,
   Trash2,
+  Loader2,
 } from 'lucide-react'
 
 import { useAuthStore } from '@/stores/authStore'
 import { useFamilyMembersStore } from '@/stores/familyMembersStore'
 import { apiClient, type ApiEnvelope } from '@/lib/apiClient'
 import { useToast } from '@/hooks/useToast'
+
+// ── Client-side canvas image compression helper ────────────────────────────────
+async function compressImageToCanvas(file: File, maxDim = 512, quality = 0.85): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      let width = img.width
+      let height = img.height
+
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width)
+          width = maxDim
+        } else {
+          width = Math.round((width * maxDim) / height)
+          height = maxDim
+        }
+      }
+
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        reject(new Error('Canvas context unavailable'))
+        return
+      }
+
+      ctx.drawImage(img, 0, 0, width, height)
+      const dataUrl = canvas.toDataURL('image/jpeg', quality)
+      resolve(dataUrl)
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('Failed to load image for compression'))
+    }
+
+    img.src = url
+  })
+}
 
 type Tab = 'profile' | 'password' | 'notifications' | 'family'
 
@@ -139,6 +184,58 @@ export function SettingsPage() {
     }
   }
 
+  // ── Avatar Upload ──────────────────────────────────────────────────────────
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file.')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size must be under 10MB.')
+      return
+    }
+
+    if (uploadingAvatar) return
+    setUploadingAvatar(true)
+
+    try {
+      // 1. Compress image client-side to max 512x512 JPEG (~40KB) for instant upload
+      const base64Data = await compressImageToCanvas(file, 512, 0.85)
+
+      // 2. Upload to ImageKit with explicit 60s timeout
+      const uploadRes = await apiClient.post<{ data: { url: string } }>(
+        '/properties/upload-image',
+        {
+          file: base64Data,
+          fileName: `avatar_${user?.id}_${Date.now()}.jpg`,
+        },
+        { timeout: 60_000 }
+      )
+
+      const avatarUrl = uploadRes.data?.data?.url
+      if (!avatarUrl) throw new Error('Failed to obtain avatar URL.')
+
+      // 3. Save avatarUrl to user document in MongoDB
+      await apiClient.patch('/auth/me', { avatarUrl })
+
+      // 4. Refresh Zustand user state
+      await refreshMe()
+
+      toast.success('Profile photo updated successfully!')
+    } catch (err: any) {
+      console.error('Avatar upload failed:', err)
+      toast.error('Failed to update profile photo. Please try again.')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   // ── Role badge ────────────────────────────────────────────────────────────
   const roleBadge = isAdmin
     ? { label: 'Super Admin', color: 'var(--color-warning, #f59e0b)' }
@@ -181,25 +278,81 @@ export function SettingsPage() {
             borderBottom: '1px solid var(--color-border)',
           }}>
             <div style={{ position: 'relative', display: 'inline-block', marginBottom: '0.75rem' }}>
-              <div style={{
-                width: 72, height: 72, borderRadius: '50%',
-                background: 'linear-gradient(135deg, var(--color-primary, #0284c7), var(--color-primary-strong, #0369a1))',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.75rem', fontWeight: 700, color: '#fff',
-                margin: '0 auto',
-              }}>
-                {(user?.name ?? '?')[0].toUpperCase()}
-              </div>
-              <button style={{
-                position: 'absolute', bottom: 0, right: 0,
-                width: 24, height: 24, borderRadius: '50%',
-                background: '#6366f1', border: '2px solid #0f172a',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: '#fff',
-              }}>
-                <Camera size={12} />
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  style={{
+                    width: 72, height: 72, borderRadius: '50%',
+                    objectFit: 'cover', margin: '0 auto',
+                    opacity: uploadingAvatar ? 0.4 : 1,
+                    transition: 'opacity 0.2s ease',
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: 72, height: 72, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, var(--color-primary, #0284c7), var(--color-primary-strong, #0369a1))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.75rem', fontWeight: 700, color: '#fff',
+                  margin: '0 auto',
+                  opacity: uploadingAvatar ? 0.4 : 1,
+                  transition: 'opacity 0.2s ease',
+                }}>
+                  {(user?.name ?? '?')[0].toUpperCase()}
+                </div>
+              )}
+
+              {/* Uploading Spinner Overlay */}
+              {uploadingAvatar && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '50%',
+                    background: 'rgba(15, 23, 42, 0.65)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10,
+                  }}
+                >
+                  <Loader2 className="h-6 w-6 animate-spin text-white" />
+                </div>
+              )}
+
+              <input
+                type="file"
+                id="avatar-upload-file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleAvatarUpload}
+                disabled={uploadingAvatar}
+              />
+              <button
+                type="button"
+                onClick={() => document.getElementById('avatar-upload-file')?.click()}
+                disabled={uploadingAvatar}
+                title={uploadingAvatar ? 'Uploading...' : 'Upload Profile Photo'}
+                style={{
+                  position: 'absolute', bottom: 0, right: 0,
+                  width: 26, height: 26, borderRadius: '50%',
+                  background: uploadingAvatar ? '#64748b' : '#0284c7',
+                  border: '2px solid #0f172a',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: uploadingAvatar ? 'not-allowed' : 'pointer', color: '#fff',
+                  zIndex: 11,
+                }}
+              >
+                {uploadingAvatar ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />}
               </button>
             </div>
+
+            {uploadingAvatar && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-primary, #0284c7)', fontWeight: 600, marginBottom: '0.4rem' }}>
+                Uploading...
+              </div>
+            )}
             <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.9rem' }}>
               {user?.name ?? 'User'}
             </div>

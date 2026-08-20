@@ -63,6 +63,7 @@ function toPropertyRecord(doc: PropertyDocument): PropertyRecord {
     imageUrl: doc.imageUrl,
     ownerEmail: doc.ownerEmail,
     images: doc.images ?? [],
+    units: (doc as any).units ?? [],
     deletedAt: doc.deletedAt
       ? doc.deletedAt instanceof Date
         ? doc.deletedAt.toISOString()

@@ -162,7 +162,14 @@ export function useRestoreProperty() {
         imageUrl: data.imageUrl,
         ownerEmail: (data as any).ownerEmail,
         ownerId: data.ownerId,
-        address: data.address,
+        address: {
+          line1: data.address.line1,
+          line2: data.address.line2 ?? undefined,
+          city: data.address.city,
+          state: data.address.state,
+          postalCode: data.address.postalCode,
+          country: data.address.country,
+        },
       })
     },
     retry: false,

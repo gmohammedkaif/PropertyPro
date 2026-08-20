@@ -7,6 +7,7 @@ import { EnhancedInput } from '@/components/ui/EnhancedInput'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { useLogin } from '@/hooks/useAuth'
 import { loginSchema } from '@/lib/authValidators'
+import { useToastStore } from '@/stores/toastStore'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -22,6 +23,24 @@ export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from ?? '/app'
+
+  // Display inactivity toast if redirected due to session expiration
+  useEffect(() => {
+    try {
+      const expiredReason = sessionStorage.getItem('propertypro_session_expired')
+      if (expiredReason === 'inactivity') {
+        sessionStorage.removeItem('propertypro_session_expired')
+        useToastStore.getState().addToast({
+          intent: 'warning',
+          title: 'Session expired',
+          description: 'You were logged out due to inactivity. Please sign in again.',
+          duration: 5000,
+        })
+      }
+    } catch {
+      /* ignore storage errors */
+    }
+  }, [])
 
   // Pre-fill remembered email
   useEffect(() => {

@@ -59,6 +59,11 @@ export const createRentalRequest = asyncHandler(async (req: Request, res: Respon
     throw new ConflictError('You already have a pending rental request for this property')
   }
 
+  const targetUnit = req.body.unitNumber || 'Main'
+  const propUnits = (property as any).units || []
+  const matchedUnit = propUnits.find((u: any) => String(u.unitNumber).toLowerCase() === String(targetUnit).toLowerCase())
+  const resolvedRent = Number(req.body.monthlyRent) || matchedUnit?.monthlyRent || (property as any).monthlyRent || 0
+
   const doc = await RentalRequest.create({
     propertyId: req.body.propertyId,
     propertyName: req.body.propertyName || property.name,
@@ -70,8 +75,8 @@ export const createRentalRequest = asyncHandler(async (req: Request, res: Respon
     fullName: req.body.fullName,
     mobileNumber: req.body.mobileNumber,
     city: req.body.city,
-    monthlyRent: req.body.monthlyRent || (property as any).monthlyRent || 0,
-    unitNumber: req.body.unitNumber || 'Main',
+    monthlyRent: resolvedRent,
+    unitNumber: targetUnit,
     status: 'pending',
     notes: req.body.notes || '',
   })
@@ -175,6 +180,11 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
   // 3. Create Tenancy, Payment, and update Request status with complete rollback cleanup
   let tenancyDoc: any = null
   try {
+    const propUnits = updatedProp?.units || []
+    const matchedUnit = propUnits.find((u: any) => String(u.unitNumber).toLowerCase() === String(targetUnitNumber).toLowerCase())
+    const realRent = Number(req.body.monthlyRent) || requestDoc.monthlyRent || matchedUnit?.monthlyRent || 10000
+    const realDeposit = Number(req.body.securityDeposit) || matchedUnit?.securityDeposit || realRent * 2
+
     tenancyDoc = await Tenancy.create({
       tenantName: requestDoc.fullName,
       tenantEmail: requestDoc.tenantEmail.toLowerCase(),
@@ -186,8 +196,8 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
       leaseStart: leaseStartRaw,
       leaseEnd: leaseEndRaw,
       leaseDurationMonths,
-      monthlyRent: Number(req.body.monthlyRent) || requestDoc.monthlyRent || 10000,
-      securityDeposit: Number(req.body.securityDeposit) || (requestDoc.monthlyRent || 10000) * 2,
+      monthlyRent: realRent,
+      securityDeposit: realDeposit,
       leaseNotes: req.body.leaseNotes || 'Standard lease agreement.',
       ownerEmail: requestDoc.ownerEmail.toLowerCase(),
       ownerId: requestDoc.ownerId,
@@ -203,7 +213,7 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
       tenantEmail: requestDoc.tenantEmail.toLowerCase(),
       propertyId: requestDoc.propertyId,
       propertyName: requestDoc.propertyName,
-      amount: requestDoc.monthlyRent || 10000,
+      amount: realRent,
       dueDate,
       status: 'pending',
       type: 'rent',

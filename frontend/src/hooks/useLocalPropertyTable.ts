@@ -47,8 +47,7 @@ function convertToPropertyRecord(p: LocalProperty): PropertyRecord {
     apartment: 'apartment',
     house: 'house',
     villa: 'house',
-    commercial: 'commercial',
-    mixed: 'mixed',
+    resort: 'resort',
   }
   
   return {

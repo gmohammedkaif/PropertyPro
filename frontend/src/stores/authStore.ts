@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { AUTH_STORAGE_KEY, type Role } from '@/shared'
+import { AUTH_STORAGE_KEY, INACTIVITY_STORAGE_KEY, type Role } from '@/shared'
 import { apiClient, type ApiEnvelope } from '@/lib/apiClient'
 
 export interface AuthUser {
@@ -10,6 +10,7 @@ export interface AuthUser {
   phone: string
   roles: Role[]
   status: UserStatus
+  avatarUrl?: string
   /** If this user is a tenant, links to their tenancy record id */
   tenancyId?: string
 }
@@ -22,6 +23,7 @@ export interface DemoUser {
   email: string
   phone?: string
   roles: Role[]
+  avatarUrl?: string
   tenancyId?: string
 }
 
@@ -77,7 +79,12 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       accessToken: null,
       status: 'loading',
-      signIn: (user, token) =>
+      signIn: (user, token) => {
+        try {
+          localStorage.setItem(INACTIVITY_STORAGE_KEY, Date.now().toString())
+        } catch {
+          /* ignore storage errors */
+        }
         set({
           user: {
             id: user.id,
@@ -86,13 +93,21 @@ export const useAuthStore = create<AuthState>()(
             phone: user.phone || '',
             roles: user.roles,
             status: 'active',
+            avatarUrl: (user as AuthUser).avatarUrl || (user as DemoUser).avatarUrl || '',
             tenancyId: (user as DemoUser).tenancyId,
           },
           accessToken: token ?? null,
           status: 'authenticated',
-        }),
-      signOut: () =>
-        set({ user: null, accessToken: null, status: 'unauthenticated' }),
+        })
+      },
+      signOut: () => {
+        try {
+          localStorage.removeItem(INACTIVITY_STORAGE_KEY)
+        } catch {
+          /* ignore storage errors */
+        }
+        set({ user: null, accessToken: null, status: 'unauthenticated' })
+      },
       refreshMe: async () => {
         try {
           const { data } = await apiClient.get<ApiEnvelope<AuthUser>>('/auth/me')
@@ -106,6 +121,7 @@ export const useAuthStore = create<AuthState>()(
                     phone: record.phone || '',
                     roles: record.roles,
                     status: record.status,
+                    avatarUrl: record.avatarUrl || state.user.avatarUrl || '',
                   }
                 : null,
             }))

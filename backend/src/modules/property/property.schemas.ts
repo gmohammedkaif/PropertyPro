@@ -14,16 +14,29 @@ const location = z.object({
   coordinates: z.tuple([z.number(), z.number()]),
 })
 
+const unitSchema = z.object({
+  unitNumber: z.string().trim().min(1, 'Unit number is required'),
+  bedrooms: z.coerce.number().min(0).optional(),
+  bathrooms: z.coerce.number().min(0).optional(),
+  parking: z.coerce.number().min(0).optional(),
+  areaSqFt: z.coerce.number().min(0).optional(),
+  monthlyRent: z.coerce.number().min(0, 'Monthly rent must be >= 0'),
+  securityDeposit: z.coerce.number().min(0).optional(),
+  floor: z.string().optional(),
+})
+
 export const createPropertySchema = z.object({
   ownerId: z.string().min(1, 'Owner ID is required'),
   ownerEmail: z.string().email('Invalid owner email').optional(),
   name: z.string().trim().min(1, 'Name is required').max(200),
-  type: z.enum(['apartment', 'house', 'commercial', 'mixed']),
+  type: z.enum(['apartment', 'house', 'resort']),
   address,
   location: location.optional(),
   description: z.string().trim().max(2000).optional(),
   amenities: z.array(z.string()).max(50).optional(),
   totalUnits: z.coerce.number().int().min(0).max(99999).optional(),
+  units: z.array(unitSchema).optional(),
+  images: z.array(z.string()).optional(),
   listingStatus: z.enum(['for-rent', 'for-sale', 'occupied', 'inactive']).optional(),
   bedrooms: z.coerce.number().int().min(0).optional(),
   bathrooms: z.coerce.number().int().min(0).optional(),
@@ -37,20 +50,20 @@ export const createPropertySchema = z.object({
     .trim()
     .url('Property image must be a valid URL')
     .min(1, 'Please upload at least one property image.')
-    .refine((url) => url.startsWith('https://ik.imagekit.io/'), {
-      message: 'Property image must be uploaded to ImageKit CDN',
-    }),
+    .optional(),
 })
 export type CreatePropertyInput = z.infer<typeof createPropertySchema>
 
 export const updatePropertySchema = z.object({
   name: z.string().trim().min(1).max(200).optional(),
-  type: z.enum(['apartment', 'house', 'commercial', 'mixed']).optional(),
+  type: z.enum(['apartment', 'house', 'resort']).optional(),
   address: address.partial().optional(),
   location: location.optional(),
   description: z.string().trim().max(2000).nullable().optional(),
   amenities: z.array(z.string()).max(50).optional(),
   totalUnits: z.coerce.number().int().min(0).max(99999).optional(),
+  units: z.array(unitSchema).optional(),
+  images: z.array(z.string()).optional(),
   status: z.enum(['active', 'archived']).optional(),
   listingStatus: z.enum(['for-rent', 'for-sale', 'occupied', 'inactive']).optional(),
   bedrooms: z.coerce.number().int().min(0).optional(),
@@ -68,7 +81,7 @@ export type UpdatePropertyInput = z.infer<typeof updatePropertySchema>
 export const propertyFilterSchema = z.object({
   search: z.string().trim().max(200).optional(),
   ownerId: z.string().optional(),
-  type: z.enum(['apartment', 'house', 'commercial', 'mixed']).optional(),
+  type: z.enum(['apartment', 'house', 'resort']).optional(),
   status: z.enum(['active', 'archived']).optional(),
   city: z.string().trim().max(100).optional(),
   state: z.string().trim().max(100).optional(),

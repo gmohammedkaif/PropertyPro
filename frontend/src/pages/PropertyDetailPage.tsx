@@ -47,8 +47,7 @@ import type { PropertyRecord, PropertyStatus, PropertyType } from '@/shared'
 const TYPE_LABELS: Record<PropertyType, string> = {
   apartment: 'Apartment',
   house: 'House',
-  commercial: 'Commercial',
-  mixed: 'Mixed Use',
+  resort: 'Resort',
 }
 
 const STATUS_CONFIG: Record<
@@ -165,6 +164,7 @@ export function PropertyDetailPage() {
 
   // Rental Request Modal & Inline Validation State
   const [requestModalOpen, setRequestModalOpen] = useState(false)
+  const [selectedUnitNumber, setSelectedUnitNumber] = useState<string>('')
   const [requestForm, setRequestForm] = useState<RequestFormData>({
     fullName: user?.name ?? '',
     mobileNumber: '',
@@ -210,12 +210,8 @@ export function PropertyDetailPage() {
     : (property.monthlyRent && property.monthlyRent > 0 ? property.monthlyRent : 0)
 
   // Available units calculation for Request For Rent modal
-  const unitsList = derivePropertyUnits(
-    { id: property.id, type: property.type, totalUnits: property.totalUnits ?? 1 },
-    tenancies
-  )
+  const unitsList = derivePropertyUnits(property, tenancies)
   const availableUnitsList = unitsList.filter((u) => u.status === 'AVAILABLE')
-  const [selectedUnitNumber, setSelectedUnitNumber] = useState<string>('')
 
   // Handle Rental Request Modal Open
   const handleOpenRequestModal = () => {
@@ -224,10 +220,7 @@ export function PropertyDetailPage() {
       navigate('/login')
       return
     }
-    const avail = derivePropertyUnits(
-      { id: property.id, type: property.type, totalUnits: property.totalUnits ?? 1 },
-      tenancies
-    ).filter((u) => u.status === 'AVAILABLE')
+    const avail = derivePropertyUnits(property, tenancies).filter((u) => u.status === 'AVAILABLE')
 
     setSelectedUnitNumber(avail[0]?.unitNumber ?? 'Main')
     setRequestForm({
@@ -412,33 +405,60 @@ export function PropertyDetailPage() {
               <GlassCardTitle>Property Specifications</GlassCardTitle>
             </GlassCardHeader>
             <GlassCardContent>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-                <SpecBox
-                  icon={<Key className="h-5 w-5 text-primary" />}
-                  label="Bedrooms"
-                  value={property.bedrooms !== undefined && property.bedrooms !== null ? `${property.bedrooms} BHK` : 'Not specified'}
-                />
-                <SpecBox
-                  icon={<span className="text-lg">🛁</span>}
-                  label="Bathrooms"
-                  value={property.bathrooms !== undefined && property.bathrooms !== null ? `${property.bathrooms} Baths` : 'Not specified'}
-                />
-                <SpecBox
-                  icon={<Car className="h-5 w-5 text-emerald-400" />}
-                  label="Parking"
-                  value={property.parking !== undefined && property.parking !== null ? `${property.parking} Spaces` : 'Not specified'}
-                />
-                <SpecBox
-                  icon={<span className="text-lg">📐</span>}
-                  label="Total Area"
-                  value={property.areaSqFt !== undefined && property.areaSqFt !== null ? `${property.areaSqFt} sq ft` : 'Not specified'}
-                />
-                <SpecBox
-                  icon={<MapPin className="h-5 w-5 text-sky-400" />}
-                  label="City"
-                  value={property.address?.city || 'Not specified'}
-                />
-              </div>
+              {(() => {
+                const uList = property.units ?? []
+                const hasU = uList.length > 0
+
+                const bhkSet = Array.from(new Set(uList.map((u) => u.bedrooms).filter((b) => b !== undefined)))
+                const bhkLabel = hasU
+                  ? bhkSet.length === 1 ? `${bhkSet[0]} BHK` : 'Varies by unit'
+                  : property.bedrooms ? `${property.bedrooms} BHK` : 'Not specified'
+
+                const bathSet = Array.from(new Set(uList.map((u) => u.bathrooms).filter((b) => b !== undefined)))
+                const bathLabel = hasU
+                  ? bathSet.length === 1 ? `${bathSet[0]} Baths` : 'Varies by unit'
+                  : property.bathrooms ? `${property.bathrooms} Baths` : 'Not specified'
+
+                const parkSet = Array.from(new Set(uList.map((u) => u.parking).filter((p) => p !== undefined)))
+                const parkLabel = hasU
+                  ? parkSet.length === 1 ? `${parkSet[0]} Spaces` : 'Varies by unit'
+                  : property.parking !== undefined ? `${property.parking} Spaces` : 'Not specified'
+
+                const areaSet = Array.from(new Set(uList.map((u) => u.areaSqFt).filter((a) => a !== undefined)))
+                const areaLabel = hasU
+                  ? areaSet.length === 1 ? `${areaSet[0]} sq ft` : 'Varies by unit'
+                  : property.areaSqFt ? `${property.areaSqFt} sq ft` : 'Not specified'
+
+                return (
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+                    <SpecBox
+                      icon={<Key className="h-5 w-5 text-primary" />}
+                      label="Bedrooms"
+                      value={bhkLabel}
+                    />
+                    <SpecBox
+                      icon={<span className="text-lg">🛁</span>}
+                      label="Bathrooms"
+                      value={bathLabel}
+                    />
+                    <SpecBox
+                      icon={<Car className="h-5 w-5 text-emerald-400" />}
+                      label="Parking"
+                      value={parkLabel}
+                    />
+                    <SpecBox
+                      icon={<span className="text-lg">📐</span>}
+                      label="Total Area"
+                      value={areaLabel}
+                    />
+                    <SpecBox
+                      icon={<MapPin className="h-5 w-5 text-sky-400" />}
+                      label="City"
+                      value={property.address?.city || 'Not specified'}
+                    />
+                  </div>
+                )
+              })()}
             </GlassCardContent>
           </GlassCard>
 

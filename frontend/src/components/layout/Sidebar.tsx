@@ -82,7 +82,7 @@ export function SidebarContent({
               collapsed && 'justify-center p-1.5',
             )}
           >
-            <Avatar name={user.name} size="sm" status="online" />
+            <Avatar name={user.name} src={user.avatarUrl} size="sm" status="online" />
 
             {!collapsed ? (
               <>

@@ -2,6 +2,7 @@ import { Building2, Calendar, User, DoorOpen, CheckCircle, ShieldCheck } from 'l
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/ui/GlassCard'
 import { Badge } from '@/components/ui/Badge'
 import { derivePropertyUnits } from '@/lib/unitUtils'
+import type { PropertyUnit } from '@/shared'
 
 interface PropertyUnitsCardProps {
   property: {
@@ -10,6 +11,13 @@ interface PropertyUnitsCardProps {
     type: string
     totalUnits?: number
     occupiedUnits?: number
+    bedrooms?: number
+    bathrooms?: number
+    parking?: number
+    areaSqFt?: number
+    monthlyRent?: number
+    securityDeposit?: number
+    units?: PropertyUnit[]
   }
   tenancies: Array<{
     id: string
@@ -40,16 +48,22 @@ function formatDate(dateStr?: string) {
   }
 }
 
+function formatRupee(amount?: number) {
+  if (!amount || isNaN(amount)) return '₹0'
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
 export function PropertyUnitsCard({
   property,
   tenancies,
   title = 'Individual Unit Management',
   className = '',
 }: PropertyUnitsCardProps) {
-  const units = derivePropertyUnits(
-    { id: property.id, type: property.type, totalUnits: property.totalUnits ?? 1 },
-    tenancies
-  )
+  const units = derivePropertyUnits(property, tenancies)
   const occupiedCount = units.filter((u) => u.status === 'OCCUPIED').length
   const availableCount = units.filter((u) => u.status === 'AVAILABLE').length
 
@@ -118,6 +132,34 @@ export function PropertyUnitsCard({
                   </Badge>
                 </div>
 
+                {/* Unit Specifications Grid */}
+                <div className="grid grid-cols-2 gap-2 pt-3 text-[11px] border-b border-border/30 pb-3">
+                  <div>
+                    <span className="text-muted block text-[10px]">Specs:</span>
+                    <span className="font-semibold text-text">
+                      {unit.bedrooms !== undefined ? `${unit.bedrooms} BHK` : 'N/A'}, {unit.bathrooms !== undefined ? `${unit.bathrooms} Bath` : 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted block text-[10px]">Area / Parking:</span>
+                    <span className="font-semibold text-text">
+                      {unit.areaSqFt ? `${unit.areaSqFt} sq ft` : 'N/A'} · {unit.parking ?? 0} P
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted block text-[10px]">Rent:</span>
+                    <span className="font-bold text-emerald-400">
+                      {formatRupee(unit.monthlyRent)}/mo
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted block text-[10px]">Deposit:</span>
+                    <span className="font-semibold text-text">
+                      {formatRupee(unit.securityDeposit)}
+                    </span>
+                  </div>
+                </div>
+
                 {/* Card Body: Tenant Info or Available Placeholder */}
                 <div className="pt-3">
                   {isOccupied ? (
@@ -135,7 +177,7 @@ export function PropertyUnitsCard({
                       )}
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 text-xs text-muted py-2">
+                    <div className="flex items-center gap-2 text-xs text-muted py-1">
                       <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
                       <span>Ready for new tenancy</span>
                     </div>

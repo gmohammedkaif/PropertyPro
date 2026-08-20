@@ -1,3 +1,14 @@
+export interface PropertyUnit {
+  unitNumber: string
+  bedrooms?: number
+  bathrooms?: number
+  parking?: number
+  areaSqFt?: number
+  monthlyRent: number
+  securityDeposit?: number
+  floor?: string
+}
+
 export interface PropertyRecord {
   id: string
   ownerId: string
@@ -19,6 +30,7 @@ export interface PropertyRecord {
   amenities: string[]
   totalUnits: number
   occupiedUnits: number
+  units?: PropertyUnit[]
   status: PropertyStatus
   listingStatus?: 'for-rent' | 'for-sale' | 'occupied' | 'inactive'
   bedrooms?: number
@@ -36,7 +48,7 @@ export interface PropertyRecord {
   updatedAt: string
 }
 
-export type PropertyType = 'apartment' | 'house' | 'commercial' | 'mixed'
+export type PropertyType = 'apartment' | 'house' | 'resort'
 
 export type PropertyStatus = 'active' | 'archived'
 
@@ -60,6 +72,7 @@ export interface CreatePropertyInput {
   amenities?: string[]
   totalUnits?: number
   occupiedUnits?: number
+  units?: PropertyUnit[]
   listingStatus?: 'for-rent' | 'for-sale' | 'occupied' | 'inactive'
   bedrooms?: number
   bathrooms?: number
@@ -81,6 +94,7 @@ export interface UpdatePropertyInput {
   description?: string | null
   amenities?: string[]
   totalUnits?: number
+  units?: PropertyUnit[]
   status?: PropertyStatus
   listingStatus?: 'for-rent' | 'for-sale' | 'occupied' | 'inactive'
   bedrooms?: number

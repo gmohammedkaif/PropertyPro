@@ -75,10 +75,7 @@ export function TenantPropertyDetailPage() {
 
   // Available units calculation
   const unitsList = localProperty
-    ? derivePropertyUnits(
-        { id: localProperty.id, type: localProperty.type, totalUnits: localProperty.totalUnits ?? 1 },
-        tenancies
-      )
+    ? derivePropertyUnits(localProperty, tenancies)
     : []
   const availableUnitsList = unitsList.filter((u) => u.status === 'AVAILABLE')
 
@@ -122,10 +119,7 @@ export function TenantPropertyDetailPage() {
       return
     }
     const avail = localProperty
-      ? derivePropertyUnits(
-          { id: localProperty.id, type: localProperty.type, totalUnits: localProperty.totalUnits ?? 1 },
-          tenancies
-        ).filter((u) => u.status === 'AVAILABLE')
+      ? derivePropertyUnits(localProperty, tenancies).filter((u) => u.status === 'AVAILABLE')
       : []
 
     setSelectedUnitNumber(avail[0]?.unitNumber ?? 'Main')

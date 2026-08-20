@@ -126,11 +126,19 @@ export function TenantRentPage() {
             <GlassCard variant="primary" className="p-0 overflow-hidden">
               <div className="p-6 flex flex-col md:flex-row gap-6">
                 {/* Property Visual */}
-                <div className="relative h-48 md:h-auto md:w-56 rounded-2xl overflow-hidden bg-surface2 shrink-0 border border-border/60">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-surface3 flex items-center justify-center">
-                    <Building2 className="h-16 w-16 text-primary/40" />
-                  </div>
-                  <div className="absolute top-3 left-3">
+                <div className="relative h-48 md:h-56 md:w-56 rounded-2xl overflow-hidden bg-surface2 shrink-0 border border-border/60">
+                  {prop?.images?.[0] || prop?.imageUrl ? (
+                    <img
+                      src={prop?.images?.[0] || prop?.imageUrl}
+                      alt={tenancy.propertyName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-surface3 flex items-center justify-center">
+                      <Building2 className="h-16 w-16 text-primary/40" />
+                    </div>
+                  )}
+                  <div className="absolute top-3 left-3 z-10">
                     <Badge intent="success" size="sm" className="font-semibold shadow">
                       Rented Property
                     </Badge>
@@ -159,7 +167,7 @@ export function TenantRentPage() {
                     </div>
                     <div>
                       <span className="text-muted block text-[10px] uppercase font-semibold">Lease Duration</span>
-                      <span className="text-sm font-semibold text-text">12 Months</span>
+                      <span className="text-sm font-semibold text-text">{tenancy.leaseDurationMonths ? `${tenancy.leaseDurationMonths} Months` : '12 Months'}</span>
                     </div>
                     <div>
                       <span className="text-muted block text-[10px] uppercase font-semibold">Lease Expiry Date</span>

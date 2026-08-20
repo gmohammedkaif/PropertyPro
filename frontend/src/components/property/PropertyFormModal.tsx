@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Upload, Image, X, Building2, DollarSign, MapPin, Sparkles } from 'lucide-react'
+import { Upload, Image, X, Building2, DollarSign, MapPin, Sparkles, Layers, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -10,9 +10,55 @@ import { useCreateProperty, useUpdateProperty } from '@/hooks/useProperty'
 import { useAuthStore } from '@/stores/authStore'
 import { useLocalPropertiesStore, type LocalPropertyType } from '@/stores/localPropertiesStore'
 import { useAdminOwners } from '@/hooks/useAdmin'
-import type { PropertyRecord } from '@/shared'
+import type { PropertyRecord, PropertyUnit } from '@/shared'
+import { COUNTRY_LIST } from '@/shared/countries'
+import { generatePropertyUnitNames } from '@/lib/unitUtils'
 import { apiClient, type ApiEnvelope } from '@/lib/apiClient'
 import { cn } from '@/lib/utils'
+
+// ── Client-side canvas image compression for property photos ──────────────────
+async function compressImageToCanvas(file: File, maxDim = 1280, quality = 0.85): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image()
+    const url = URL.createObjectURL(file)
+
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      let width = img.width
+      let height = img.height
+
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width)
+          width = maxDim
+        } else {
+          width = Math.round((width * maxDim) / height)
+          height = maxDim
+        }
+      }
+
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        reject(new Error('Canvas context unavailable'))
+        return
+      }
+
+      ctx.drawImage(img, 0, 0, width, height)
+      const dataUrl = canvas.toDataURL('image/jpeg', quality)
+      resolve(dataUrl)
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('Failed to load image for compression'))
+    }
+
+    img.src = url
+  })
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,12 +67,6 @@ interface FormData {
   type: string
   description: string
   totalUnits: string
-  bedrooms: string
-  bathrooms: string
-  parking: string
-  areaSqFt: string
-  monthlyRent: string
-  securityDeposit: string
   salePrice: string
   line1: string
   line2: string
@@ -38,11 +78,13 @@ interface FormData {
   imagePreviews: string[]
   ownerId?: string
   amenities: string[]
+  units: PropertyUnit[]
 }
 
 interface FormErrors {
   name?: string
   type?: string
+  totalUnits?: string
   line1?: string
   city?: string
   state?: string
@@ -50,7 +92,6 @@ interface FormErrors {
   country?: string
   image?: string
   ownerId?: string
-  securityDeposit?: string
 }
 
 interface Suggestion {
@@ -88,19 +129,10 @@ export interface PropertyFormModalProps {
 const TYPE_OPTIONS = [
   { value: 'apartment', label: 'Apartment' },
   { value: 'house', label: 'House' },
-  { value: 'commercial', label: 'Commercial' },
-  { value: 'mixed', label: 'Mixed Use' },
+  { value: 'resort', label: 'Resort' },
 ]
 
-const COUNTRY_OPTIONS = [
-  { value: 'US', label: 'United States' },
-  { value: 'GB', label: 'United Kingdom' },
-  { value: 'CA', label: 'Canada' },
-  { value: 'AU', label: 'Australia' },
-  { value: 'IN', label: 'India' },
-  { value: 'SG', label: 'Singapore' },
-  { value: 'AE', label: 'UAE' },
-]
+const COUNTRY_OPTIONS = COUNTRY_LIST.map((c) => ({ value: c, label: c }))
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
@@ -113,14 +145,17 @@ function validate(data: FormData, mode: Mode, isSuperAdmin: boolean): FormErrors
   if (!data.state.trim()) errors.state = 'State / province is required'
   if (!data.postalCode.trim()) errors.postalCode = 'Postal code is required'
   if (!data.country) errors.country = 'Country is required'
+  
+  const count = parseInt(data.totalUnits, 10)
+  if (isNaN(count) || count <= 0) {
+    errors.totalUnits = 'Total units must be at least 1'
+  }
+
   if (mode === 'create' && data.images.length === 0 && data.imagePreviews.length === 0) {
     errors.image = 'Please upload at least one property image.'
   }
   if (isSuperAdmin && mode === 'create' && !data.ownerId) {
     errors.ownerId = 'Please select a property owner.'
-  }
-  if (data.securityDeposit && parseFloat(data.securityDeposit) < 0) {
-    errors.securityDeposit = 'Security deposit must be non-negative'
   }
   return errors
 }
@@ -133,52 +168,48 @@ function hasErrors(errors: FormErrors) {
 
 function defaultForm(property?: PropertyRecord): FormData {
   if (property) {
+    const existingImages = property.images && property.images.length > 0
+      ? property.images
+      : (property.imageUrl ? [property.imageUrl] : [])
+
+    const unitsCount = property.units?.length || property.totalUnits || 1
+
     return {
       name: property.name,
       type: property.type,
       description: property.description ?? '',
-      totalUnits: String(property.totalUnits ?? ''),
-      bedrooms: String((property as any).bedrooms ?? ''),
-      bathrooms: String((property as any).bathrooms ?? ''),
-      parking: String((property as any).parking ?? ''),
-      areaSqFt: String((property as any).areaSqFt ?? ''),
-      monthlyRent: String((property as any).monthlyRent ?? ''),
-      securityDeposit: String((property as any).securityDeposit ?? ''),
+      totalUnits: String(unitsCount),
       salePrice: String((property as any).salePrice ?? ''),
       line1: property.address.line1,
       line2: property.address.line2 ?? '',
       city: property.address.city,
       state: property.address.state,
       postalCode: property.address.postalCode,
-      country: property.address.country,
+      country: property.address.country || 'India',
       images: [],
-      imagePreviews: property.imageUrl ? [property.imageUrl] : (property.images ?? []),
+      imagePreviews: existingImages,
       ownerId: property.ownerId,
       amenities: property.amenities ?? [],
+      units: property.units ?? [],
     }
   }
   return {
     name: '',
-    type: '',
+    type: 'house',
     description: '',
-    totalUnits: '',
-    bedrooms: '',
-    bathrooms: '',
-    parking: '',
-    areaSqFt: '',
-    monthlyRent: '',
-    securityDeposit: '',
+    totalUnits: '1',
     salePrice: '',
     line1: '',
     line2: '',
     city: '',
     state: '',
     postalCode: '',
-    country: 'US',
+    country: 'India',
     images: [],
     imagePreviews: [],
     ownerId: '',
     amenities: [],
+    units: [],
   }
 }
 
@@ -213,12 +244,16 @@ export function PropertyFormModal({
 
   const createProperty = useCreateProperty()
   const updateProperty = useUpdateProperty()
-  const [isUploading, setIsUploading] = useState(false)
-  const isPending = createProperty.isPending || updateProperty.isPending || isUploading
+  const [uploadingImages, setUploadingImages] = useState(false)
+  const [uploadProgressText, setUploadProgressText] = useState('')
+  const isPending = createProperty.isPending || updateProperty.isPending || uploadingImages
 
   const [form, setForm] = useState<FormData>(() => defaultForm(property))
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState(false)
+
+  // Track property type changes to regenerate unit labels when type changes
+  const prevTypeRef = useRef(form.type)
 
   // Autocomplete search states
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
@@ -227,6 +262,38 @@ export function PropertyFormModal({
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [shouldSearch, setShouldSearch] = useState(false)
   const autocompleteRef = useRef<HTMLDivElement>(null)
+
+  // Sync unit configurations whenever totalUnits or type changes
+  useEffect(() => {
+    const count = parseInt(form.totalUnits, 10)
+    if (isNaN(count) || count <= 0) return
+
+    const typeChanged = prevTypeRef.current !== form.type
+    prevTypeRef.current = form.type
+
+    const defaultNames = generatePropertyUnitNames(form.type, count)
+
+    setForm((prev) => {
+      const existingUnits = prev.units || []
+      const nextUnits: PropertyUnit[] = defaultNames.map((unitName, i) => {
+        const existing = existingUnits[i]
+        const unitNumber = (!typeChanged && existing?.unitNumber) ? existing.unitNumber : unitName
+        const floor = (!typeChanged && existing?.floor) ? existing.floor : (form.type === 'house' ? unitName : `Floor ${Math.floor(i / 4) + 1}`)
+
+        return {
+          unitNumber,
+          bedrooms: existing?.bedrooms ?? 1,
+          bathrooms: existing?.bathrooms ?? 1,
+          parking: existing?.parking ?? 0,
+          areaSqFt: existing?.areaSqFt ?? 500,
+          monthlyRent: existing?.monthlyRent ?? 10000,
+          securityDeposit: existing?.securityDeposit ?? 20000,
+          floor,
+        }
+      })
+      return { ...prev, units: nextUnits }
+    })
+  }, [form.totalUnits, form.type, property])
 
   // Click outside to dismiss suggestions dropdown
   useEffect(() => {
@@ -296,7 +363,7 @@ export function PropertyFormModal({
         city: suggestion.city,
         state: suggestion.state || prev.state,
         postalCode: suggestion.postalCode || prev.postalCode,
-        country: matchedCountry ? matchedCountry.value : (suggestion.countryCode || prev.country),
+        country: matchedCountry ? matchedCountry.value : (suggestion.country || prev.country),
       }
     })
     setShouldSearch(false)
@@ -329,50 +396,101 @@ export function PropertyFormModal({
     }
   }
 
-  // Image upload handlers
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Immediate ImageKit upload on file selection with Max 5 validation & Canvas compression
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
-    const validFiles = files.filter(f => f.type.startsWith('image/') && f.size <= 5 * 1024 * 1024) // 5MB max
-    
-    if (validFiles.length !== files.length) {
-      toast.warning('Some files were skipped', { description: 'Only image files under 5MB are allowed.' })
+    if (files.length === 0) return
+    e.target.value = '' // Reset input
+
+    const currentTotal = form.imagePreviews.length
+    if (currentTotal >= 5) {
+      toast.error('Maximum 5 Images Allowed', { description: 'You can upload a maximum of 5 images per property.' })
+      return
     }
 
-    const newPreviews = validFiles.map(f => URL.createObjectURL(f))
-    setForm(prev => ({
-      ...prev,
-      images: [...prev.images, ...validFiles],
-      imagePreviews: [...prev.imagePreviews, ...newPreviews],
-    }))
-    setErrors(prev => ({ ...prev, image: undefined }))
+    const maxAllowed = Math.max(0, 5 - currentTotal)
+    if (files.length > maxAllowed) {
+      toast.error('Limit Exceeded', { description: `You can only add ${maxAllowed} more image(s). Maximum total is 5.` })
+    }
+
+    const validFiles = files.filter(f => f.type.startsWith('image/')).slice(0, maxAllowed)
+    if (validFiles.length === 0) {
+      toast.error('Invalid Files', { description: 'Please select valid image files under 10MB.' })
+      return
+    }
+
+    if (uploadingImages) return
+    setUploadingImages(true)
+    setUploadProgressText(`Uploading ${validFiles.length} image(s)...`)
+
+    const newlyUploadedUrls: string[] = []
+
+    try {
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i]
+        setUploadProgressText(`Uploading image ${i + 1} of ${validFiles.length}...`)
+
+        // 1. Canvas compress property photo to max 1280px (~150KB) for instant, lightweight upload
+        const base64Data = await compressImageToCanvas(file, 1280, 0.85)
+
+        // 2. Upload to ImageKit with explicit 60s timeout
+        const uploadRes = await apiClient.post<{ data: { url: string } }>(
+          '/properties/upload-image',
+          {
+            file: base64Data,
+            fileName: file.name || `property_${Date.now()}_${i}.jpg`,
+          },
+          { timeout: 60_000 }
+        )
+
+        if (uploadRes.data?.data?.url) {
+          newlyUploadedUrls.push(uploadRes.data.data.url)
+        }
+      }
+
+      if (newlyUploadedUrls.length > 0) {
+        setForm((prev) => ({
+          ...prev,
+          imagePreviews: [...prev.imagePreviews, ...newlyUploadedUrls],
+        }))
+        setErrors((prev) => ({ ...prev, image: undefined }))
+        toast.success(`Successfully uploaded ${newlyUploadedUrls.length} property image(s)!`)
+      }
+    } catch (uploadErr: any) {
+      console.error('Property image upload failed:', uploadErr)
+      toast.error('ImageKit Upload Failed', {
+        description: 'Failed to upload property image. Please try again.',
+      })
+    } finally {
+      setUploadingImages(false)
+      setUploadProgressText('')
+    }
   }
 
   const removeImage = (index: number) => {
+    setForm(prev => ({
+      ...prev,
+      imagePreviews: prev.imagePreviews.filter((_, i) => i !== index),
+    }))
+  }
+
+  // Unit field editor handler
+  const handleUnitChange = (index: number, field: keyof PropertyUnit, value: any) => {
     setForm(prev => {
-      // Revoke object URL to prevent memory leaks
-      if (prev.imagePreviews[index]?.startsWith('blob:')) {
-        URL.revokeObjectURL(prev.imagePreviews[index])
+      const updatedUnits = [...prev.units]
+      if (updatedUnits[index]) {
+        updatedUnits[index] = { ...updatedUnits[index], [field]: value }
       }
-      return {
-        ...prev,
-        images: prev.images.filter((_, i) => i !== index),
-        imagePreviews: prev.imagePreviews.filter((_, i) => i !== index),
-      }
+      return { ...prev, units: updatedUnits }
     })
   }
 
-  // Reset form when the modal opens / property changes
+  // Reset form when modal opens / property changes
   useEffect(() => {
     if (open) {
       setForm(defaultForm(property))
       setErrors({})
       setTouched(false)
-    }
-    // Cleanup previews on unmount
-    return () => {
-      form.imagePreviews.forEach(preview => {
-        if (preview.startsWith('blob:')) URL.revokeObjectURL(preview)
-      })
     }
   }, [open, property])
 
@@ -404,47 +522,21 @@ export function PropertyFormModal({
       return
     }
 
-    // Handle ImageKit upload first before creating Property record
-    let uploadedImageUrl = form.imagePreviews.find((url) => url.startsWith('https://ik.imagekit.io/'))
+    const primaryImageUrl = form.imagePreviews[0] || ''
 
-    if (!uploadedImageUrl && form.images.length > 0) {
-      setIsUploading(true)
-      try {
-        const base64Data = await fileToBase64(form.images[0])
-        const { apiClient } = await import('@/lib/apiClient')
-        const uploadRes = await apiClient.post<{ data: { url: string } }>('/properties/upload-image', {
-          file: base64Data,
-          fileName: form.images[0].name,
-        })
-
-        if (uploadRes.data?.data?.url) {
-          uploadedImageUrl = uploadRes.data.data.url
-        } else {
-          throw new Error('ImageKit response did not include a valid URL.')
-        }
-      } catch (uploadErr: any) {
-        setIsUploading(false)
-        const errMsg = uploadErr?.response?.data?.error?.message || uploadErr?.message || 'Failed to upload property image to ImageKit.'
-        toast.error('ImageKit Upload Failed', { description: errMsg })
-        return
-      } finally {
-        setIsUploading(false)
-      }
-    }
-
-    if (mode === 'create' && !uploadedImageUrl) {
+    if (mode === 'create' && form.imagePreviews.length === 0) {
       setErrors((prev) => ({ ...prev, image: 'Please upload at least one property image.' }))
       toast.error('Image Required', { description: 'Please upload at least one property image.' })
       return
     }
 
-    const totalUnits = form.totalUnits ? parseInt(form.totalUnits, 10) : 0
-    const bedrooms = form.bedrooms ? parseInt(form.bedrooms, 10) : undefined
-    const bathrooms = form.bathrooms ? parseInt(form.bathrooms, 10) : undefined
-    const parking = form.parking ? parseInt(form.parking, 10) : undefined
-    const areaSqFt = form.areaSqFt ? parseFloat(form.areaSqFt) : undefined
-    const monthlyRent = form.monthlyRent ? parseFloat(form.monthlyRent) : undefined
-    const securityDeposit = form.securityDeposit ? parseFloat(form.securityDeposit) : undefined
+    const totalUnits = form.units.length > 0 ? form.units.length : (form.totalUnits ? parseInt(form.totalUnits, 10) : 1)
+    const rootRent = form.units[0]?.monthlyRent ?? 0
+    const rootDeposit = form.units[0]?.securityDeposit ?? 0
+    const rootBhk = form.units[0]?.bedrooms ?? 1
+    const rootBaths = form.units[0]?.bathrooms ?? 1
+    const rootParking = form.units[0]?.parking ?? 0
+    const rootArea = form.units[0]?.areaSqFt ?? 500
     const salePrice = form.salePrice ? parseFloat(form.salePrice) : undefined
 
     const addressPayload = {
@@ -458,11 +550,10 @@ export function PropertyFormModal({
 
     try {
       if (mode === 'create') {
-        const selectedOwner = owners.find((o) => o.id === form.ownerId)
-        const finalOwnerId = isSuperAdmin ? form.ownerId! : user.id
+        const selectedOwner = isSuperAdmin ? owners.find((o) => o.id === form.ownerId) : null
+        const finalOwnerId = isSuperAdmin && form.ownerId ? form.ownerId : user.id
         const finalOwnerEmail = isSuperAdmin && selectedOwner ? selectedOwner.email : user.email
 
-        // 1. Send API request & WAIT for backend MongoDB insertion with ImageKit URL
         const created = await createProperty.mutateAsync({
           ownerId: finalOwnerId,
           ownerEmail: finalOwnerEmail,
@@ -470,20 +561,20 @@ export function PropertyFormModal({
           type: form.type as PropertyRecord['type'],
           description: form.description.trim() || undefined,
           totalUnits,
-          bedrooms,
-          bathrooms,
-          parking,
-          areaSqFt,
-          monthlyRent,
-          securityDeposit,
+          bedrooms: rootBhk,
+          bathrooms: rootBaths,
+          parking: rootParking,
+          areaSqFt: rootArea,
+          monthlyRent: rootRent,
+          securityDeposit: rootDeposit,
           salePrice,
           address: addressPayload,
-          imageUrl: uploadedImageUrl!,
-          images: [uploadedImageUrl!],
+          imageUrl: primaryImageUrl,
+          images: form.imagePreviews,
+          units: form.units,
           amenities: Array.from(new Set(form.amenities)),
         })
 
-        // 2. Sync to local store so offline/local views match MongoDB state
         addLocal({
           id: created.id,
           name: created.name,
@@ -491,13 +582,14 @@ export function PropertyFormModal({
           description: created.description ?? undefined,
           totalUnits: created.totalUnits ?? totalUnits,
           occupiedUnits: created.occupiedUnits ?? 0,
-          bedrooms: (created as any).bedrooms ?? bedrooms,
-          bathrooms: (created as any).bathrooms ?? bathrooms,
-          parking: (created as any).parking ?? parking,
-          areaSqFt: (created as any).areaSqFt ?? areaSqFt,
-          monthlyRent: (created as any).monthlyRent ?? monthlyRent,
-          securityDeposit: (created as any).securityDeposit ?? securityDeposit,
-          salePrice: (created as any).salePrice ?? salePrice,
+          bedrooms: rootBhk,
+          bathrooms: rootBaths,
+          parking: rootParking,
+          areaSqFt: rootArea,
+          monthlyRent: rootRent,
+          securityDeposit: rootDeposit,
+          salePrice,
+          units: form.units,
           address: {
             line1: created.address.line1,
             line2: created.address.line2 ?? undefined,
@@ -508,19 +600,18 @@ export function PropertyFormModal({
           },
           listingStatus: 'for-rent',
           imageUrl: created.imageUrl,
+          images: form.imagePreviews,
           ownerEmail: finalOwnerEmail,
           ownerId: finalOwnerId,
         })
 
-        // 3. ONLY THEN show success toast & close modal
         toast.success('Property Added Successfully', {
-          description: `"${created.name}" has been created and stored in MongoDB with ImageKit image.`,
+          description: `"${created.name}" has been created with ${form.imagePreviews.length} images and ${form.units.length} units.`,
         })
         onOpenChange(false)
       } else {
         if (!property) return
 
-        // 1. Send API update & WAIT for backend
         const updated = await updateProperty.mutateAsync({
           id: property.id,
           input: {
@@ -528,33 +619,35 @@ export function PropertyFormModal({
             type: form.type as PropertyRecord['type'],
             description: form.description.trim() || null,
             totalUnits,
-            bedrooms,
-            bathrooms,
-            parking,
-            areaSqFt,
-            monthlyRent,
-            securityDeposit,
+            bedrooms: rootBhk,
+            bathrooms: rootBaths,
+            parking: rootParking,
+            areaSqFt: rootArea,
+            monthlyRent: rootRent,
+            securityDeposit: rootDeposit,
             salePrice,
             address: addressPayload,
+            units: form.units,
             amenities: Array.from(new Set(form.amenities)),
-            ...(uploadedImageUrl ? { imageUrl: uploadedImageUrl, images: [uploadedImageUrl] } : {}),
+            ...(primaryImageUrl ? { imageUrl: primaryImageUrl, images: form.imagePreviews } : {}),
           },
         })
 
-        // 2. Sync to local store
         updateLocal(property.id, {
           name: updated.name,
           type: updated.type as LocalPropertyType,
           description: updated.description ?? undefined,
           totalUnits: updated.totalUnits ?? totalUnits,
-          bedrooms: (updated as any).bedrooms ?? bedrooms,
-          bathrooms: (updated as any).bathrooms ?? bathrooms,
-          parking: (updated as any).parking ?? parking,
-          areaSqFt: (updated as any).areaSqFt ?? areaSqFt,
-          monthlyRent: (updated as any).monthlyRent ?? monthlyRent,
-          securityDeposit: (updated as any).securityDeposit ?? securityDeposit,
-          salePrice: (updated as any).salePrice ?? salePrice,
+          bedrooms: rootBhk,
+          bathrooms: rootBaths,
+          parking: rootParking,
+          areaSqFt: rootArea,
+          monthlyRent: rootRent,
+          securityDeposit: rootDeposit,
+          salePrice,
           imageUrl: updated.imageUrl,
+          images: form.imagePreviews,
+          units: form.units,
           address: {
             line1: updated.address.line1,
             line2: updated.address.line2 ?? undefined,
@@ -565,9 +658,8 @@ export function PropertyFormModal({
           },
         })
 
-        // 3. ONLY THEN show success toast & close modal
         toast.success('Property Updated Successfully', {
-          description: `"${updated.name}" has been updated.`,
+          description: `"${updated.name}" has been updated with ${form.units.length} units.`,
         })
         onOpenChange(false)
       }
@@ -586,7 +678,7 @@ export function PropertyFormModal({
     <Modal
       open={open}
       onOpenChange={(next) => {
-        if (isPending) return // prevent close while submitting
+        if (isPending) return
         onOpenChange(next)
       }}
       title={title}
@@ -653,7 +745,7 @@ export function PropertyFormModal({
             <div className="grid grid-cols-2 gap-4">
               <Select
                 id="property-type"
-                label="Type"
+                label="Property Type"
                 placeholder="Select type"
                 options={TYPE_OPTIONS}
                 value={form.type}
@@ -667,60 +759,14 @@ export function PropertyFormModal({
                 id="property-units"
                 label="Total Units"
                 type="number"
-                placeholder="e.g. 12"
-                min={0}
+                placeholder="e.g. 4"
+                min={1}
                 max={99999}
                 value={form.totalUnits}
                 onChange={update('totalUnits')}
+                error={touched ? errors.totalUnits : undefined}
                 disabled={isPending}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                id="property-bedrooms"
-                label="Bedrooms (BHK)"
-                type="number"
-                placeholder="e.g. 3"
-                min={0}
-                value={form.bedrooms}
-                onChange={update('bedrooms')}
-                disabled={isPending}
-              />
-
-              <Input
-                id="property-bathrooms"
-                label="Bathrooms"
-                type="number"
-                placeholder="e.g. 2"
-                min={0}
-                value={form.bathrooms}
-                onChange={update('bathrooms')}
-                disabled={isPending}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                id="property-parking"
-                label="Parking Spaces"
-                type="number"
-                placeholder="e.g. 1"
-                min={0}
-                value={form.parking}
-                onChange={update('parking')}
-                disabled={isPending}
-              />
-
-              <Input
-                id="property-area"
-                label="Total Area (sq ft)"
-                type="number"
-                placeholder="e.g. 1500"
-                min={0}
-                value={form.areaSqFt}
-                onChange={update('areaSqFt')}
-                disabled={isPending}
+                required
               />
             </div>
 
@@ -739,6 +785,105 @@ export function PropertyFormModal({
               />
             </div>
           </div>
+
+          {/* Section: Individual Unit Configurations */}
+          {form.units.length > 0 && (
+            <div className="rounded-2xl border border-border/40 bg-surface/20 p-5 flex flex-col gap-4">
+              <h3 className="text-xs font-bold text-text uppercase tracking-wider flex items-center gap-2 border-b border-border/30 pb-2.5 mb-1.5">
+                <Layers className="h-4 w-4 text-sky-400" /> Individual Unit Specifications ({form.units.length} Units)
+              </h3>
+              <p className="text-xs text-muted -mt-2">
+                Configure specific BHK, area, rent, and deposits for each individual unit.
+              </p>
+
+              <div className="flex flex-col gap-4 max-h-96 overflow-y-auto pr-1">
+                {form.units.map((unit, idx) => (
+                  <div key={idx} className="rounded-xl border border-border/40 bg-surface2/30 p-4 flex flex-col gap-3">
+                    <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                      <span className="text-xs font-bold text-primary">
+                        UNIT {idx + 1}: {unit.unitNumber}
+                      </span>
+                      <span className="text-[10px] text-muted uppercase font-semibold">
+                        {unit.floor || 'Standard Floor'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 text-xs">
+                      <div>
+                        <label className="text-[10px] font-semibold text-muted uppercase block mb-1">Unit Label</label>
+                        <input
+                          type="text"
+                          value={unit.unitNumber}
+                          onChange={(e) => handleUnitChange(idx, 'unitNumber', e.target.value)}
+                          className="glass-input w-full text-xs py-1.5 px-2"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold text-muted uppercase block mb-1">Bedrooms (BHK)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={unit.bedrooms ?? ''}
+                          onChange={(e) => handleUnitChange(idx, 'bedrooms', Number(e.target.value))}
+                          className="glass-input w-full text-xs py-1.5 px-2"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold text-muted uppercase block mb-1">Bathrooms</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={unit.bathrooms ?? ''}
+                          onChange={(e) => handleUnitChange(idx, 'bathrooms', Number(e.target.value))}
+                          className="glass-input w-full text-xs py-1.5 px-2"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold text-muted uppercase block mb-1">Parking</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={unit.parking ?? ''}
+                          onChange={(e) => handleUnitChange(idx, 'parking', Number(e.target.value))}
+                          className="glass-input w-full text-xs py-1.5 px-2"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold text-muted uppercase block mb-1">Area (sq ft)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={unit.areaSqFt ?? ''}
+                          onChange={(e) => handleUnitChange(idx, 'areaSqFt', Number(e.target.value))}
+                          className="glass-input w-full text-xs py-1.5 px-2"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold text-muted uppercase block mb-1">Monthly Rent (₹)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={unit.monthlyRent ?? ''}
+                          onChange={(e) => handleUnitChange(idx, 'monthlyRent', Number(e.target.value))}
+                          className="glass-input w-full text-xs py-1.5 px-2 text-emerald-400 font-bold"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-[10px] font-semibold text-muted uppercase block mb-1">Security Deposit (₹)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={unit.securityDeposit ?? ''}
+                          onChange={(e) => handleUnitChange(idx, 'securityDeposit', Number(e.target.value))}
+                          className="glass-input w-full text-xs py-1.5 px-2 font-semibold"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Section: Amenities & Facilities */}
           <div className="rounded-2xl border border-border/40 bg-surface/20 p-5 flex flex-col gap-4">
@@ -782,89 +927,103 @@ export function PropertyFormModal({
             </div>
           </div>
 
-          {/* Section 2: Financial Details */}
-          <div className="rounded-2xl border border-border/40 bg-surface/20 p-5 flex flex-col gap-4">
-            <h3 className="text-xs font-bold text-text uppercase tracking-wider flex items-center gap-2 border-b border-border/30 pb-2.5 mb-1.5">
-              <DollarSign className="h-4 w-4 text-emerald-400" /> Financial Details
-            </h3>
+          {/* Section: Financial & Sale Options */}
+          {form.salePrice !== '' && (
+            <div className="rounded-2xl border border-border/40 bg-surface/20 p-5 flex flex-col gap-4">
+              <h3 className="text-xs font-bold text-text uppercase tracking-wider flex items-center gap-2 border-b border-border/30 pb-2.5 mb-1.5">
+                <DollarSign className="h-4 w-4 text-emerald-400" /> Sale Details (Optional)
+              </h3>
 
-            <div className="grid grid-cols-2 gap-4">
-              {property?.listingStatus === 'for-sale' ? (
-                <>
-                  <Input
-                    id="property-rent"
-                    label="Monthly Rent (₹)"
-                    type="number"
-                    placeholder="e.g. 25000"
-                    min={0}
-                    value={form.monthlyRent}
-                    onChange={update('monthlyRent')}
-                    disabled={isPending}
-                  />
-
-                  <Input
-                    id="property-sale"
-                    label="Sale Price (₹)"
-                    type="number"
-                    placeholder="e.g. 7500000"
-                    min={0}
-                    value={form.salePrice}
-                    onChange={update('salePrice')}
-                    disabled={isPending}
-                  />
-
-                  <Input
-                    id="property-deposit"
-                    label="Security Deposit (₹)"
-                    type="number"
-                    placeholder="e.g. 50000"
-                    min={0}
-                    value={form.securityDeposit}
-                    onChange={update('securityDeposit')}
-                    error={touched ? errors.securityDeposit : undefined}
-                    disabled={isPending}
-                    containerClassName="col-span-2"
-                  />
-                </>
-              ) : (
-                <>
-                  <Input
-                    id="property-rent"
-                    label="Monthly Rent (₹)"
-                    type="number"
-                    placeholder="e.g. 25000"
-                    min={0}
-                    value={form.monthlyRent}
-                    onChange={update('monthlyRent')}
-                    disabled={isPending}
-                  />
-
-                  <Input
-                    id="property-deposit"
-                    label="Security Deposit (₹)"
-                    type="number"
-                    placeholder="e.g. 50000"
-                    min={0}
-                    value={form.securityDeposit}
-                    onChange={update('securityDeposit')}
-                    error={touched ? errors.securityDeposit : undefined}
-                    disabled={isPending}
-                  />
-                </>
-              )}
+              <Input
+                id="property-sale-price"
+                label="Sale Price (₹)"
+                type="number"
+                placeholder="e.g. 5000000"
+                min={0}
+                value={form.salePrice}
+                onChange={update('salePrice')}
+                disabled={isPending}
+              />
             </div>
+          )}
+
+          {/* Section: Property Photos (Max 5) */}
+          <div className="rounded-2xl border border-border/40 bg-surface/20 p-5 flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-border/30 pb-2.5 mb-1.5">
+              <h3 className="text-xs font-bold text-text uppercase tracking-wider flex items-center gap-2">
+                <Image className="h-4 w-4 text-purple-400" /> Property Photos (Max 5)
+              </h3>
+              <span className="text-[11px] font-semibold text-muted">
+                {form.imagePreviews.length} / 5 uploaded
+              </span>
+            </div>
+
+            {form.imagePreviews.length > 0 && (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                {form.imagePreviews.map((preview, idx) => (
+                  <div key={idx} className="group relative aspect-square overflow-hidden rounded-xl border border-border/60 bg-surface2/50">
+                    <img src={preview} alt={`Property Photo ${idx + 1}`} className="h-full w-full object-cover" />
+                    {idx === 0 && (
+                      <span className="absolute bottom-1 left-1 rounded bg-primary/80 px-1.5 py-0.5 text-[9px] font-bold text-white uppercase">
+                        Cover
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeImage(idx)}
+                      disabled={isPending}
+                      className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {form.imagePreviews.length < 5 && (
+              <label className={cn(
+                "flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border/60 bg-surface2/20 p-6 transition-colors",
+                uploadingImages ? "opacity-75 cursor-not-allowed" : "cursor-pointer hover:border-primary/50 hover:bg-surface2/40"
+              )}>
+                {uploadingImages ? (
+                  <>
+                    <Loader2 className="h-6 w-6 text-primary animate-spin mb-2" />
+                    <span className="text-xs font-semibold text-primary">{uploadProgressText || 'Uploading images to ImageKit...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-6 w-6 text-muted mb-2" />
+                    <span className="text-xs font-medium text-text">Click to upload photo(s)</span>
+                    <span className="text-[10px] text-muted mt-0.5">PNG, JPG, WEBP (Max 5 total)</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageChange}
+                  disabled={isPending || uploadingImages}
+                  className="hidden"
+                />
+              </label>
+            )}
+
+            {touched && errors.image && (
+              <p className="text-xs font-medium text-red-400">{errors.image}</p>
+            )}
           </div>
 
-          {/* Section 3: Location Details */}
+          {/* Section: Address Details */}
           <div className="rounded-2xl border border-border/40 bg-surface/20 p-5 flex flex-col gap-4">
             <h3 className="text-xs font-bold text-text uppercase tracking-wider flex items-center gap-2 border-b border-border/30 pb-2.5 mb-1.5">
-              <MapPin className="h-4 w-4 text-cyan-400" /> Location Details
+              <MapPin className="h-4 w-4 text-sky-400" /> Address Details
             </h3>
 
             <Input
               id="property-line1"
               label="Address Line 1"
-              placeholder="Street address, P.O. box, etc."
+              placeholder="e.g. 123 Main St, Block B"
               value={form.line1}
               onChange={update('line1')}
               error={touched ? errors.line1 : undefined}
@@ -874,62 +1033,50 @@ export function PropertyFormModal({
 
             <Input
               id="property-line2"
-              label="Address Line 2"
-              placeholder="Apt, suite, unit, floor (optional)"
+              label="Address Line 2 (optional)"
+              placeholder="e.g. Suite 4B or Landmark"
               value={form.line2}
               onChange={update('line2')}
               disabled={isPending}
             />
 
             <div className="grid grid-cols-2 gap-4">
-              <div ref={autocompleteRef} className="relative flex flex-col">
+              <div className="relative" ref={autocompleteRef}>
                 <Input
                   id="property-city"
                   label="City"
-                  placeholder="e.g. San Francisco"
+                  placeholder="e.g. Mumbai"
                   value={form.city}
                   onChange={handleCityChange}
                   onKeyDown={handleKeyDown}
-                  onFocus={() => {
-                    if (suggestions.length > 0) {
-                      setShowSuggestions(true)
-                    }
-                  }}
                   error={touched ? errors.city : undefined}
                   disabled={isPending}
                   required
-                  autoComplete="off"
                 />
-
-                {showSuggestions && (
-                  <div className="absolute left-0 right-0 top-[70px] z-50 max-h-60 overflow-y-auto rounded-xl border border-border bg-surface/90 shadow-2xl p-1.5 backdrop-blur-md animate-in fade-in slide-in-from-top-1 duration-200">
-                    <ul role="listbox" className="flex flex-col gap-0.5">
-                      {suggestions.map((suggestion, index) => (
-                        <li
-                          key={index}
-                          role="option"
-                          aria-selected={index === selectedIndex}
-                          onClick={() => handleSelectSuggestion(suggestion)}
-                          onMouseEnter={() => setSelectedIndex(index)}
-                          className={cn(
-                            "px-3.5 py-2 text-sm rounded-lg cursor-pointer transition-all duration-150 text-left font-medium",
-                            index === selectedIndex
-                              ? "bg-primary text-white shadow-sm"
-                              : "text-text2 hover:bg-surface-2 hover:text-text"
-                          )}
-                        >
-                          {suggestion.label}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                {showSuggestions && suggestions.length > 0 && (
+                  <ul className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-border bg-surface shadow-lg py-1">
+                    {suggestions.map((item, idx) => (
+                      <li
+                        key={idx}
+                        onClick={() => handleSelectSuggestion(item)}
+                        className={`cursor-pointer px-3 py-2 text-xs transition-colors ${
+                          idx === selectedIndex ? 'bg-primary/20 text-primary font-semibold' : 'text-text hover:bg-surface2'
+                        }`}
+                      >
+                        <div className="font-semibold">{item.label}</div>
+                        <div className="text-[10px] text-muted">
+                          {item.state ? `${item.state}, ` : ''}{item.country}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
 
               <Input
                 id="property-state"
                 label="State / Province"
-                placeholder="e.g. CA"
+                placeholder="e.g. Maharashtra"
                 value={form.state}
                 onChange={update('state')}
                 error={touched ? errors.state : undefined}
@@ -942,7 +1089,7 @@ export function PropertyFormModal({
               <Input
                 id="property-postal"
                 label="Postal Code"
-                placeholder="e.g. 94102"
+                placeholder="e.g. 400001"
                 value={form.postalCode}
                 onChange={update('postalCode')}
                 error={touched ? errors.postalCode : undefined}
@@ -953,6 +1100,7 @@ export function PropertyFormModal({
               <Select
                 id="property-country"
                 label="Country"
+                placeholder="Select country"
                 options={COUNTRY_OPTIONS}
                 value={form.country}
                 onChange={update('country')}
@@ -961,77 +1109,6 @@ export function PropertyFormModal({
                 required
               />
             </div>
-          </div>
-
-          {/* Section 4: Property Images */}
-          <div className="rounded-2xl border border-border/40 bg-surface/20 p-5 flex flex-col gap-4">
-            <h3 className="text-xs font-bold text-text uppercase tracking-wider flex items-center gap-2 border-b border-border/30 pb-2.5 mb-1.5">
-              <Sparkles className="h-4 w-4 text-amber-400" /> Property Images
-            </h3>
-            
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-text/80 tracking-wide">
-                Upload Photos <span className="text-muted font-normal">(max 10, 5MB each)</span>
-              </label>
-              <input
-                type="file"
-                id="property-images"
-                accept="image/*"
-                multiple
-                onChange={handleImageChange}
-                disabled={isPending}
-                className="sr-only"
-                aria-label="Upload property images"
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => document.getElementById('property-images')?.click()}
-                disabled={isPending}
-                className="w-fit hover:bg-surface2/80 rounded-lg px-4"
-              >
-                <Upload className="h-4 w-4 mr-2" aria-hidden="true" />
-                Select Images
-              </Button>
-              {touched && errors.image && (
-                <p className="text-xs font-semibold text-danger">{errors.image}</p>
-              )}
-            </div>
-
-            {form.imagePreviews.length > 0 && (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-                {form.imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-surface2/50 border border-border/50 group">
-                    <img
-                      src={preview}
-                      alt={`Property image ${index + 1}`}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors z-20"
-                      aria-label="Remove image"
-                    >
-                      <X className="h-3.5 w-3.5" aria-hidden="true" />
-                    </button>
-                    {index === 0 && (
-                      <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 text-[9px] font-bold bg-primary text-white rounded shadow-sm z-20">
-                        Cover
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {form.imagePreviews.length === 0 && (
-              <div className="text-center py-8 border-2 border-dashed border-border/50 rounded-xl bg-surface/10">
-                <Image className="h-10 w-10 mx-auto text-muted/40 mb-2" aria-hidden="true" />
-                <p className="text-sm font-semibold text-muted">No images uploaded yet</p>
-                <p className="text-xs text-muted/60 mt-1">Add photos to make your property more attractive</p>
-              </div>
-            )}
           </div>
         </div>
       </form>

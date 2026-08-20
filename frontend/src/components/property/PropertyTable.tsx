@@ -35,8 +35,7 @@ export interface PropertyTableProps {
 const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {
   apartment: 'Apartment',
   house: 'House',
-  commercial: 'Commercial',
-  mixed: 'Mixed',
+  resort: 'Resort',
 }
 
 const STATUS_LABELS: Record<PropertyStatus, { label: string; intent: 'success' | 'warning' | 'neutral' }> = {
@@ -262,8 +261,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 const PROPERTY_TYPE_IMAGES: Record<PropertyType, string> = {
   apartment: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=600&q=80',
   house: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=600&q=80',
-  commercial: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=600&q=80',
-  mixed: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=600&q=80',
+  resort: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80',
 }
 
 function formatRupee(n: number) {

@@ -1,6 +1,14 @@
+import type { PropertyUnit } from '@/shared'
+
 export interface UnitRecord {
   unitNumber: string
   floor?: string
+  bedrooms?: number
+  bathrooms?: number
+  parking?: number
+  areaSqFt?: number
+  monthlyRent?: number
+  securityDeposit?: number
   status: 'AVAILABLE' | 'OCCUPIED'
   tenantName?: string
   tenantEmail?: string
@@ -30,6 +38,7 @@ const ORDINAL_FLOORS = [
 export function generatePropertyUnitNames(type: string, totalUnits: number): string[] {
   const count = Math.max(1, totalUnits || 1)
   const isHouse = type === 'house' || type === 'villa'
+  const isResort = type === 'resort'
 
   if (isHouse) {
     return Array.from({ length: count }, (_, i) => {
@@ -38,7 +47,14 @@ export function generatePropertyUnitNames(type: string, totalUnits: number): str
     })
   }
 
-  // Apartment, Commercial, Mixed
+  if (isResort) {
+    return Array.from({ length: count }, (_, i) => {
+      const roomNum = 101 + i
+      return `Room ${roomNum}`
+    })
+  }
+
+  // Apartment (default)
   return Array.from({ length: count }, (_, i) => {
     const unitNum = 101 + i
     return `A-${unitNum}`
@@ -46,11 +62,22 @@ export function generatePropertyUnitNames(type: string, totalUnits: number): str
 }
 
 /**
- * Derives real-time unit occupancy records by cross-referencing generated property units
+ * Derives real-time unit occupancy records by cross-referencing generated or stored property units
  * with active tenancy records from MongoDB.
  */
 export function derivePropertyUnits(
-  property: { id: string; type: string; totalUnits: number },
+  property: {
+    id: string
+    type: string
+    totalUnits?: number
+    bedrooms?: number
+    bathrooms?: number
+    parking?: number
+    areaSqFt?: number
+    monthlyRent?: number
+    securityDeposit?: number
+    units?: PropertyUnit[]
+  },
   tenancies: Array<{
     id: string
     propertyId: string
@@ -64,20 +91,64 @@ export function derivePropertyUnits(
     leaseEnd: string
   }>
 ): UnitRecord[] {
-  const unitNames = generatePropertyUnitNames(property.type, property.totalUnits)
-
-  // Find all active/expiring-soon tenancies for this property
+  const totalUnitsCount = property.totalUnits || (property.units && property.units.length) || 1
   const activeTenancies = tenancies.filter(
     (t) =>
       t.propertyId === property.id &&
       (t.status === 'active' || t.status === 'expiring-soon')
   )
 
+  // If property has stored individual units, use them
+  if (property.units && property.units.length > 0) {
+    return property.units.map((unit, idx) => {
+      const matchedTenancy = activeTenancies.find(
+        (t) => (t.unitNumber || 'Main').toLowerCase() === unit.unitNumber.toLowerCase()
+      )
+
+      const isHouse = property.type === 'house' || property.type === 'villa'
+      const defaultFloor = isHouse ? unit.unitNumber : `Floor ${Math.floor(idx / 4) + 1}`
+
+      if (matchedTenancy) {
+        return {
+          unitNumber: unit.unitNumber,
+          floor: unit.floor || defaultFloor,
+          bedrooms: unit.bedrooms ?? property.bedrooms,
+          bathrooms: unit.bathrooms ?? property.bathrooms,
+          parking: unit.parking ?? property.parking,
+          areaSqFt: unit.areaSqFt ?? property.areaSqFt,
+          monthlyRent: unit.monthlyRent ?? property.monthlyRent,
+          securityDeposit: unit.securityDeposit ?? property.securityDeposit,
+          status: 'OCCUPIED',
+          tenantName: matchedTenancy.tenantName,
+          tenantEmail: matchedTenancy.tenantEmail,
+          tenantPhone: matchedTenancy.tenantPhone,
+          tenancyId: matchedTenancy.id,
+          leaseStart: matchedTenancy.leaseStart,
+          leaseEnd: matchedTenancy.leaseEnd,
+        }
+      }
+
+      return {
+        unitNumber: unit.unitNumber,
+        floor: unit.floor || defaultFloor,
+        bedrooms: unit.bedrooms ?? property.bedrooms,
+        bathrooms: unit.bathrooms ?? property.bathrooms,
+        parking: unit.parking ?? property.parking,
+        areaSqFt: unit.areaSqFt ?? property.areaSqFt,
+        monthlyRent: unit.monthlyRent ?? property.monthlyRent,
+        securityDeposit: unit.securityDeposit ?? property.securityDeposit,
+        status: 'AVAILABLE',
+      }
+    })
+  }
+
+  // Fallback for existing properties without stored individual unit specs
+  const unitNames = generatePropertyUnitNames(property.type, totalUnitsCount)
+
   return unitNames.map((unitNumber, idx) => {
     const isHouse = property.type === 'house' || property.type === 'villa'
     const floorLabel = isHouse ? unitNumber : `Floor ${Math.floor(idx / 4) + 1}`
 
-    // Match tenancy by unitNumber
     const matchedTenancy = activeTenancies.find(
       (t) => (t.unitNumber || 'Main').toLowerCase() === unitNumber.toLowerCase()
     )
@@ -86,6 +157,12 @@ export function derivePropertyUnits(
       return {
         unitNumber,
         floor: floorLabel,
+        bedrooms: property.bedrooms,
+        bathrooms: property.bathrooms,
+        parking: property.parking,
+        areaSqFt: property.areaSqFt,
+        monthlyRent: property.monthlyRent,
+        securityDeposit: property.securityDeposit,
         status: 'OCCUPIED',
         tenantName: matchedTenancy.tenantName,
         tenantEmail: matchedTenancy.tenantEmail,
@@ -99,6 +176,12 @@ export function derivePropertyUnits(
     return {
       unitNumber,
       floor: floorLabel,
+      bedrooms: property.bedrooms,
+      bathrooms: property.bathrooms,
+      parking: property.parking,
+      areaSqFt: property.areaSqFt,
+      monthlyRent: property.monthlyRent,
+      securityDeposit: property.securityDeposit,
       status: 'AVAILABLE',
     }
   })

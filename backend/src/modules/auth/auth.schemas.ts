@@ -50,6 +50,7 @@ export type LogoutInput = z.infer<typeof logoutSchema>
 export const updateProfileSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(120).optional(),
   phone: z.string().trim().max(30).optional(),
+  avatarUrl: z.string().trim().optional(),
 })
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>
 

@@ -1,26 +1,44 @@
 import { useEffect } from 'react'
 
-import { restoreSession } from '@/lib/authSession'
+import { logout, restoreSession } from '@/lib/authSession'
 import { useAuthStore } from '@/stores/authStore'
+import { useToastStore } from '@/stores/toastStore'
+import { INACTIVITY_STORAGE_KEY, INACTIVITY_TIMEOUT_MS } from '@/shared'
 
 /**
- * Runs once on mount. If onRehydrateStorage already set a non-loading status
- * (user found or not found in localStorage), we do nothing.
- * Only when status is still 'loading' (rare: storage read not yet finished) do
+ * Runs once on mount. Checks if saved activity timestamp is expired.
+ * If status is still 'loading' (rare: storage read not yet finished),
  * we try the API refresh to determine the session state.
  */
 export function SessionRestore() {
   const status = useAuthStore((state) => state.status)
+  const user = useAuthStore((state) => state.user)
 
   useEffect(() => {
-    // onRehydrateStorage in authStore handles the common case:
-    // - user in localStorage → status = 'authenticated'
-    // - no user in localStorage → status = 'unauthenticated'
-    // We only need to call the API if somehow status is still 'loading'
+    if (user) {
+      try {
+        const rawTimestamp = localStorage.getItem(INACTIVITY_STORAGE_KEY)
+        if (rawTimestamp) {
+          const lastActivity = Number(rawTimestamp)
+          if (!isNaN(lastActivity) && Date.now() - lastActivity >= INACTIVITY_TIMEOUT_MS) {
+            try {
+              sessionStorage.setItem('propertypro_session_expired', 'inactivity')
+            } catch {
+              /* ignore storage errors */
+            }
+            void logout()
+            return
+          }
+        }
+      } catch {
+        /* ignore storage read error */
+      }
+    }
+
     if (status === 'loading') {
       void restoreSession()
     }
-  }, [status])
+  }, [status, user])
 
   return null
 }

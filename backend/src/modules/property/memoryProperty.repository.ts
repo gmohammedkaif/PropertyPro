@@ -106,7 +106,7 @@ export class InMemoryPropertyRepository implements PropertyRepository {
       {
         ownerId: 'usr_demo',
         name: 'Green Valley Homes',
-        type: 'mixed',
+        type: 'house',
         address: {
           line1: '45, RS Puram, Near Bus Stand',
           line2: null,
@@ -166,7 +166,7 @@ export class InMemoryPropertyRepository implements PropertyRepository {
       {
         ownerId: 'usr_demo',
         name: 'Silicon Towers',
-        type: 'commercial',
+        type: 'resort',
         address: {
           line1: '9th Floor, Tech Park',
           line2: null,

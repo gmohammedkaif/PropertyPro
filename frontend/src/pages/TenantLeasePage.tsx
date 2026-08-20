@@ -135,7 +135,7 @@ export function TenantLeasePage() {
             <LeaseRow label="Lease Number" value={leaseNumber} icon={<FileText className="h-4 w-4" />} />
             <LeaseRow label="Lease Start Date" value={formatDate(myTenancy.leaseStart)} icon={<Calendar className="h-4 w-4 text-primary" />} />
             <LeaseRow label="Lease End Date" value={formatDate(myTenancy.leaseEnd)} icon={<Calendar className="h-4 w-4 text-amber-400" />} />
-            <LeaseRow label="Lease Duration" value="12 Months (1 Year)" icon={<Clock className="h-4 w-4" />} />
+            <LeaseRow label="Lease Duration" value={`${myTenancy.leaseDurationMonths || 12} Months`} icon={<Clock className="h-4 w-4" />} />
             <LeaseRow label="Monthly Rent" value={formatRupee(myTenancy.monthlyRent)} icon={<DollarSign className="h-4 w-4 text-emerald-400" />} />
             <LeaseRow label="Advance Paid" value={formatRupee(myTenancy.monthlyRent)} icon={<Shield className="h-4 w-4 text-sky-400" />} />
             <LeaseRow label="Security Deposit" value={formatRupee(myTenancy.securityDeposit)} icon={<Shield className="h-4 w-4 text-purple-400" />} />

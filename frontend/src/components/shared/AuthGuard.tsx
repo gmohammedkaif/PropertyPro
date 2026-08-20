@@ -2,6 +2,7 @@ import type { PropsWithChildren } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { Spinner } from '@/components/ui/Spinner'
 import { useAuthStore } from '@/stores/authStore'
+import { InactivityTracker } from '@/components/shared/InactivityTracker'
 
 /** Redirects unauthenticated visitors to the login screen, preserving intent. */
 export function AuthGuard({ children }: PropsWithChildren) {
@@ -18,5 +19,10 @@ export function AuthGuard({ children }: PropsWithChildren) {
   }
 
   if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />
-  return <>{children}</>
+  return (
+    <>
+      <InactivityTracker />
+      {children}
+    </>
+  )
 }

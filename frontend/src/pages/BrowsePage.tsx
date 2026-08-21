@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { Search, Filter, MapPin, Key, Bath, Square, Heart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { GlassCard, GlassCardContent } from '@/components/ui/GlassCard'
@@ -9,6 +10,8 @@ import { Input } from '@/components/ui/Input'
 import { Select, type SelectOption } from '@/components/ui/Select'
 import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useSavedPropertiesStore } from '@/stores/savedPropertiesStore'
+import { useToast } from '@/hooks/useToast'
 
 function formatRupee(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n)
@@ -38,6 +41,7 @@ const SORT_OPTIONS: SelectOption[] = [
 
 export function BrowsePage() {
   const navigate = useNavigate()
+  const toast = useToast()
   const { items: properties, fetch: fetchProperties } = useLocalPropertiesStore()
   const user = useAuthStore((state) => state.user)
 
@@ -298,6 +302,7 @@ interface ListingCardProps {
 }
 
 function ListingCard({ item, onClick }: ListingCardProps) {
+  const toast = useToast()
   return (
     <div
       className="group flex flex-col h-full overflow-hidden border-r border-b border-border/50 last:border-r-0 sm:last:border-r border-r transition-all duration-300 hover:bg-surface/50 cursor-pointer"
@@ -328,11 +333,28 @@ function ListingCard({ item, onClick }: ListingCardProps) {
         
         <div className="absolute right-3 top-3">
           <button
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 backdrop-blur text-white hover:bg-white/20 transition-colors"
-            onClick={(e) => e.stopPropagation()}
+            type="button"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-black/40 backdrop-blur text-white hover:bg-black/60 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation()
+              const saved = useSavedPropertiesStore.getState().toggleSave(item.id)
+              if (saved) {
+                toast.success('Property saved to your favorites!')
+              } else {
+                toast.info('Property removed from favorites.')
+              }
+            }}
             aria-label="Save property"
           >
-            <Heart className="h-4 w-4" aria-hidden="true" />
+            <Heart
+              className={cn(
+                'h-4 w-4 transition-colors',
+                useSavedPropertiesStore.getState().isSaved(item.id)
+                  ? 'fill-rose-500 text-rose-500'
+                  : 'text-white'
+              )}
+              aria-hidden="true"
+            />
           </button>
         </div>
 

@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express'
 import { asyncHandler } from '../../core/asyncHandler.js'
-import { NotFoundError, ForbiddenError } from '../../core/errors.js'
-import { Notification } from './notification.model.js'
+import { BadRequestError, NotFoundError, ForbiddenError } from '../../core/errors.js'
+import { Notification, createNotificationIdempotent } from './notification.model.js'
 
 function formatDoc(doc: any) {
   return {
@@ -15,6 +15,26 @@ function formatDoc(doc: any) {
     createdAt: doc.createdAt ? doc.createdAt.toISOString() : new Date().toISOString(),
   }
 }
+
+export const createNotification = asyncHandler(async (req: Request, res: Response) => {
+  const { userEmail, title, message, type, eventType, relatedEntityId } = req.body
+
+  if (!userEmail || !title || !message) {
+    throw new BadRequestError('userEmail, title, and message are required')
+  }
+
+  const doc = await createNotificationIdempotent({
+    userEmail: String(userEmail).toLowerCase().trim(),
+    userId: req.user?.id || '',
+    title: String(title).trim(),
+    message: String(message).trim(),
+    type: type || 'info',
+    eventType,
+    relatedEntityId,
+  })
+
+  res.status(201).json({ data: formatDoc(doc), meta: {}, error: null })
+})
 
 export const listNotifications = asyncHandler(async (req: Request, res: Response) => {
   const userEmail = req.user?.email?.toLowerCase()

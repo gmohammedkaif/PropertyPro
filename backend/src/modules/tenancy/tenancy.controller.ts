@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express'
+import { z } from 'zod'
 import { asyncHandler } from '../../core/asyncHandler.js'
 import { NotFoundError, ForbiddenError, ConflictError } from '../../core/errors.js'
 import { Tenancy } from './tenancy.model.js'
@@ -137,7 +138,7 @@ export const createTenancy = asyncHandler(async (req: Request, res: Response) =>
       leaseEnd: new Date(req.body.leaseEnd),
       leaseDurationMonths: req.body.leaseDurationMonths || 12,
       monthlyRent: req.body.monthlyRent,
-      securityDeposit: req.body.securityDeposit || req.body.monthlyRent * 2,
+      securityDeposit: req.body.securityDeposit || (property as any)?.securityDeposit || 0,
       leaseNotes: req.body.leaseNotes || '',
       ownerEmail: ownerEmail.toLowerCase(),
       ownerId,
@@ -164,6 +165,19 @@ export const createTenancy = asyncHandler(async (req: Request, res: Response) =>
   res.status(201).json({ data: formatDoc(doc), meta: {}, error: null })
 })
 
+const updateTenancySchema = z
+  .object({
+    unitNumber: z.string().trim().optional(),
+    leaseStart: z.string().or(z.date()).optional(),
+    leaseEnd: z.string().or(z.date()).optional(),
+    leaseDurationMonths: z.number().optional(),
+    monthlyRent: z.number().optional(),
+    securityDeposit: z.number().optional(),
+    leaseNotes: z.string().optional(),
+    status: z.enum(['active', 'expiring-soon', 'expired', 'terminated']).optional(),
+  })
+  .strict()
+
 export const updateTenancy = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params
   const tenancy = await Tenancy.findById(id)
@@ -173,7 +187,8 @@ export const updateTenancy = asyncHandler(async (req: Request, res: Response) =>
     throw new ForbiddenError('You do not have permission to modify this tenancy')
   }
 
-  const updated = await Tenancy.findByIdAndUpdate(id, { $set: req.body }, { new: true, runValidators: true }).lean()
+  const payload = updateTenancySchema.parse(req.body)
+  const updated = await Tenancy.findByIdAndUpdate(id, { $set: payload }, { new: true, runValidators: true }).lean()
   res.json({ data: formatDoc(updated!), meta: {}, error: null })
 })
 

@@ -242,7 +242,11 @@ export function TenantDashboardPage() {
 
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-muted">Rent Status:</span>
-                    {pendingPayment ? (
+                    {myPayments.length === 0 ? (
+                      <Badge intent="neutral" size="sm" className="font-semibold uppercase">
+                        No Payments Yet
+                      </Badge>
+                    ) : pendingPayment ? (
                       <Badge intent="warning" size="sm" className="font-semibold uppercase">
                         Pending
                       </Badge>

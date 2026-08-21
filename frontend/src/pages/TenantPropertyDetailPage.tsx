@@ -114,13 +114,28 @@ export function TenantPropertyDetailPage() {
 
   const handleOpenRequestModal = () => {
     if (!user) {
-      toast.error('Please login first')
+      toast.info('Please log in to submit a rental application.')
       navigate('/login')
       return
     }
+
+    if (localProperty && (localProperty as any).totalUnits - (localProperty as any).occupiedUnits <= 0) {
+      toast.error('This property is currently fully occupied.', {
+        description: 'No available units are open for new rental applications.',
+      })
+      return
+    }
+
     const avail = localProperty
       ? derivePropertyUnits(localProperty, tenancies).filter((u) => u.status === 'AVAILABLE')
       : []
+
+    if (avail.length === 0) {
+      toast.error('This property is currently fully occupied.', {
+        description: 'No available units are open for new rental applications.',
+      })
+      return
+    }
 
     setSelectedUnitNumber(avail[0]?.unitNumber ?? 'Main')
     setFullName(user.name)
@@ -154,14 +169,6 @@ export function TenantPropertyDetailPage() {
         unitNumber: selectedUnitNumber || availableUnitsList[0]?.unitNumber || 'Main',
       })
 
-      // Create notification for tenant
-      addNotification({
-        userEmail: user?.email ?? '',
-        title: 'Rental Request Submitted',
-        message: `Your request for ${propertyName} (Unit: ${selectedUnitNumber || 'Main'}) has been sent to the property owner for review.`,
-        type: 'info',
-      })
-
       toast.success('Rental Request Sent!', {
         description: 'The property owner will review your application and respond soon.',
       })
@@ -171,6 +178,23 @@ export function TenantPropertyDetailPage() {
 
     setSubmitting(false)
     setRequestModalOpen(false)
+  }
+
+  const handleInquirePurchase = async () => {
+    const ownerEmail = (localProperty as any)?.ownerEmail
+    if (ownerEmail) {
+      await addNotification({
+        userEmail: ownerEmail.toLowerCase(),
+        title: '🏷️ Property Purchase Inquiry',
+        message: `${user?.name || 'A prospective buyer'} submitted a purchase inquiry for ${propertyName}.`,
+        type: 'info',
+        eventType: 'PURCHASE_INQUIRY',
+        relatedEntityId: `${id}_${Date.now()}`,
+      })
+      toast.success('Purchase inquiry sent directly to the property owner!')
+    } else {
+      toast.info('Purchase inquiry recorded. Property owner notified.')
+    }
   }
 
   return (
@@ -299,7 +323,7 @@ export function TenantPropertyDetailPage() {
               <div className="divide-y divide-border/40 text-xs py-2">
                 <div className="py-2 flex justify-between">
                   <span className="text-muted">Security Deposit</span>
-                  <span className="font-semibold text-text">{formatRupee(price * 2)}</span>
+                  <span className="font-semibold text-text">{formatRupee(localProperty?.securityDeposit || price)}</span>
                 </div>
                 <div className="py-2 flex justify-between">
                   <span className="text-muted">Advance Rent</span>
@@ -320,7 +344,7 @@ export function TenantPropertyDetailPage() {
                   <Sparkles className="h-4 w-4" /> Request For Rent
                 </Button>
               ) : (
-                <Button variant="primary" size="lg" className="w-full font-bold" onClick={() => toast.info('Owner contacted for buying inquiry.')}>
+                <Button variant="primary" size="lg" className="w-full font-bold" onClick={handleInquirePurchase}>
                   Inquire to Purchase
                 </Button>
               )}

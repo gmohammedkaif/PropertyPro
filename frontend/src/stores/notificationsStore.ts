@@ -23,7 +23,9 @@ interface NotificationsState {
     title: string
     message: string
     type?: NotificationType
-  }) => NotificationRecord
+    eventType?: string
+    relatedEntityId?: string
+  }) => Promise<NotificationRecord>
   markAsRead: (id: string) => Promise<void>
   markAllAsRead: () => Promise<void>
   removeNotification: (id: string) => Promise<void>
@@ -81,8 +83,21 @@ export const useNotificationsStore = create<NotificationsState>()((set, get) => 
     }
   },
 
-  addNotification: (input) => {
-    const record: NotificationRecord = {
+  addNotification: async (input) => {
+    try {
+      const { data } = await apiClient.post<ApiEnvelope<NotificationRecord>>('/notifications', input)
+      if (data.data) {
+        const record = data.data
+        set((state) => {
+          const exists = state.items.some((item) => item.id === record.id)
+          return { items: exists ? state.items : [record, ...state.items] }
+        })
+        return record
+      }
+    } catch (err: any) {
+      set({ error: err })
+    }
+    const fallback: NotificationRecord = {
       id: `ntf_${Math.random().toString(36).substring(2, 9)}`,
       userEmail: input.userEmail,
       title: input.title,
@@ -91,7 +106,7 @@ export const useNotificationsStore = create<NotificationsState>()((set, get) => 
       read: false,
       createdAt: new Date().toISOString(),
     }
-    set((state) => ({ items: [record, ...state.items] }))
-    return record
+    set((state) => ({ items: [fallback, ...state.items] }))
+    return fallback
   },
 }))

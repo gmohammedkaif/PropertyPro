@@ -164,31 +164,45 @@ export function MaintenancePage() {
       return
     }
 
-    const payload = {
-      title: title.trim(),
-      description: description.trim() || undefined,
-      propertyName: propertyName.trim(),
-      category: category.trim(),
-      priority,
-      status,
-      reportedBy: reportedBy.trim() || undefined,
-      tenantEmail: tenantEmail.trim() || undefined,
-      assignedTo: assignedTo.trim() || undefined,
-      resolvedAt: status === 'resolved' || status === 'closed' ? new Date().toISOString() : undefined,
-    }
-
     try {
       if (editingItem) {
+        // Owner/Admin update: send ONLY allowed editable fields.
+        // Protected fields (reportedBy, tenantEmail, tenantId, ownerEmail, ownerId, propertyId, _id) are barred by backend security.
+        const updatePayload = {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          propertyName: propertyName.trim(),
+          category: category.trim(),
+          priority,
+          status,
+          assignedTo: assignedTo.trim() || undefined,
+          resolvedAt: status === 'resolved' || status === 'closed' ? new Date().toISOString() : undefined,
+        }
+
         const oldStatus = editingItem.status
-        await update(editingItem.id, payload)
-        if (oldStatus !== status && payload.tenantEmail) {
-          handleNotifyTenant(payload.propertyName, payload.title, payload.tenantEmail, status)
+        await update(editingItem.id, updatePayload)
+        const targetNotifyEmail = editingItem.tenantEmail || tenantEmail.trim()
+        if (oldStatus !== status && targetNotifyEmail) {
+          handleNotifyTenant(updatePayload.propertyName, updatePayload.title, targetNotifyEmail, status)
         }
         toast.success('Ticket updated successfully')
       } else {
-        await add(payload)
-        if (payload.tenantEmail) {
-          handleNotifyTenant(payload.propertyName, payload.title, payload.tenantEmail, status)
+        const createPayload = {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          propertyName: propertyName.trim(),
+          category: category.trim(),
+          priority,
+          status,
+          reportedBy: reportedBy.trim() || undefined,
+          tenantEmail: tenantEmail.trim() || undefined,
+          assignedTo: assignedTo.trim() || undefined,
+          resolvedAt: status === 'resolved' || status === 'closed' ? new Date().toISOString() : undefined,
+        }
+
+        await add(createPayload)
+        if (createPayload.tenantEmail) {
+          handleNotifyTenant(createPayload.propertyName, createPayload.title, createPayload.tenantEmail, status)
         }
         toast.success('Maintenance ticket filed')
       }
@@ -519,18 +533,20 @@ export function MaintenancePage() {
               onChange={(e) => setStatus(e.target.value as MaintenanceStatus)}
             />
             <Input
-              label="Reporter Name"
+              label={editingItem ? 'Reporter Name (Read-Only)' : 'Reporter Name'}
               value={reportedBy}
               onChange={(e) => setReportedBy(e.target.value)}
               placeholder="e.g. Rajesh Kumar"
+              disabled={Boolean(editingItem)}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Tenant Email (for notifications)"
+              label={editingItem ? 'Tenant Email (Read-Only)' : 'Tenant Email (for notifications)'}
               value={tenantEmail}
               onChange={(e) => setTenantEmail(e.target.value)}
               placeholder="e.g. tenant@domain.com"
+              disabled={Boolean(editingItem)}
             />
             <Input
               label="Assignee/Vendor"

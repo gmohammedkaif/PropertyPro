@@ -60,6 +60,10 @@ export const createRentalRequest = asyncHandler(async (req: Request, res: Respon
     throw new ConflictError('You already have a pending rental request for this property')
   }
 
+  if (property.occupiedUnits >= property.totalUnits) {
+    throw new ConflictError('This property is currently fully occupied and has no available units.')
+  }
+
   const targetUnit = req.body.unitNumber || 'Main'
   const propUnits = (property as any).units || []
   const matchedUnit = propUnits.find((u: any) => String(u.unitNumber).toLowerCase() === String(targetUnit).toLowerCase())
@@ -184,8 +188,10 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
   try {
     const propUnits = updatedProp?.units || []
     const matchedUnit = propUnits.find((u: any) => String(u.unitNumber).toLowerCase() === String(targetUnitNumber).toLowerCase())
-    const realRent = Number(req.body.monthlyRent) || requestDoc.monthlyRent || matchedUnit?.monthlyRent || 10000
-    const realDeposit = Number(req.body.securityDeposit) || matchedUnit?.securityDeposit || realRent * 2
+    const propertyRent = (updatedProp as any)?.monthlyRent || (updatedProp as any)?.salePrice || 0
+    const realRent = Number(req.body.monthlyRent) || requestDoc.monthlyRent || matchedUnit?.monthlyRent || propertyRent || 0
+    const propertyDeposit = (updatedProp as any)?.securityDeposit || 0
+    const realDeposit = Number(req.body.securityDeposit) || matchedUnit?.securityDeposit || propertyDeposit || 0
 
     tenancyDoc = await Tenancy.create({
       tenantName: requestDoc.fullName,

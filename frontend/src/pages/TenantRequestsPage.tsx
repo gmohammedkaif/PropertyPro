@@ -79,24 +79,38 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
 
   const availableUnitsList = derivedUnits.filter((u) => u.status === 'AVAILABLE')
 
+  const requestedUnitValid = request.unitNumber && availableUnitsList.some((u) => u.unitNumber === request.unitNumber)
+  const initialUnit = requestedUnitValid
+    ? request.unitNumber!
+    : availableUnitsList.length > 0
+    ? availableUnitsList[0].unitNumber
+    : 'Main'
+
+  const selectedUnitObj = derivedUnits.find((u) => u.unitNumber.toLowerCase() === initialUnit.toLowerCase())
+  const initialRent = selectedUnitObj?.monthlyRent ?? request.monthlyRent ?? targetProperty?.monthlyRent ?? 0
+  const initialDeposit = selectedUnitObj?.securityDeposit ?? targetProperty?.securityDeposit ?? 0
+
   const [leaseStart, setLeaseStart] = useState(new Date().toISOString().split('T')[0])
   const [leaseDuration, setLeaseDuration] = useState('12')
-  const [monthlyRent, setMonthlyRent] = useState(String(request.monthlyRent ?? 18000))
-  const [securityDeposit, setSecurityDeposit] = useState(String((request.monthlyRent ?? 18000) * 2))
-  const requestedUnitValid = request.unitNumber && availableUnitsList.some((u) => u.unitNumber === request.unitNumber)
-  const [unitNumber, setUnitNumber] = useState(
-    requestedUnitValid ? request.unitNumber! : availableUnitsList.length > 0 ? availableUnitsList[0].unitNumber : 'Main'
-  )
+  const [unitNumber, setUnitNumber] = useState(initialUnit)
+  const [monthlyRent, setMonthlyRent] = useState(String(initialRent))
+  const [securityDeposit, setSecurityDeposit] = useState(String(initialDeposit))
   const [leaseNotes, setLeaseNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Update default unitNumber if property loaded or tenant requested a specific unit
+  // Sync unitNumber, rent, and deposit when target property or requested unit resolves
   useEffect(() => {
-    if (request.unitNumber && availableUnitsList.some((u) => u.unitNumber === request.unitNumber)) {
-      setUnitNumber(request.unitNumber)
-    } else if (availableUnitsList.length > 0 && (unitNumber === 'Main' || !unitNumber)) {
-      setUnitNumber(availableUnitsList[0].unitNumber)
-    }
+    const targetUnitName =
+      request.unitNumber && availableUnitsList.some((u) => u.unitNumber === request.unitNumber)
+        ? request.unitNumber
+        : unitNumber || (availableUnitsList.length > 0 ? availableUnitsList[0].unitNumber : 'Main')
+
+    const matched = derivedUnits.find((u) => u.unitNumber.toLowerCase() === (targetUnitName || unitNumber).toLowerCase())
+    const r = matched?.monthlyRent ?? request.monthlyRent ?? targetProperty?.monthlyRent
+    const d = matched?.securityDeposit ?? targetProperty?.securityDeposit
+
+    if (r !== undefined && r !== null) setMonthlyRent(String(r))
+    if (d !== undefined && d !== null) setSecurityDeposit(String(d))
   }, [request.propertyId, request.unitNumber, availableUnitsList.length])
 
   const computedEnd = (() => {
@@ -213,7 +227,17 @@ function LeaseCreationModal({ open, onClose, request, onConfirm }: LeaseModalPro
           {availableUnitsList.length > 0 ? (
             <select
               value={unitNumber}
-              onChange={(e) => setUnitNumber(e.target.value)}
+              onChange={(e) => {
+                const selected = e.target.value
+                setUnitNumber(selected)
+                const matched = derivedUnits.find((u) => u.unitNumber.toLowerCase() === selected.toLowerCase())
+                if (matched?.monthlyRent !== undefined && matched?.monthlyRent !== null) {
+                  setMonthlyRent(String(matched.monthlyRent))
+                }
+                if (matched?.securityDeposit !== undefined && matched?.securityDeposit !== null) {
+                  setSecurityDeposit(String(matched.securityDeposit))
+                }
+              }}
               className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
             >
               {availableUnitsList.map((u) => (

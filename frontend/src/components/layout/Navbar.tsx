@@ -12,7 +12,7 @@ import { useLogout } from '@/hooks/useAuth'
 import { useUiStore } from '@/stores/uiStore'
 import { useNotificationsStore } from '@/stores/notificationsStore'
 import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
-import { useEffect } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 interface NavbarProps {
   onMenuClick: () => void
@@ -33,9 +33,28 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
 
   const unreadCount = notifications.filter((n) => !n.read).length
 
+  const [navSearch, setNavSearch] = useState('')
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     fetchNotifications()
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (navSearch.trim()) {
+      navigate(`/browse?q=${encodeURIComponent(navSearch.trim())}`)
+    }
+  }
 
   const handleSignOut = () => {
     logout.mutate()
@@ -85,13 +104,16 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
       </div>
 
       <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-        <div className="relative hidden md:block group">
+        <form onSubmit={handleSearchSubmit} className="relative hidden md:block group">
           <Search
             className="pointer-events-none absolute inset-y-0 left-3.5 my-auto h-4 w-4 text-muted transition-colors group-focus-within:text-primary"
             aria-hidden="true"
           />
           <input
+            ref={searchInputRef}
             type="search"
+            value={navSearch}
+            onChange={(e) => setNavSearch(e.target.value)}
             placeholder={
               location.pathname.includes('/app/properties') || location.pathname.includes('/app/property')
                 ? 'Search properties...'
@@ -113,7 +135,7 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
           <kbd className="pointer-events-none absolute inset-y-0 right-2.5 my-auto hidden h-5 items-center rounded border border-border bg-surface3 px-1.5 text-[9px] font-bold text-muted lg:flex shadow-sm">
             ⌘K
           </kbd>
-        </div>
+        </form>
 
         <ThemeToggle />
 

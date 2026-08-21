@@ -29,7 +29,7 @@ import { useNotificationsStore } from '@/stores/notificationsStore'
 import { useToast } from '@/hooks/useToast'
 
 type IssueCategory = 'Electrical' | 'Water' | 'Plumbing' | 'Cleaning' | 'Security' | 'Internet' | 'Painting' | 'Furniture' | 'Other'
-type PriorityLevel = 'Low' | 'Medium' | 'High' | 'Emergency'
+type PriorityLevel = 'Low' | 'Medium' | 'High' | 'Urgent' | 'Emergency'
 
 const CATEGORIES: { value: IssueCategory; label: string; icon: React.ElementType; color: string }[] = [
   { value: 'Electrical', label: 'Electrical', icon: Zap, color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
@@ -197,24 +197,6 @@ export function TenantReportIssuePage() {
         issueImageUrl: finalImageUrl,
       })
 
-      // Automatically notify Property Owner if owner email is known
-      if (myTenancy?.ownerEmail) {
-        addNotification({
-          userEmail: myTenancy.ownerEmail,
-          title: 'New Maintenance Request 🛠️',
-          message: `${user?.name || 'Tenant'} submitted a ${priority} priority ${category} issue for ${myTenancy.propertyName}.`,
-          type: 'warning',
-        })
-      }
-
-      // Confirmation notification to Tenant
-      addNotification({
-        userEmail: userEmail,
-        title: 'Maintenance Request Submitted 🛠️',
-        message: `Your issue "${title.trim()}" for ${myTenancy?.propertyName ?? 'property'} has been logged.`,
-        type: 'info',
-      })
-
       toast.success('Maintenance Issue Reported! 🛠️', {
         description: 'Your property owner has been notified.',
       })
@@ -294,15 +276,15 @@ export function TenantReportIssuePage() {
               {/* Priority */}
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-text2 uppercase tracking-wider">Priority Level</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {(['Low', 'Medium', 'High'] as PriorityLevel[]).map((p) => (
+                <div className="flex flex-wrap gap-2">
+                  {(['Low', 'Medium', 'High', 'Urgent', 'Emergency'] as PriorityLevel[]).map((p) => (
                     <button
                       key={p}
                       type="button"
                       onClick={() => setPriority(p)}
-                      className={`py-2 rounded-xl border text-xs font-bold transition-all ${
+                      className={`px-3.5 py-2 rounded-xl border text-xs font-bold transition-all ${
                         priority === p
-                          ? p === 'High'
+                          ? p === 'Emergency' || p === 'Urgent' || p === 'High'
                             ? 'bg-red-500/20 text-red-400 border-red-500/40'
                             : p === 'Medium'
                             ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'

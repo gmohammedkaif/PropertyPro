@@ -25,9 +25,15 @@ export function useApproveOwner() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (userId: string) => {
-      const { data } = await apiClient.patch<{ data: { id: string; status: UserStatus; message: string } }>(
+      const { data } = await apiClient.patch<{ data?: { id: string; status: UserStatus; message: string }; error?: { message: string } }>(
         `/admin/owner-requests/${userId}/approve`,
       )
+      if (data.error) {
+        throw new Error(data.error.message || 'Failed to approve owner request')
+      }
+      if (!data.data) {
+        throw new Error('Owner approval failed: Invalid server response')
+      }
       return data.data
     },
     onSuccess: () => {
@@ -42,9 +48,15 @@ export function useRejectOwner() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (userId: string) => {
-      const { data } = await apiClient.patch<{ data: { id: string; status: UserStatus; message: string } }>(
+      const { data } = await apiClient.patch<{ data?: { id: string; status: UserStatus; message: string }; error?: { message: string } }>(
         `/admin/owner-requests/${userId}/reject`,
       )
+      if (data.error) {
+        throw new Error(data.error.message || 'Failed to reject owner request')
+      }
+      if (!data.data) {
+        throw new Error('Owner rejection failed: Invalid server response')
+      }
       return data.data
     },
     onSuccess: () => {

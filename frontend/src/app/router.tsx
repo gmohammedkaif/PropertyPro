@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 
 import { AuthGuard } from '@/components/shared/AuthGuard'
@@ -5,33 +6,48 @@ import { PublicOnlyGuard } from '@/components/shared/PublicOnlyGuard'
 import { AdminGuard, TenantGuard, SuperAdminGuard } from '@/components/shared/RoleGuard'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { BrowsePage } from '@/pages/BrowsePage'
-import { PropertyListPage } from '@/pages/PropertyListPage'
-import { PropertyDetailPage } from '@/pages/PropertyDetailPage'
-import { DashboardPage } from '@/pages/DashboardPage'
-import { TenantDashboardPage } from '@/pages/TenantDashboardPage'
-import { TenantRentPage } from '@/pages/TenantRentPage'
-import { TenantReportIssuePage } from '@/pages/TenantReportIssuePage'
-import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { LandingPage } from '@/pages/LandingPage'
 import { LoginPage } from '@/pages/LoginPage'
-import { NotFoundPage } from '@/pages/NotFoundPage'
-import { OwnerRequestsPage } from '@/pages/OwnerRequestsPage'
-import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { RegisterPage } from '@/pages/RegisterPage'
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
-import { TenanciesPage } from '@/pages/TenanciesPage'
-import { PaymentsPage } from '@/pages/PaymentsPage'
-import { MaintenancePage } from '@/pages/MaintenancePage'
-import { AnalyticsPage } from '@/pages/AnalyticsPage'
-import { SettingsPage } from '@/pages/SettingsPage'
-import { TenantLeasePage } from '@/pages/TenantLeasePage'
-import { TenantPropertyDetailPage } from '@/pages/TenantPropertyDetailPage'
-import { OwnersPage } from '@/pages/OwnersPage'
-import { TenantsPage } from '@/pages/TenantsPage'
-import { AuditLogsPage } from '@/pages/AuditLogsPage'
-import { isAdmin } from '@/stores/authStore'
-import { useAuthStore } from '@/stores/authStore'
-import { TenantRequestsPage } from '@/pages/TenantRequestsPage'
+import { NotFoundPage } from '@/pages/NotFoundPage'
+import { isAdmin, useAuthStore } from '@/stores/authStore'
+
+// ── Lazy-loaded Page Chunks for Performance & Bundle Code Splitting ─────────
+const lazyLoad = (Component: React.ComponentType<any>) => (props: any) => (
+  <Suspense
+    fallback={
+      <div className="flex h-64 w-full items-center justify-center p-8 text-center text-sm font-semibold text-muted">
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span>Loading module...</span>
+        </div>
+      </div>
+    }
+  >
+    <Component {...props} />
+  </Suspense>
+)
+
+const DashboardPage = lazyLoad(lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage }))))
+const TenantDashboardPage = lazyLoad(lazy(() => import('@/pages/TenantDashboardPage').then((m) => ({ default: m.TenantDashboardPage }))))
+const PropertyListPage = lazyLoad(lazy(() => import('@/pages/PropertyListPage').then((m) => ({ default: m.PropertyListPage }))))
+const PropertyDetailPage = lazyLoad(lazy(() => import('@/pages/PropertyDetailPage').then((m) => ({ default: m.PropertyDetailPage }))))
+const TenanciesPage = lazyLoad(lazy(() => import('@/pages/TenanciesPage').then((m) => ({ default: m.TenanciesPage }))))
+const PaymentsPage = lazyLoad(lazy(() => import('@/pages/PaymentsPage').then((m) => ({ default: m.PaymentsPage }))))
+const MaintenancePage = lazyLoad(lazy(() => import('@/pages/MaintenancePage').then((m) => ({ default: m.MaintenancePage }))))
+const AnalyticsPage = lazyLoad(lazy(() => import('@/pages/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage }))))
+const SettingsPage = lazyLoad(lazy(() => import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage }))))
+const OwnerRequestsPage = lazyLoad(lazy(() => import('@/pages/OwnerRequestsPage').then((m) => ({ default: m.OwnerRequestsPage }))))
+const OwnersPage = lazyLoad(lazy(() => import('@/pages/OwnersPage').then((m) => ({ default: m.OwnersPage }))))
+const TenantsPage = lazyLoad(lazy(() => import('@/pages/TenantsPage').then((m) => ({ default: m.TenantsPage }))))
+const AuditLogsPage = lazyLoad(lazy(() => import('@/pages/AuditLogsPage').then((m) => ({ default: m.AuditLogsPage }))))
+const TenantRequestsPage = lazyLoad(lazy(() => import('@/pages/TenantRequestsPage').then((m) => ({ default: m.TenantRequestsPage }))))
+const TenantRentPage = lazyLoad(lazy(() => import('@/pages/TenantRentPage').then((m) => ({ default: m.TenantRentPage }))))
+const TenantReportIssuePage = lazyLoad(lazy(() => import('@/pages/TenantReportIssuePage').then((m) => ({ default: m.TenantReportIssuePage }))))
+const TenantLeasePage = lazyLoad(lazy(() => import('@/pages/TenantLeasePage').then((m) => ({ default: m.TenantLeasePage }))))
+const PlaceholderPage = lazyLoad(lazy(() => import('@/pages/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage }))))
 
 // Smart dashboard: renders admin or tenant dashboard based on role
 function SmartDashboard() {

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { AUTH_STORAGE_KEY, INACTIVITY_STORAGE_KEY, type Role } from '@/shared'
+import { AUTH_STORAGE_KEY, INACTIVITY_STORAGE_KEY, type Role, type UserStatus } from '@/shared'
 import { apiClient, type ApiEnvelope } from '@/lib/apiClient'
 
 export interface AuthUser {
@@ -15,34 +15,7 @@ export interface AuthUser {
   tenancyId?: string
 }
 
-export type UserStatus = 'pending_verification' | 'active' | 'suspended'
-
-export interface DemoUser {
-  id: string
-  name: string
-  email: string
-  phone?: string
-  roles: Role[]
-  avatarUrl?: string
-  tenancyId?: string
-}
-
-export const demoUser: DemoUser = {
-  id: 'usr_demo',
-  name: 'Alex Morgan',
-  email: 'alex@propertypro.app',
-  phone: '+91 98765 43210',
-  roles: ['owner', 'agent'],
-}
-
-export const demoTenant: DemoUser = {
-  id: 'usr_tenant',
-  name: 'John Tenant',
-  email: 'tenant@propertypro.app',
-  phone: '+91 98765 43210',
-  roles: ['tenant'],
-  tenancyId: 'tnc_001',
-}
+export type { UserStatus }
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated'
 
@@ -50,7 +23,7 @@ interface AuthState {
   user: AuthUser | null
   accessToken: string | null
   status: AuthStatus
-  signIn: (user: AuthUser | DemoUser, token?: string) => void
+  signIn: (user: AuthUser, token?: string) => void
   signOut: () => void
   refreshMe: () => Promise<void>
 }
@@ -92,9 +65,9 @@ export const useAuthStore = create<AuthState>()(
             name: user.name,
             phone: user.phone || '',
             roles: user.roles,
-            status: 'active',
-            avatarUrl: (user as AuthUser).avatarUrl || (user as DemoUser).avatarUrl || '',
-            tenancyId: (user as DemoUser).tenancyId,
+            status: user.status || 'active',
+            avatarUrl: user.avatarUrl || '',
+            tenancyId: user.tenancyId,
           },
           accessToken: token ?? null,
           status: 'authenticated',
@@ -120,7 +93,7 @@ export const useAuthStore = create<AuthState>()(
                     name: record.name,
                     phone: record.phone || '',
                     roles: record.roles,
-                    status: record.status,
+                    status: record.status || state.user.status,
                     avatarUrl: record.avatarUrl || state.user.avatarUrl || '',
                   }
                 : null,

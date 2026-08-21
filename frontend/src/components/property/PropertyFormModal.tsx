@@ -282,12 +282,12 @@ export function PropertyFormModal({
 
         return {
           unitNumber,
-          bedrooms: existing?.bedrooms ?? 1,
-          bathrooms: existing?.bathrooms ?? 1,
-          parking: existing?.parking ?? 0,
-          areaSqFt: existing?.areaSqFt ?? 500,
-          monthlyRent: existing?.monthlyRent ?? 10000,
-          securityDeposit: existing?.securityDeposit ?? 20000,
+          bedrooms: existing?.bedrooms,
+          bathrooms: existing?.bathrooms,
+          parking: existing?.parking,
+          areaSqFt: existing?.areaSqFt,
+          monthlyRent: existing?.monthlyRent,
+          securityDeposit: existing?.securityDeposit,
           floor,
         }
       })

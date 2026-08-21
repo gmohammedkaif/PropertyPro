@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Building2, Calendar, User, DoorOpen, CheckCircle, ShieldCheck } from 'lucide-react'
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/ui/GlassCard'
 import { Badge } from '@/components/ui/Badge'
@@ -63,9 +64,9 @@ export function PropertyUnitsCard({
   title = 'Individual Unit Management',
   className = '',
 }: PropertyUnitsCardProps) {
-  const units = derivePropertyUnits(property, tenancies)
-  const occupiedCount = units.filter((u) => u.status === 'OCCUPIED').length
-  const availableCount = units.filter((u) => u.status === 'AVAILABLE').length
+  const units = useMemo(() => derivePropertyUnits(property, tenancies), [property, tenancies])
+  const occupiedCount = useMemo(() => units.filter((u) => u.status === 'OCCUPIED').length, [units])
+  const availableCount = useMemo(() => units.filter((u) => u.status === 'AVAILABLE').length, [units])
 
   return (
     <GlassCard className={className}>

@@ -21,8 +21,8 @@ export function OwnerRequestsPage() {
       onSuccess: () => {
         toast.success(`Approved owner account for ${req.name}`)
       },
-      onError: () => {
-        toast.error('Failed to approve owner account.')
+      onError: (err: any) => {
+        toast.error(err?.message || 'Failed to approve owner account.')
       },
     })
   }
@@ -32,8 +32,8 @@ export function OwnerRequestsPage() {
       onSuccess: () => {
         toast.success(`Rejected owner request for ${req.name}`)
       },
-      onError: () => {
-        toast.error('Failed to reject owner request.')
+      onError: (err: any) => {
+        toast.error(err?.message || 'Failed to reject owner request.')
       },
     })
   }

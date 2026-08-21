@@ -25,17 +25,15 @@ export function useApproveOwner() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (userId: string) => {
-      try {
-        const { data } = await apiClient.patch<{ data: { id: string; status: UserStatus; message: string } }>(
-          `/admin/owner-requests/${userId}/approve`,
-        )
-        return data.data
-      } catch {
-        return { id: userId, status: 'active' as UserStatus, message: 'Owner approved' }
-      }
+      const { data } = await apiClient.patch<{ data: { id: string; status: UserStatus; message: string } }>(
+        `/admin/owner-requests/${userId}/approve`,
+      )
+      return data.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'owner-requests'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'owners'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] })
     },
   })
 }
@@ -44,17 +42,15 @@ export function useRejectOwner() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (userId: string) => {
-      try {
-        const { data } = await apiClient.patch<{ data: { id: string; status: UserStatus; message: string } }>(
-          `/admin/owner-requests/${userId}/reject`,
-        )
-        return data.data
-      } catch {
-        return { id: userId, status: 'rejected' as UserStatus, message: 'Owner rejected' }
-      }
+      const { data } = await apiClient.patch<{ data: { id: string; status: UserStatus; message: string } }>(
+        `/admin/owner-requests/${userId}/reject`,
+      )
+      return data.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'owner-requests'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'owners'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] })
     },
   })
 }

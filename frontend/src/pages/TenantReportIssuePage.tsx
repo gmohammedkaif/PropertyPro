@@ -20,6 +20,8 @@ import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle, GlassCard
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
+import { Spinner } from '@/components/ui/Spinner'
+import { apiClient } from '@/lib/apiClient'
 import { useAuthStore } from '@/stores/authStore'
 import { useTenanciesStore } from '@/stores/tenanciesStore'
 import { useMaintenanceStore } from '@/stores/maintenanceStore'
@@ -41,6 +43,42 @@ const CATEGORIES: { value: IssueCategory; label: string; icon: React.ElementType
   { value: 'Other', label: 'Other', icon: Wrench, color: 'text-muted bg-surface2/60 border-border' },
 ]
 
+async function compressImageToCanvas(file: File, maxDim = 1280, quality = 0.85): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      let w = img.width
+      let h = img.height
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          h = Math.round((h * maxDim) / w)
+          w = maxDim
+        } else {
+          w = Math.round((w * maxDim) / h)
+          h = maxDim
+        }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        reject(new Error('Canvas 2D context not available'))
+        return
+      }
+      ctx.drawImage(img, 0, 0, w, h)
+      resolve(canvas.toDataURL('image/jpeg', quality))
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('Failed to load image for compression'))
+    }
+    img.src = url
+  })
+}
+
 export function TenantReportIssuePage() {
   const user = useAuthStore((state) => state.user)
   const navigate = useNavigate()
@@ -59,7 +97,10 @@ export function TenantReportIssuePage() {
   const [priority, setPriority] = useState<PriorityLevel>('Medium')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   // Filter issues reported by this tenant
@@ -71,11 +112,29 @@ export function TenantReportIssuePage() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => setImagePreview(reader.result as string)
-      reader.readAsDataURL(file)
+    if (!file) return
+    e.target.value = ''
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Invalid File Type', { description: 'Please select a valid image file (JPG, PNG, WebP).' })
+      return
     }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File Too Large', { description: 'Image must be less than 10MB.' })
+      return
+    }
+
+    setSelectedFile(file)
+    const reader = new FileReader()
+    reader.onloadend = () => setImagePreview(reader.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveImage = () => {
+    setSelectedFile(null)
+    setImagePreview(null)
+    setUploadedImageUrl(null)
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -86,45 +145,90 @@ export function TenantReportIssuePage() {
     }
 
     setSubmitting(true)
-    await new Promise((r) => setTimeout(r, 600))
+    let finalImageUrl: string | null = uploadedImageUrl
 
-    addMaintenance({
-      propertyName: myTenancy ? `${myTenancy.propertyName} (${myTenancy.unitNumber ?? 'Main'})` : 'Rented Property',
-      propertyId: myTenancy?.propertyId,
-      reportedBy: myTenancy?.tenantName ?? user?.name ?? 'Tenant',
-      tenantEmail: userEmail,
-      title: `[${category.toUpperCase()}] ${title.trim()}`,
-      description: description.trim(),
-      priority: priority.toLowerCase() as any,
-      status: 'open',
-    })
+    // 1. Upload photo to ImageKit if selected
+    if (selectedFile && !finalImageUrl) {
+      try {
+        setUploadingImage(true)
+        const base64Data = await compressImageToCanvas(selectedFile, 1280, 0.85)
 
-    // Automatically notify Property Owner if owner email is known
-    if (myTenancy?.ownerEmail) {
-      addNotification({
-        userEmail: myTenancy.ownerEmail,
-        title: 'New Maintenance Request 🛠️',
-        message: `${user?.name || 'Tenant'} submitted a ${priority} priority ${category} issue for ${myTenancy.propertyName}.`,
-        type: 'warning',
-      })
+        const uploadRes = await apiClient.post<{ data: { url: string } }>(
+          '/properties/upload-image',
+          {
+            file: base64Data,
+            fileName: selectedFile.name || `maintenance_${Date.now()}.jpg`,
+          },
+          { timeout: 60_000 }
+        )
+
+        if (uploadRes.data?.data?.url) {
+          finalImageUrl = uploadRes.data.data.url
+          setUploadedImageUrl(finalImageUrl)
+        } else {
+          throw new Error('ImageKit upload did not return a valid CDN URL')
+        }
+      } catch (err: any) {
+        setSubmitting(false)
+        setUploadingImage(false)
+        toast.error('Image Upload Failed', {
+          description:
+            err?.response?.data?.error?.message ||
+            err?.message ||
+            'Could not upload photo to ImageKit. Please retry or remove photo.',
+        })
+        return
+      } finally {
+        setUploadingImage(false)
+      }
     }
 
-    // Confirmation notification to Tenant
-    addNotification({
-      userEmail: userEmail,
-      title: 'Maintenance Request Submitted 🛠️',
-      message: `Your issue "${title.trim()}" for ${myTenancy?.propertyName ?? 'property'} has been logged and assigned.`,
-      type: 'info',
-    })
+    try {
+      await addMaintenance({
+        propertyName: myTenancy ? `${myTenancy.propertyName} (${myTenancy.unitNumber ?? 'Main'})` : 'Rented Property',
+        propertyId: myTenancy?.propertyId,
+        reportedBy: myTenancy?.tenantName ?? user?.name ?? 'Tenant',
+        tenantEmail: userEmail,
+        title: `[${category.toUpperCase()}] ${title.trim()}`,
+        description: description.trim(),
+        priority: priority.toLowerCase() as any,
+        status: 'open',
+        imageUrl: finalImageUrl,
+        issueImageUrl: finalImageUrl,
+      })
 
-    toast.success('Maintenance Issue Reported! 🛠️', {
-      description: 'Your property owner has been notified.',
-    })
+      // Automatically notify Property Owner if owner email is known
+      if (myTenancy?.ownerEmail) {
+        addNotification({
+          userEmail: myTenancy.ownerEmail,
+          title: 'New Maintenance Request 🛠️',
+          message: `${user?.name || 'Tenant'} submitted a ${priority} priority ${category} issue for ${myTenancy.propertyName}.`,
+          type: 'warning',
+        })
+      }
 
-    setSubmitting(false)
-    setTitle('')
-    setDescription('')
-    setImagePreview(null)
+      // Confirmation notification to Tenant
+      addNotification({
+        userEmail: userEmail,
+        title: 'Maintenance Request Submitted 🛠️',
+        message: `Your issue "${title.trim()}" for ${myTenancy?.propertyName ?? 'property'} has been logged.`,
+        type: 'info',
+      })
+
+      toast.success('Maintenance Issue Reported! 🛠️', {
+        description: 'Your property owner has been notified.',
+      })
+
+      setTitle('')
+      setDescription('')
+      setSelectedFile(null)
+      setImagePreview(null)
+      setUploadedImageUrl(null)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to submit maintenance request')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   // If tenant has NO active tenancy
@@ -238,26 +342,34 @@ export function TenantReportIssuePage() {
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-text2 uppercase tracking-wider">Upload Photo (Optional)</label>
                 {imagePreview ? (
-                  <div className="relative h-32 w-full rounded-xl overflow-hidden border border-border bg-surface2">
+                  <div className="relative h-40 w-full rounded-xl overflow-hidden border border-border bg-surface2">
                     <img src={imagePreview} alt="Issue preview" className="h-full w-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setImagePreview(null)}
-                      className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                    {uploadingImage && (
+                      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-2 text-white text-xs font-semibold">
+                        <Spinner label="Uploading photo to ImageKit..." />
+                      </div>
+                    )}
+                    {!uploadingImage && !submitting && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black transition"
+                        title="Remove photo"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <label className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/60 bg-surface2/30 p-4 text-center cursor-pointer hover:border-primary/50 transition">
                     <Upload className="h-6 w-6 text-muted" />
                     <span className="text-xs text-muted font-medium">Click to select photo attachment</span>
-                    <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} disabled={submitting || uploadingImage} />
                   </label>
                 )}
               </div>
 
-              <Button type="submit" variant="primary" loading={submitting} className="font-bold py-3 mt-2 shadow-lg">
+              <Button type="submit" variant="primary" loading={submitting || uploadingImage} disabled={submitting || uploadingImage} className="font-bold py-3 mt-2 shadow-lg">
                 <Wrench className="h-4 w-4" /> Submit Maintenance Request
               </Button>
             </form>
@@ -302,6 +414,23 @@ export function TenantReportIssuePage() {
                           {issue.status}
                         </Badge>
                       </div>
+
+                      {/* Display Persisted Photo if present */}
+                      {(issue.imageUrl || issue.issueImageUrl) && (
+                        <a
+                          href={issue.imageUrl || issue.issueImageUrl!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block relative h-36 w-full rounded-xl overflow-hidden border border-border/60 bg-surface2/40 group"
+                          title="Click to view full photo"
+                        >
+                          <img
+                            src={issue.imageUrl || issue.issueImageUrl!}
+                            alt={issue.title}
+                            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </a>
+                      )}
 
                       {/* Request Step Timeline Visual Bar */}
                       <TimelineProgressBar status={issue.status} />

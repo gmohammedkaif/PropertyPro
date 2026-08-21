@@ -35,6 +35,7 @@ const paymentSchema = new Schema(
 )
 
 paymentSchema.index({ tenantEmail: 1, status: 1 })
+paymentSchema.index({ status: 1, dueDate: 1 })
 
 export type PaymentDocument = InferSchemaType<typeof paymentSchema> & {
   _id: import('mongoose').Types.ObjectId

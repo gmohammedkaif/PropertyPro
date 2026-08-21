@@ -123,7 +123,7 @@ export function TenantDashboardPage() {
       bathrooms: p.bathrooms,
       areaSqFt: p.areaSqFt,
       city: p.address.city,
-      ownerName: 'House Owner',
+      ownerName: p.ownerName || p.ownerEmail || 'Owner information unavailable',
       status: 'available',
       description: p.description ?? 'Beautiful modern residential property ready for occupancy.',
       imageUrl: p.imageUrl,
@@ -142,7 +142,7 @@ export function TenantDashboardPage() {
       bathrooms: p.bathrooms,
       areaSqFt: p.areaSqFt,
       city: p.address.city,
-      ownerName: 'House Owner',
+      ownerName: p.ownerName || p.ownerEmail || 'Owner information unavailable',
       status: 'available',
       description: p.description ?? 'Beautiful modern residential property ready for occupancy.',
       imageUrl: p.imageUrl,
@@ -212,7 +212,7 @@ export function TenantDashboardPage() {
                     </div>
                     <p className="text-xs text-muted flex items-center gap-1 mt-1">
                       <MapPin className="h-3.5 w-3.5 text-primary" />
-                      {myProperty?.address.city ?? 'Hyderabad'}, {myProperty?.address.state ?? 'Telangana'}
+                      {myProperty?.address?.city ? `${myProperty.address.city}, ${myProperty.address.state ?? 'India'}` : 'Location unavailable'}
                     </p>
                   </div>
 
@@ -227,7 +227,9 @@ export function TenantDashboardPage() {
                     </div>
                     <div>
                       <span className="text-muted block text-[10px] uppercase font-semibold">Owner Name</span>
-                      <span className="text-sm font-medium text-text">{myProperty ? 'House Owner' : 'Property Manager'}</span>
+                      <span className="text-sm font-medium text-text">
+                        {myTenancy?.ownerName || myProperty?.ownerName || myProperty?.ownerEmail || myTenancy?.ownerEmail || 'Owner information unavailable'}
+                      </span>
                     </div>
                     <div>
                       <span className="text-muted block text-[10px] uppercase font-semibold">Lease Expiry</span>
@@ -651,7 +653,7 @@ function PropertyDisplayCard({
         </h4>
         <p className="text-xs text-muted flex items-center gap-1 mt-0.5">
           <MapPin className="h-3 w-3 text-primary shrink-0" />
-          {city ?? 'Hyderabad'}, India
+          {city ? `${city}, India` : 'Location unavailable'}
         </p>
 
         {description && (
@@ -671,7 +673,7 @@ function PropertyDisplayCard({
         </div>
 
         <div className="mt-2 flex items-center justify-between pt-2">
-          <span className="text-[11px] text-muted">Owner: <strong className="text-text font-medium">{ownerName ?? 'Verified Owner'}</strong></span>
+          <span className="text-[11px] text-muted">Owner: <strong className="text-text font-medium">{ownerName ?? 'Owner information unavailable'}</strong></span>
           <Button variant="ghost" size="sm" className="text-xs font-semibold text-primary group-hover:bg-primary/10">
             View Details
           </Button>

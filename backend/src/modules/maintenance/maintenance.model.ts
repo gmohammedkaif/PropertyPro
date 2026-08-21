@@ -26,6 +26,8 @@ const maintenanceSchema = new Schema(
     ownerEmail: { type: String, default: '', index: true },
     ownerId: { type: String, default: '', index: true },
     assignedTo: { type: String, default: '' },
+    imageUrl: { type: String, default: null },
+    issueImageUrl: { type: String, default: null },
     resolvedAt: { type: Date, default: null },
   },
   {

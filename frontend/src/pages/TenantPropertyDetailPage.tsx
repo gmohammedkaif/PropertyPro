@@ -69,7 +69,7 @@ export function TenantPropertyDetailPage() {
   const [requestModalOpen, setRequestModalOpen] = useState(false)
   const [fullName, setFullName] = useState(user?.name ?? '')
   const [mobileNumber, setMobileNumber] = useState('')
-  const [city, setCity] = useState(localProperty?.address.city ?? 'Hyderabad')
+  const [city, setCity] = useState(localProperty?.address.city ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [selectedUnitNumber, setSelectedUnitNumber] = useState<string>('')
 
@@ -109,7 +109,7 @@ export function TenantPropertyDetailPage() {
   const propertyType = listing?.type ?? 'rent'
   const status = listing?.status ?? 'available'
   const isAvailable = status === 'available'
-  const propertyCity = localProperty?.address.city ?? 'Hyderabad'
+  const propertyCity = localProperty?.address.city ?? 'Location unavailable'
   const addressLine = localProperty?.address.line1 ?? 'Prime Location, Main Road'
 
   const handleOpenRequestModal = () => {
@@ -337,19 +337,29 @@ export function TenantPropertyDetailPage() {
             <GlassCardContent className="space-y-3 text-xs">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-sm">
-                  HO
+                  {((localProperty as any)?.ownerName || (localProperty as any)?.ownerEmail || 'PO').slice(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <p className="font-bold text-text text-sm">House Owner</p>
-                  <p className="text-muted">Verified Property Manager</p>
+                  <p className="font-bold text-text text-sm">
+                    {(localProperty as any)?.ownerName || (localProperty as any)?.ownerEmail || 'Property Owner'}
+                  </p>
+                  <p className="text-muted text-xs font-mono">
+                    {(localProperty as any)?.ownerEmail || 'Verified Owner'}
+                  </p>
                 </div>
               </div>
               <div className="pt-2 flex flex-col gap-2">
-                <Button variant="secondary" size="sm" className="w-full justify-start gap-2" onClick={() => toast.info('Calling owner +91 98765 43210')}>
-                  <Phone className="h-3.5 w-3.5 text-emerald-400" /> +91 98765 43210
-                </Button>
-                <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted hover:text-text" onClick={() => toast.info('Chat feature available in messages.')}>
-                  <MessageSquare className="h-3.5 w-3.5 text-primary" /> Send Message
+                {(localProperty as any)?.ownerPhone ? (
+                  <Button variant="secondary" size="sm" className="w-full justify-start gap-2" onClick={() => window.location.href = `tel:${(localProperty as any).ownerPhone}`}>
+                    <Phone className="h-3.5 w-3.5 text-emerald-400" /> {(localProperty as any).ownerPhone}
+                  </Button>
+                ) : (
+                  <Button variant="secondary" size="sm" disabled className="w-full justify-start gap-2 opacity-50 cursor-not-allowed">
+                    <Phone className="h-3.5 w-3.5 text-muted" /> Phone not available
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted hover:text-text" onClick={() => toast.info('Contact owner via tenant dashboard.')}>
+                  <MessageSquare className="h-3.5 w-3.5 text-primary" /> Contact Owner
                 </Button>
               </div>
             </GlassCardContent>

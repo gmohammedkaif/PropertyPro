@@ -12,6 +12,7 @@ export type PaymentType = 'rent' | 'deposit' | 'maintenance' | 'other'
 export interface PaymentRecord {
   id: string
   tenantName: string
+  tenantEmail?: string
   propertyName: string
   amount: number
   dueDate: string
@@ -87,7 +88,7 @@ export const usePaymentsStore = create<PaymentsState>()((set) => ({
         amount: payment.amount,
         dueDate: payment.dueDate,
         type: payment.type,
-        tenantEmail: matchedTenancy?.tenantEmail || `${payment.tenantName.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
+        tenantEmail: matchedTenancy?.tenantEmail || '',
         notes: payment.notes,
       }
 

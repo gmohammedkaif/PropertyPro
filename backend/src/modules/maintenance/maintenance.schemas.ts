@@ -11,6 +11,8 @@ export const createMaintenanceSchema = z.object({
   category: z.string().trim().optional(),
   priority: z.enum(['low', 'medium', 'high', 'urgent', 'emergency']).optional(),
   reportedBy: z.string().trim().optional(),
+  imageUrl: z.string().trim().nullable().optional(),
+  issueImageUrl: z.string().trim().nullable().optional(),
 })
 
 export const updateMaintenanceTenantSchema = z
@@ -19,6 +21,8 @@ export const updateMaintenanceTenantSchema = z
     description: z.string().trim().optional(),
     category: z.string().trim().optional(),
     priority: z.enum(['low', 'medium', 'high', 'urgent', 'emergency']).optional(),
+    imageUrl: z.string().trim().nullable().optional(),
+    issueImageUrl: z.string().trim().nullable().optional(),
   })
   .strict()
 
@@ -31,6 +35,8 @@ export const updateMaintenanceOwnerSchema = z
     priority: z.enum(['low', 'medium', 'high', 'urgent', 'emergency']).optional(),
     status: z.enum(['open', 'assigned', 'in-progress', 'resolved', 'closed', 'rejected']).optional(),
     assignedTo: z.string().trim().optional(),
+    imageUrl: z.string().trim().nullable().optional(),
+    issueImageUrl: z.string().trim().nullable().optional(),
     resolvedAt: z.string().nullable().optional(),
   })
   .strict()

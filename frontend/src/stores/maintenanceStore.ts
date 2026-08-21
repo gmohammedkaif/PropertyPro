@@ -21,6 +21,8 @@ export interface MaintenanceRecord {
   /** Email of the tenant who reported — used to send status update notifications */
   tenantEmail?: string
   assignedTo?: string
+  imageUrl?: string
+  issueImageUrl?: string
   resolvedAt?: string
   createdAt: string
   updatedAt: string
@@ -75,6 +77,8 @@ export const useMaintenanceStore = create<MaintenanceState>()((set) => ({
         category: item.category,
         priority: item.priority,
         status: item.status,
+        imageUrl: item.imageUrl || item.issueImageUrl,
+        issueImageUrl: item.issueImageUrl || item.imageUrl,
       }
 
       const { data } = await apiClient.post<ApiEnvelope<MaintenanceRecord>>('/maintenance', payload)

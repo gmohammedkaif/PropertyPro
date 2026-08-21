@@ -4,6 +4,7 @@ import { NotFoundError, ForbiddenError, ConflictError } from '../../core/errors.
 import { Payment } from './payment.model.js'
 import { Notification } from '../notification/notification.model.js'
 import { Tenancy } from '../tenancy/tenancy.model.js'
+import { sweepPaymentOverdues } from './paymentOverdue.service.js'
 
 function formatDoc(doc: any) {
   return {
@@ -27,6 +28,9 @@ function formatDoc(doc: any) {
 }
 
 export const listPayments = asyncHandler(async (req: Request, res: Response) => {
+  // Trigger overdue sweep to ensure fresh statuses
+  await sweepPaymentOverdues()
+
   const user = req.user
   const isSuperAdmin = user?.roles.includes('admin') || user?.email === 'admin@propertypro.com'
   const isOwner = user?.roles.includes('owner') || user?.roles.includes('agent')
@@ -47,6 +51,9 @@ export const listPayments = asyncHandler(async (req: Request, res: Response) => 
 })
 
 export const getMyPayments = asyncHandler(async (req: Request, res: Response) => {
+  // Trigger overdue sweep to ensure fresh statuses
+  await sweepPaymentOverdues()
+
   const tenantEmail = req.user?.email?.toLowerCase()
   if (!tenantEmail) throw new NotFoundError('Tenant email not found in session')
 

@@ -28,6 +28,8 @@ function formatDoc(doc: any) {
     ownerEmail: doc.ownerEmail,
     ownerId: doc.ownerId,
     assignedTo: doc.assignedTo,
+    imageUrl: doc.imageUrl || doc.issueImageUrl || null,
+    issueImageUrl: doc.issueImageUrl || doc.imageUrl || null,
     resolvedAt: doc.resolvedAt ? doc.resolvedAt.toISOString() : null,
     createdAt: doc.createdAt ? doc.createdAt.toISOString() : new Date().toISOString(),
     updatedAt: doc.updatedAt ? doc.updatedAt.toISOString() : new Date().toISOString(),
@@ -61,6 +63,8 @@ export const createMaintenanceTicket = asyncHandler(async (req: Request, res: Re
   const propertyId = tenancy?.propertyId || req.body.propertyId || ''
   const propertyName = tenancy?.propertyName || req.body.propertyName || 'Property'
 
+  const imageUrl = input.imageUrl || input.issueImageUrl || req.body.imageUrl || req.body.issueImageUrl || null
+
   const doc: any = await Maintenance.create({
     title: input.title,
     description: input.description || '',
@@ -74,6 +78,8 @@ export const createMaintenanceTicket = asyncHandler(async (req: Request, res: Re
     tenantId,
     ownerEmail,
     ownerId,
+    imageUrl,
+    issueImageUrl: imageUrl,
   })
 
   // Notify Owner

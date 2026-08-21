@@ -33,6 +33,8 @@ export interface LocalProperty {
   units?: PropertyUnit[]
   ownerEmail?: string
   ownerId?: string
+  ownerName?: string
+  ownerPhone?: string
   address: {
     line1: string
     line2?: string

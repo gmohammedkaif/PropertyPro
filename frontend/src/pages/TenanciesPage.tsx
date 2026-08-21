@@ -28,6 +28,7 @@ import { useTenanciesStore, type TenancyRecord, type TenancyStatus } from '@/sto
 import { useLocalPropertiesStore, availableUnits, isUnitBased } from '@/stores/localPropertiesStore'
 import { usePaymentsStore } from '@/stores/paymentsStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useNotificationsStore } from '@/stores/notificationsStore'
 import { cn } from '@/lib/utils'
 import { useConfirmStore } from '@/stores/confirmStore'
 
@@ -42,6 +43,7 @@ const formatCurrency = (val: number) => {
 export function TenanciesPage() {
   const user = useAuthStore((state) => state.user)
   const toast = useToast()
+  const { addNotification } = useNotificationsStore()
   const { items: allTenancies, add, update, remove } = useTenanciesStore()
   const { items: properties, occupyUnits, freeUnits } = useLocalPropertiesStore()
   const { items: payments } = usePaymentsStore()
@@ -222,10 +224,34 @@ export function TenanciesPage() {
   }
 
   const handleSendMessage = () => {
-    if (!messageText.trim()) return
-    toast.success(`Message sent to ${selectedTenancy?.tenantName} successfully!`, {
-      description: `Message: "${messageText.substring(0, 30)}..."`,
+    if (!messageText.trim() || !selectedTenancy) return
+
+    // Ownership & authorization check
+    const isTenantOwner =
+      isSuperAdmin ||
+      (selectedTenancy.ownerEmail && selectedTenancy.ownerEmail.toLowerCase() === userEmail) ||
+      myPropertyIds.has(selectedTenancy.propertyId) ||
+      myPropertyNames.has(selectedTenancy.propertyName.toLowerCase())
+
+    if (!isTenantOwner) {
+      toast.error('You do not have permission to message this tenant')
+      return
+    }
+
+    if (!selectedTenancy.tenantEmail) {
+      toast.error(`No email address recorded for ${selectedTenancy.tenantName} to deliver notification.`)
+      return
+    }
+
+    // Deliver real notification via project's notifications system
+    addNotification({
+      userEmail: selectedTenancy.tenantEmail.toLowerCase(),
+      title: '💬 Message from Property Manager',
+      message: messageText.trim(),
+      type: 'info',
     })
+
+    toast.success(`Notification delivered to ${selectedTenancy.tenantName}'s inbox`)
     setMessageText('')
     setMessageOpen(false)
   }

@@ -316,11 +316,24 @@ export function MaintenancePage() {
               filtered.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell>
-                    <div className="flex flex-col max-w-sm">
-                      <span className="font-semibold text-text">{item.title}</span>
-                      <span className="text-xs text-muted truncate">
-                        {item.propertyName} {item.description ? `• ${item.description}` : ''}
-                      </span>
+                    <div className="flex items-center gap-3">
+                      {(item.imageUrl || item.issueImageUrl) && (
+                        <a
+                          href={item.imageUrl || item.issueImageUrl!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="h-10 w-10 shrink-0 rounded-lg overflow-hidden border border-border bg-surface2 hover:brightness-110 transition"
+                          title="Click to view photo"
+                        >
+                          <img src={item.imageUrl || item.issueImageUrl!} alt={item.title} className="h-full w-full object-cover" />
+                        </a>
+                      )}
+                      <div className="flex flex-col max-w-sm">
+                        <span className="font-semibold text-text">{item.title}</span>
+                        <span className="text-xs text-muted truncate">
+                          {item.propertyName} {item.description ? `• ${item.description}` : ''}
+                        </span>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>

@@ -37,15 +37,6 @@ const formatCurrency = (val: number) => {
   }).format(val)
 }
 
-function getTenantContact(name: string): { phone: string; email: string } {
-  const clean = name.toLowerCase()
-  if (clean === 'fttt') return { phone: '9978543215', email: 'ft@gmail.com' }
-  if (clean === 'mohan') return { phone: '9898989898', email: 'mohan@gmail.com' }
-  if (clean === 'ram') return { phone: '9008989898', email: 'ram@gmail.com' }
-  if (clean === 'mohammed') return { phone: '8765456789', email: 'mohammed@gmail.com' }
-  return { phone: '99999 88888', email: `${clean}@gmail.com` }
-}
-
 function getTransactionId(id: string): string {
   return `TXN-${id.replace('pay_', '').slice(0, 6).toUpperCase()}`
 }
@@ -251,6 +242,7 @@ export function PaymentsPage() {
             { value: 'all', label: 'All Status' },
             { value: 'paid', label: 'Paid' },
             { value: 'pending', label: 'Pending' },
+            { value: 'overdue', label: 'Overdue' },
           ].map((tab) => (
             <button
               key={tab.value}
@@ -292,7 +284,13 @@ export function PaymentsPage() {
             ) : (
               filtered.map((item) => {
                 const initials = item.tenantName.slice(0, 2).toUpperCase()
-                const contact = getTenantContact(item.tenantName)
+                const tenancy = tenancies.find(
+                  (t) =>
+                    t.tenantName.toLowerCase() === item.tenantName.toLowerCase() ||
+                    (item.tenantEmail && t.tenantEmail.toLowerCase() === item.tenantEmail.toLowerCase())
+                )
+                const tenantEmail = item.tenantEmail || tenancy?.tenantEmail || null
+                const tenantPhone = tenancy?.tenantPhone || null
                 const txnId = getTransactionId(item.id)
                 
                 return (
@@ -315,8 +313,8 @@ export function PaymentsPage() {
                     </TableCell>
                     <TableCell className="text-xs text-muted">
                       <div className="flex flex-col">
-                        <span>{contact.phone}</span>
-                        <span>{contact.email}</span>
+                        <span>{tenantPhone || 'Not available'}</span>
+                        <span>{tenantEmail || 'Not available'}</span>
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-xs text-text2">{txnId}</TableCell>
@@ -341,7 +339,9 @@ export function PaymentsPage() {
                         intent={
                           item.status === 'paid'
                             ? 'success'
-                            : 'danger'
+                            : item.status === 'overdue'
+                            ? 'danger'
+                            : 'warning'
                         }
                         size="sm"
                       >

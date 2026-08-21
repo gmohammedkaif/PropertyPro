@@ -27,6 +27,7 @@ export interface TenancyRecord {
   leaseNotes?: string
   /** Email of the owner who approved the lease */
   ownerEmail?: string
+  ownerName?: string
   /** Original rental request ID that triggered this tenancy */
   requestId?: string
   status: TenancyStatus

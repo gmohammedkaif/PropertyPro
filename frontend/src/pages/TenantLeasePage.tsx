@@ -152,7 +152,7 @@ export function TenantLeasePage() {
           <GlassCardContent className="space-y-3">
             <LeaseRow label="Property Name" value={myTenancy.propertyName} icon={<Home className="h-4 w-4 text-primary" />} />
             <LeaseRow label="Assigned Unit" value={myTenancy.unitNumber || 'Main'} icon={<DoorOpen className="h-4 w-4 text-purple-400" />} />
-            <LeaseRow label="Owner Name" value={myProperty ? 'House Owner' : 'Property Owner'} icon={<User className="h-4 w-4 text-emerald-400" />} />
+            <LeaseRow label="Owner Name" value={myTenancy.ownerName || myProperty?.ownerName || myProperty?.ownerEmail || myTenancy.ownerEmail || 'Owner information unavailable'} icon={<User className="h-4 w-4 text-emerald-400" />} />
             <LeaseRow label="Tenant Name" value={myTenancy.tenantName} icon={<User className="h-4 w-4 text-sky-400" />} />
             <LeaseRow label="Tenant Email" value={myTenancy.tenantEmail} icon={<User className="h-4 w-4" />} />
             <LeaseRow label="Tenant Phone" value={myTenancy.tenantPhone || 'Not provided'} icon={<User className="h-4 w-4" />} />

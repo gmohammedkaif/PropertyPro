@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { apiClient, type ApiEnvelope } from '@/lib/apiClient'
 import type { PropertyListResult, PropertyUnit } from '@/shared'
+import { useAuthStore } from './authStore'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -80,7 +81,20 @@ export const useLocalPropertiesStore = create<LocalPropertiesState>()((set) => (
 
   fetch: async () => {
     try {
-      const res = await apiClient.get<ApiEnvelope<PropertyListResult>>('/properties')
+      let res
+      try {
+        if (!useAuthStore.getState().accessToken) {
+          res = await apiClient.get<ApiEnvelope<PropertyListResult>>('/properties/search')
+        } else {
+          res = await apiClient.get<ApiEnvelope<PropertyListResult>>('/properties')
+        }
+      } catch (err: any) {
+        if (err?.status === 401 || err?.response?.status === 401) {
+          res = await apiClient.get<ApiEnvelope<PropertyListResult>>('/properties/search')
+        } else {
+          throw err
+        }
+      }
       const records = res.data?.data?.items ?? []
       if (records.length > 0) {
         const mapped: LocalProperty[] = records.map((r) => ({

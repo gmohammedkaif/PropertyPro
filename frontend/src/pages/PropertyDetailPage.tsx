@@ -309,7 +309,7 @@ export function PropertyDetailPage() {
     <div className="flex flex-col gap-6 animate-in fade-in duration-300 max-w-6xl mx-auto">
       {/* ─── Top Bar Navigation & Actions ─────────────────────────────────── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/app/properties')} className="w-fit">
+        <Button variant="ghost" size="sm" onClick={() => navigate(user ? '/app/properties' : '/browse')} className="w-fit">
           <ArrowLeft className="h-4 w-4" /> Back to Properties
         </Button>
 

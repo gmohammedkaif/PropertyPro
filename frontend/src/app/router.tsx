@@ -74,6 +74,7 @@ export const router = createBrowserRouter([
     ),
   },
   { path: '/browse', element: <BrowsePage /> },
+  { path: '/browse/:id', element: <PropertyDetailPage /> },
 
   // Role shortcut path redirects -> send to authenticated dashboard app
   { path: '/tenant', element: <Navigate to="/app" replace /> },

@@ -125,7 +125,7 @@ export function BrowsePage() {
   }, [allListings, search, typeFilter, bedroomFilter, priceRange, sortBy, properties])
 
   const handleViewDetail = (id: string) => {
-    navigate(`/app/property/${id}`)
+    navigate(user ? `/app/property/${id}` : `/browse/${id}`)
   }
 
   return (

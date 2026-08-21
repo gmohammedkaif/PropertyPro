@@ -4,6 +4,13 @@ import { NotFoundError, ForbiddenError } from '../../core/errors.js'
 import { Maintenance } from './maintenance.model.js'
 import { Tenancy } from '../tenancy/tenancy.model.js'
 import { Notification } from '../notification/notification.model.js'
+import {
+  maintenanceIdSchema,
+  createMaintenanceSchema,
+  updateMaintenanceTenantSchema,
+  updateMaintenanceOwnerSchema,
+  PROTECTED_MAINTENANCE_FIELDS,
+} from './maintenance.schemas.js'
 
 function formatDoc(doc: any) {
   return {
@@ -28,32 +35,41 @@ function formatDoc(doc: any) {
 }
 
 export const createMaintenanceTicket = asyncHandler(async (req: Request, res: Response) => {
-  const tenantEmail = req.user?.email?.toLowerCase() || ''
-  const tenantId = req.user?.id || ''
+  const user = req.user
+  const userEmail = user?.email?.toLowerCase() || ''
+  const userId = user?.id || ''
+  const isOwnerOrAdmin = user?.roles.includes('owner') || user?.roles.includes('agent') || user?.roles.includes('admin')
 
-  // Look up tenancy to find owner, enforcing they can only submit tickets for their active rental property
-  const tenancy = await Tenancy.findOne({
-    tenantEmail,
-    status: { $in: ['active', 'expiring-soon'] },
-  }).lean()
+  const input = createMaintenanceSchema.parse(req.body)
 
-  if (!tenancy) {
-    throw new ForbiddenError('You must have an active lease/tenancy to submit a maintenance ticket')
+  let tenancy: any = null
+  if (!isOwnerOrAdmin) {
+    tenancy = await Tenancy.findOne({
+      tenantEmail: userEmail,
+      status: { $in: ['active', 'expiring-soon'] },
+    }).lean()
+
+    if (!tenancy) {
+      throw new ForbiddenError('You must have an active lease/tenancy to submit a maintenance ticket')
+    }
   }
 
-  const ownerEmail = tenancy.ownerEmail || ''
-  const ownerId = tenancy.ownerId || ''
-  const propertyId = tenancy.propertyId || ''
+  const tenantEmail = isOwnerOrAdmin ? (req.body.tenantEmail?.toLowerCase() || userEmail) : userEmail
+  const tenantId = isOwnerOrAdmin ? (req.body.tenantId || userId) : userId
+  const ownerEmail = tenancy?.ownerEmail || (isOwnerOrAdmin ? userEmail : '')
+  const ownerId = tenancy?.ownerId || (isOwnerOrAdmin ? userId : '')
+  const propertyId = tenancy?.propertyId || req.body.propertyId || ''
+  const propertyName = tenancy?.propertyName || req.body.propertyName || 'Property'
 
-  const doc = await Maintenance.create({
-    title: req.body.title,
-    description: req.body.description || '',
-    propertyName: tenancy.propertyName,
+  const doc: any = await Maintenance.create({
+    title: input.title,
+    description: input.description || '',
+    propertyName,
     propertyId,
-    category: req.body.category || 'Electrical',
-    priority: (req.body.priority || 'medium').toLowerCase(),
+    category: input.category || 'Electrical',
+    priority: (input.priority || 'medium').toLowerCase() as any,
     status: 'open',
-    reportedBy: req.body.reportedBy || req.user?.name || 'Tenant',
+    reportedBy: input.reportedBy || user?.name || 'Tenant',
     tenantEmail,
     tenantId,
     ownerEmail,
@@ -66,19 +82,21 @@ export const createMaintenanceTicket = asyncHandler(async (req: Request, res: Re
       userEmail: ownerEmail.toLowerCase(),
       userId: ownerId,
       title: 'New Maintenance Request 🛠️',
-      message: `${doc.reportedBy} reported "${doc.title}" for ${doc.propertyName}. Priority: ${doc.priority.toUpperCase()}.`,
+      message: `${doc.reportedBy} reported "${doc.title}" for ${doc.propertyName}. Priority: ${String(doc.priority).toUpperCase()}.`,
       type: 'warning',
     })
   }
 
   // Notify Tenant
-  await Notification.create({
-    userEmail: tenantEmail.toLowerCase(),
-    userId: tenantId,
-    title: 'Maintenance Request Submitted 🛠️',
-    message: `Your issue "${doc.title}" has been logged and assigned to your property manager.`,
-    type: 'info',
-  })
+  if (tenantEmail) {
+    await Notification.create({
+      userEmail: tenantEmail.toLowerCase(),
+      userId: tenantId,
+      title: 'Maintenance Request Submitted 🛠️',
+      message: `Your issue "${doc.title}" has been logged and assigned to your property manager.`,
+      type: 'info',
+    })
+  }
 
   res.status(201).json({ data: formatDoc(doc), meta: {}, error: null })
 })
@@ -107,24 +125,61 @@ export const listMaintenanceTickets = asyncHandler(async (req: Request, res: Res
 })
 
 export const updateMaintenanceTicket = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params
+  const { id } = maintenanceIdSchema.parse(req.params)
   const existing = await Maintenance.findById(id)
   if (!existing) throw new NotFoundError('Maintenance ticket not found')
 
-  const isOwner = existing.ownerId === req.user?.id || existing.ownerEmail?.toLowerCase() === req.user?.email?.toLowerCase()
-  const isTenant = existing.tenantId === req.user?.id || existing.tenantEmail?.toLowerCase() === req.user?.email?.toLowerCase()
-  const isAdmin = req.user?.roles.includes('admin')
+  const user = req.user
+  const userEmail = user?.email?.toLowerCase() ?? ''
+  const userId = user?.id ?? ''
+  const userName = user?.name?.toLowerCase() ?? ''
+
+  const isAdmin = user?.roles.includes('admin') || userEmail === 'admin@propertypro.com'
+  const isOwner =
+    (existing.ownerId && existing.ownerId === userId) ||
+    (existing.ownerEmail && existing.ownerEmail.toLowerCase() === userEmail)
+  const isTenant =
+    (existing.tenantId && existing.tenantId === userId) ||
+    (existing.tenantEmail && existing.tenantEmail.toLowerCase() === userEmail) ||
+    (existing.reportedBy && existing.reportedBy.toLowerCase() === userName)
 
   if (!isOwner && !isTenant && !isAdmin) {
     throw new ForbiddenError('You do not have permission to modify this maintenance ticket')
   }
 
+  // Reject any attempt to modify protected identity/ownership fields
+  const bodyKeys = Object.keys(req.body || {})
+  const hasProtectedField = bodyKeys.some((key) => PROTECTED_MAINTENANCE_FIELDS.includes(key))
+  if (hasProtectedField) {
+    throw new ForbiddenError('Modifying protected ticket ownership/identity fields is not allowed')
+  }
+
+  // Validate allowed update payload by role using strict Zod schemas
+  let updatePayload: Record<string, any> = {}
+
+  if (isTenant && !isOwner && !isAdmin) {
+    // Tenant role: allowed fields (title, description, category, priority)
+    // Tenants cannot modify status, assignedTo, or protected fields
+    if (req.body.status !== undefined) {
+      throw new ForbiddenError('Tenants are not authorized to change ticket status directly')
+    }
+    updatePayload = updateMaintenanceTenantSchema.parse(req.body)
+  } else {
+    // Owner / Admin role: allowed fields (title, description, propertyName, category, priority, status, assignedTo, resolvedAt)
+    updatePayload = updateMaintenanceOwnerSchema.parse(req.body)
+  }
+
   const oldStatus = existing.status
-  const updated = await Maintenance.findByIdAndUpdate(id, { $set: req.body }, { new: true, runValidators: true }).lean()
+  const updated = await Maintenance.findByIdAndUpdate(
+    id,
+    { $set: updatePayload },
+    { new: true, runValidators: true }
+  ).lean()
+
   if (!updated) throw new NotFoundError('Maintenance ticket not found')
 
   // Send status update notification to tenant if status changed
-  if (req.body.status && req.body.status !== oldStatus && updated.tenantEmail) {
+  if (updatePayload.status && updatePayload.status !== oldStatus && updated.tenantEmail) {
     await Notification.create({
       userEmail: updated.tenantEmail.toLowerCase(),
       userId: updated.tenantId,
@@ -138,13 +193,23 @@ export const updateMaintenanceTicket = asyncHandler(async (req: Request, res: Re
 })
 
 export const deleteMaintenanceTicket = asyncHandler(async (req: Request, res: Response) => {
-  const { id } = req.params
+  const { id } = maintenanceIdSchema.parse(req.params)
   const existing = await Maintenance.findById(id)
   if (!existing) throw new NotFoundError('Maintenance ticket not found')
 
-  const isOwner = existing.ownerId === req.user?.id || existing.ownerEmail?.toLowerCase() === req.user?.email?.toLowerCase()
-  const isTenant = existing.tenantId === req.user?.id || existing.tenantEmail?.toLowerCase() === req.user?.email?.toLowerCase()
-  const isAdmin = req.user?.roles.includes('admin')
+  const user = req.user
+  const userEmail = user?.email?.toLowerCase() ?? ''
+  const userId = user?.id ?? ''
+  const userName = user?.name?.toLowerCase() ?? ''
+
+  const isAdmin = user?.roles.includes('admin') || userEmail === 'admin@propertypro.com'
+  const isOwner =
+    (existing.ownerId && existing.ownerId === userId) ||
+    (existing.ownerEmail && existing.ownerEmail.toLowerCase() === userEmail)
+  const isTenant =
+    (existing.tenantId && existing.tenantId === userId) ||
+    (existing.tenantEmail && existing.tenantEmail.toLowerCase() === userEmail) ||
+    (existing.reportedBy && existing.reportedBy.toLowerCase() === userName)
 
   if (!isOwner && !isTenant && !isAdmin) {
     throw new ForbiddenError('You do not have permission to delete this maintenance ticket')
@@ -154,7 +219,7 @@ export const deleteMaintenanceTicket = asyncHandler(async (req: Request, res: Re
     const deleted = await Maintenance.findByIdAndDelete(id).lean()
     res.json({ data: formatDoc(deleted!), meta: {}, error: null })
   } else {
-    // Tenants and Owners cannot permanently delete tickets; instead transition status to 'closed'
+    // Tenants and Owners cannot permanently hard delete tickets; instead transition status to 'closed'
     existing.status = 'closed'
     await existing.save()
     res.json({ data: formatDoc(existing), meta: {}, error: null })

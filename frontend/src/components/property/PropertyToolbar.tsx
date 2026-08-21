@@ -16,8 +16,7 @@ const typeOptions: SelectOption[] = [
   { value: '', label: 'All Types' },
   { value: 'apartment', label: 'Apartment' },
   { value: 'house', label: 'House' },
-  { value: 'commercial', label: 'Commercial' },
-  { value: 'mixed', label: 'Mixed Use' },
+  { value: 'resort', label: 'Resort' },
 ]
 
 const sortOptions: SelectOption[] = [

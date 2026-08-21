@@ -18,7 +18,7 @@ const TYPE_OPTIONS: SelectOption[] = [
   { value: '', label: 'All Types' },
   { value: 'apartment', label: 'Apartment' },
   { value: 'house', label: 'House/Villa' },
-  { value: 'commercial', label: 'Commercial' },
+  { value: 'resort', label: 'Resort' },
 ]
 
 const BEDROOM_OPTIONS: SelectOption[] = [
@@ -105,7 +105,8 @@ export function BrowsePage() {
 
       // Price filter
       if (item.price > 0) {
-        if (item.price < priceRange[0] || item.price > priceRange[1]) return false
+        if (item.price < priceRange[0]) return false
+        if (priceRange[1] < 100000 && item.price > priceRange[1]) return false
       }
 
       return true

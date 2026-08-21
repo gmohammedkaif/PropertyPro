@@ -68,37 +68,117 @@ export function AnalyticsPage() {
     }).format(val)
   }
 
-  useEffect(() => {
-    let isMounted = true
-    const fetchAnalytics = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const res = await apiClient.get<ApiEnvelope<AnalyticsData>>(`/analytics/overview?range=${period}`)
-        if (isMounted) {
-          if (res.data.data) {
-            setData(res.data.data)
-          } else {
-            setError(res.data.error?.message || 'Failed to load analytics data')
-          }
-        }
-      } catch (err: any) {
-        if (isMounted) {
-          setError(err?.response?.data?.error?.message || 'Failed to fetch analytics from server')
-        }
-      } finally {
-        if (isMounted) setIsLoading(false)
+  const fetchAnalytics = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const res = await apiClient.get<ApiEnvelope<AnalyticsData>>(`/analytics/overview?range=${period}`)
+      if (res.data.data) {
+        setData(res.data.data)
+      } else {
+        setError(res.data.error?.message || 'Failed to load analytics data')
       }
+    } catch (err: any) {
+      setError(err?.response?.data?.error?.message || 'Failed to fetch analytics from server')
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
     void fetchAnalytics()
-    return () => {
-      isMounted = false
-    }
   }, [period])
 
+  const handleRetry = () => {
+    void fetchAnalytics()
+  }
+
   const handleExportReport = () => {
-    toast.info('Report export initiated. Generating PDF summary...')
+    if (!data) {
+      toast.error('No analytics data available to export.')
+      return
+    }
+
+    try {
+      const dateStr = new Date().toISOString().split('T')[0]
+      const periodLabel = period === '3m' ? 'Last 3 Months' : period === '12m' ? 'Last Year' : 'Last 6 Months'
+
+      const rows: string[][] = []
+
+      // Header Metadata
+      rows.push(['PropertyPro Portfolio Analytics Report'])
+      rows.push(['Reporting Period', periodLabel])
+      rows.push(['Generated Date', new Date().toLocaleDateString()])
+      rows.push([])
+
+      // Portfolio Summary
+      rows.push(['PORTFOLIO SUMMARY METRICS'])
+      rows.push(['Metric', 'Value'])
+      rows.push(['Total Revenue', String(data.summary.totalRevenue)])
+      rows.push(['Operating Cost', String(data.summary.operatingCost)])
+      rows.push(['Net Operating Income', String(data.summary.netOperatingIncome)])
+      rows.push(['Average Occupancy', data.summary.averageOccupancyFormatted])
+      rows.push([])
+
+      // Property Performance Breakdown
+      rows.push(['PROPERTY PERFORMANCE BREAKDOWN'])
+      rows.push(['Property Name', 'Occupancy Rate', 'Rental Yield', 'Collected Revenue', 'Expenses', 'Operating Income'])
+      if (data.propertyPerformance && data.propertyPerformance.length > 0) {
+        data.propertyPerformance.forEach((p) => {
+          rows.push([p.name, p.occupancy, p.yield, String(p.revenue), String(p.expenses), String(p.operatingIncome)])
+        })
+      } else {
+        rows.push(['No property data available'])
+      }
+      rows.push([])
+
+      // Financial Trends
+      rows.push(['MONTHLY FINANCIAL TRENDS'])
+      rows.push(['Month', 'Gross Revenue', 'Operating Expenses', 'Net Profit'])
+      if (data.financialTrends && data.financialTrends.length > 0) {
+        data.financialTrends.forEach((t) => {
+          rows.push([t.month, String(t.revenue), String(t.expenses), String(t.profit)])
+        })
+      } else {
+        rows.push(['No financial trend data available'])
+      }
+      rows.push([])
+
+      // Operating Expenses Breakdown
+      rows.push(['OPERATING EXPENSES BREAKDOWN'])
+      rows.push(['Category', 'Amount', 'Percentage'])
+      if (data.operatingExpenses && data.operatingExpenses.length > 0) {
+        data.operatingExpenses.forEach((e) => {
+          rows.push([e.category, String(e.amount), `${e.percentage}%`])
+        })
+      }
+
+      // Format CSV
+      const csvContent = rows
+        .map((row) =>
+          row
+            .map((cell) => {
+              const escaped = String(cell).replace(/"/g, '""')
+              return `"${escaped}"`
+            })
+            .join(','),
+        )
+        .join('\n')
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.setAttribute('href', url)
+      link.setAttribute('download', `propertypro-analytics-${dateStr}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast.success('Analytics report exported successfully!')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to export analytics report.')
+    }
   }
 
   const summary = data?.summary || {
@@ -158,7 +238,7 @@ export function AnalyticsPage() {
       {!isLoading && error && (
         <div className="rounded-xl border border-danger/30 bg-danger/10 p-6 text-center text-danger">
           <p className="font-semibold">{error}</p>
-          <Button variant="secondary" size="sm" className="mt-4" onClick={() => setPeriod(period)}>
+          <Button variant="secondary" size="sm" className="mt-4" onClick={handleRetry}>
             Retry
           </Button>
         </div>

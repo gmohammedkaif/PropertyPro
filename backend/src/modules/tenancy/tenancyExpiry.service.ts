@@ -1,6 +1,7 @@
 import { Tenancy } from './tenancy.model.js'
 import { Property } from '../property/models/property.model.js'
 import { createNotificationIdempotent } from '../notification/notification.model.js'
+import { syncPropertyOccupancy } from '../property/propertyOccupancy.service.js'
 
 let isSweeperRunning = false
 
@@ -16,13 +17,9 @@ export async function expireTenancy(tenancyId: string): Promise<boolean> {
   tenancy.status = 'expired'
   await tenancy.save()
 
-  // Safely decrement occupiedUnits on property (never below 0)
+  // Synchronize real property occupancy from active tenancies
   if (tenancy.propertyId) {
-    const property = await Property.findById(tenancy.propertyId)
-    if (property && property.occupiedUnits > 0) {
-      property.occupiedUnits = Math.max(0, property.occupiedUnits - (tenancy.unitsOccupied || 1))
-      await property.save()
-    }
+    await syncPropertyOccupancy([tenancy.propertyId])
   }
 
   // Generate idempotent notifications for Tenant and Owner

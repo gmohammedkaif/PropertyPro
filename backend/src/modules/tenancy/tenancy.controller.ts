@@ -5,6 +5,8 @@ import { Tenancy } from './tenancy.model.js'
 import { Property } from '../property/models/property.model.js'
 import { createNotificationIdempotent } from '../notification/notification.model.js'
 
+import { syncPropertyOccupancy } from '../property/propertyOccupancy.service.js'
+
 function formatDoc(doc: any) {
   return {
     id: doc._id.toString(),
@@ -141,6 +143,9 @@ export const createTenancy = asyncHandler(async (req: Request, res: Response) =>
       ownerId,
       status: 'active',
     })
+    if (req.body.propertyId) {
+      await syncPropertyOccupancy([req.body.propertyId])
+    }
   } catch (createErr: any) {
     if (updatedProp && req.body.propertyId) {
       await Property.findByIdAndUpdate(req.body.propertyId, { $inc: { occupiedUnits: -countToOccupy } }).catch(() => null)
@@ -186,14 +191,9 @@ export const deleteTenancy = asyncHandler(async (req: Request, res: Response) =>
     tenancy.status = 'terminated'
     await tenancy.save()
 
-    // Decrement occupiedUnits on property (never below 0)
+    // Synchronize real property occupancy from active tenancies
     if (tenancy.propertyId) {
-      const property = await Property.findById(tenancy.propertyId)
-      if (property && property.occupiedUnits > 0) {
-        const countToFree = Math.max(1, Number(tenancy.unitsOccupied) || 1)
-        property.occupiedUnits = Math.max(0, property.occupiedUnits - countToFree)
-        await property.save()
-      }
+      await syncPropertyOccupancy([tenancy.propertyId])
     }
 
     // Emit notifications

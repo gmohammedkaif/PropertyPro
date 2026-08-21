@@ -7,6 +7,7 @@ import { Payment } from '../payment/payment.model.js'
 import { Notification, createNotificationIdempotent } from '../notification/notification.model.js'
 import { Property } from '../property/models/property.model.js'
 import { User } from '../auth/models/user.model.js'
+import { syncPropertyOccupancy } from '../property/propertyOccupancy.service.js'
 
 function formatDoc(doc: any) {
   return {
@@ -226,6 +227,10 @@ export const approveRentalRequest = asyncHandler(async (req: Request, res: Respo
 
     requestDoc.status = 'approved'
     await requestDoc.save()
+
+    if (requestDoc.propertyId) {
+      await syncPropertyOccupancy([requestDoc.propertyId])
+    }
   } catch (err: any) {
     // Roll back created tenancy & associated payment if any subsequent step failed
     if (tenancyDoc?._id) {

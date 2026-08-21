@@ -101,9 +101,11 @@ export function derivePropertyUnits(
   // If property has stored individual units, use them
   if (property.units && property.units.length > 0) {
     return property.units.map((unit, idx) => {
-      const matchedTenancy = activeTenancies.find(
-        (t) => (t.unitNumber || 'Main').toLowerCase() === unit.unitNumber.toLowerCase()
-      )
+      const matchedTenancy = activeTenancies.find((t) => {
+        const tUnit = (t.unitNumber || 'Main').toLowerCase()
+        const targetUnit = unit.unitNumber.toLowerCase()
+        return tUnit === targetUnit || tUnit.includes(targetUnit)
+      })
 
       const isHouse = property.type === 'house' || property.type === 'villa'
       const defaultFloor = isHouse ? unit.unitNumber : `Floor ${Math.floor(idx / 4) + 1}`
@@ -149,9 +151,11 @@ export function derivePropertyUnits(
     const isHouse = property.type === 'house' || property.type === 'villa'
     const floorLabel = isHouse ? unitNumber : `Floor ${Math.floor(idx / 4) + 1}`
 
-    const matchedTenancy = activeTenancies.find(
-      (t) => (t.unitNumber || 'Main').toLowerCase() === unitNumber.toLowerCase()
-    )
+    const matchedTenancy = activeTenancies.find((t) => {
+      const tUnit = (t.unitNumber || 'Main').toLowerCase()
+      const targetUnit = unitNumber.toLowerCase()
+      return tUnit === targetUnit || tUnit.includes(targetUnit)
+    })
 
     if (matchedTenancy) {
       return {

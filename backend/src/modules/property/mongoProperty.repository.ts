@@ -1,5 +1,6 @@
 import { Property, type PropertyDocument } from './models/property.model.js'
 import type { PropertyRepository } from './property.repository.js'
+import { syncPropertyOccupancy } from './propertyOccupancy.service.js'
 import type {
   PropertyRecord,
   CreatePropertyInput,
@@ -86,11 +87,13 @@ export class MongoPropertyRepository implements PropertyRepository {
   }
 
   async findById(id: string): Promise<PropertyRecord | null> {
+    await syncPropertyOccupancy([id])
     const doc = await Property.findById(id).lean()
     return doc ? toPropertyRecord(doc as PropertyDocument) : null
   }
 
   async findByOwner(ownerId: string, filter: PropertyFilter): Promise<PropertyListResult> {
+    await syncPropertyOccupancy()
     const query: Record<string, unknown> = { ownerId, deletedAt: null }
     this.applyFilters(query, filter)
     const sort = this.buildSort(filter)
@@ -136,6 +139,7 @@ export class MongoPropertyRepository implements PropertyRepository {
   }
 
   async findAllPublished(filter: PropertyFilter): Promise<PropertyListResult> {
+    await syncPropertyOccupancy()
     const query: Record<string, unknown> = {
       status: 'active',
       deletedAt: null,
@@ -160,6 +164,7 @@ export class MongoPropertyRepository implements PropertyRepository {
   }
 
   async findAll(filter: PropertyFilter): Promise<PropertyListResult> {
+    await syncPropertyOccupancy()
     const query: Record<string, unknown> = { deletedAt: null }
 
     this.applyFilters(query, filter)
@@ -179,6 +184,7 @@ export class MongoPropertyRepository implements PropertyRepository {
   }
 
   async search(query: string, filter: PropertyFilter): Promise<PropertyListResult> {
+    await syncPropertyOccupancy()
     const q: Record<string, unknown> = {
       $text: { $search: query },
       status: 'active',

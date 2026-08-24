@@ -491,7 +491,7 @@ export function MaintenancePage() {
             placeholder="e.g. Hassan Villa"
             required
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label="Issue Category"
               options={[
@@ -518,7 +518,7 @@ export function MaintenancePage() {
               onChange={(e) => setPriority(e.target.value as MaintenancePriority)}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label="Status"
               options={[
@@ -540,7 +540,7 @@ export function MaintenancePage() {
               disabled={Boolean(editingItem)}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label={editingItem ? 'Tenant Email (Read-Only)' : 'Tenant Email (for notifications)'}
               value={tenantEmail}

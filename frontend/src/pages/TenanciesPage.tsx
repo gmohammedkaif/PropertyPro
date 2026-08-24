@@ -454,11 +454,11 @@ export function TenanciesPage() {
                 </GlassCardContent>
 
                 {/* Card Footer Quick Actions */}
-                <div className="border-t border-border/30 p-4 flex gap-1.5 shrink-0 bg-surface2/10">
+                <div className="border-t border-border/30 p-3 sm:p-4 flex flex-wrap items-center gap-1.5 shrink-0 bg-surface2/10">
                   <EnhancedButton
                     variant="ghost"
                     size="sm"
-                    className="flex-1 text-[10px] py-1 gap-1 border border-border/60 hover:bg-surface2"
+                    className="flex-1 min-w-[70px] text-[10px] py-1 gap-1 border border-border/60 hover:bg-surface2"
                     onClick={() => { setSelectedTenancy(item); setLeaseDetailsOpen(true) }}
                   >
                     <FileText className="h-3 w-3 text-primary" /> Lease
@@ -466,7 +466,7 @@ export function TenanciesPage() {
                   <EnhancedButton
                     variant="ghost"
                     size="sm"
-                    className="flex-1 text-[10px] py-1 gap-1 border border-border/60 hover:bg-surface2"
+                    className="flex-1 min-w-[80px] text-[10px] py-1 gap-1 border border-border/60 hover:bg-surface2"
                     onClick={() => { setSelectedTenancy(item); setPaymentsLedgerOpen(true) }}
                   >
                     <Receipt className="h-3 w-3 text-emerald-400" /> Payments
@@ -474,12 +474,12 @@ export function TenanciesPage() {
                   <EnhancedButton
                     variant="ghost"
                     size="sm"
-                    className="flex-1 text-[10px] py-1 gap-1 border border-border/60 hover:bg-surface2"
+                    className="flex-1 min-w-[60px] text-[10px] py-1 gap-1 border border-border/60 hover:bg-surface2"
                     onClick={() => { setSelectedTenancy(item); setMessageOpen(true) }}
                   >
                     <MessageSquare className="h-3 w-3 text-sky-400" /> Ping
                   </EnhancedButton>
-                  <div className="flex gap-1 shrink-0">
+                  <div className="flex gap-1 shrink-0 ml-auto sm:ml-0">
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(item)}
@@ -528,7 +528,7 @@ export function TenanciesPage() {
               required
               focusColor="primary"
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <EnhancedInput
                 label="Email"
                 type="email"
@@ -549,7 +549,7 @@ export function TenanciesPage() {
 
           <fieldset className="flex flex-col gap-4 border-t border-border/60 pt-4">
             <legend className="text-xs font-semibold text-muted uppercase tracking-wider">Lease Details</legend>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-text/80 tracking-wide">
                   Property <span className="text-danger">*</span>
@@ -597,7 +597,7 @@ export function TenanciesPage() {
                 />
               </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <EnhancedInput
                 label="Lease Start"
                 type="date"
@@ -615,7 +615,7 @@ export function TenanciesPage() {
                 focusColor="primary"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <EnhancedInput
                 label="Monthly Rent"
                 type="number"

@@ -75,7 +75,7 @@ export function Modal({
                 transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                 className={cn(
                   'bg-surface border border-border',
-                  'fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[calc(100vw-2rem)] rounded-xl',
+                  'fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[calc(100vw-1.5rem)] sm:w-[calc(100vw-2rem)] rounded-xl',
                   'shadow-xl',
                   'flex flex-col max-h-[90vh]',
                   modalSizes({ size }),
@@ -83,7 +83,7 @@ export function Modal({
                 )}
               >
                 {/* Sticky Header */}
-                <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-border shrink-0">
+                <div className="flex items-start justify-between gap-4 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border shrink-0">
                   <div className="flex flex-col gap-0.5">
                     {title ? (
                       <DialogPrimitive.Title className="text-base font-semibold tracking-tight text-text">
@@ -91,7 +91,7 @@ export function Modal({
                       </DialogPrimitive.Title>
                     ) : null}
                     {description ? (
-                      <DialogPrimitive.Description className="text-sm text-muted">
+                      <DialogPrimitive.Description className="text-xs sm:text-sm text-muted">
                         {description}
                       </DialogPrimitive.Description>
                     ) : null}
@@ -109,13 +109,13 @@ export function Modal({
                 </div>
 
                 {/* Scrollable Body */}
-                <div className="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 custom-scrollbar">
                   {children}
                 </div>
 
                 {/* Sticky Footer */}
                 {footer ? (
-                  <div className="shrink-0 px-6 py-4 border-t border-border flex items-center justify-end gap-2">
+                  <div className="shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-t border-border flex flex-wrap items-center justify-end gap-2">
                     {footer}
                   </div>
                 ) : null}

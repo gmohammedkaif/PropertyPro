@@ -252,18 +252,18 @@ export function SettingsPage() {
   ]
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '900px', margin: '0 auto' }}>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto w-full">
       {/* Header */}
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text">
           Settings
         </h1>
-        <p style={{ color: 'var(--color-text-muted)', marginTop: '0.25rem', fontSize: '0.9rem' }}>
+        <p className="text-sm text-muted mt-1">
           Manage your account preferences
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 items-start">
         {/* ── Sidebar ───────────────────────────────────────────────────── */}
         <div style={{
           background: 'var(--color-surface)',
@@ -430,7 +430,7 @@ export function SettingsPage() {
                 Update your name and contact details.
               </p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label style={labelStyle}>Full Name</label>
                   <input
@@ -624,7 +624,7 @@ export function SettingsPage() {
                 <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-primary, #f8fafc)', marginBottom: '0.75rem' }}>
                   Add New Member
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px 1fr', gap: '0.75rem', alignItems: 'end' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
                   <div>
                     <label style={labelStyle}>Name</label>
                     <input style={inputStyle} value={famName} onChange={(e) => setFamName(e.target.value)} placeholder="Full name" />

@@ -62,7 +62,7 @@ export function DashboardLayout() {
       >
         <Navbar onMenuClick={() => setMobileSidebarOpen(true)} onCollapseToggle={toggleSidebar} />
 
-        <main className="mx-auto w-full max-w-7xl px-5 py-6 sm:px-8 lg:px-10 lg:py-7">
+        <main className="mx-auto w-full max-w-7xl px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-7">
           <Outlet />
         </main>
       </div>

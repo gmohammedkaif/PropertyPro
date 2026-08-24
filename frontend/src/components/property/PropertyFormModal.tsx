@@ -742,7 +742,7 @@ export function PropertyFormModal({
               required
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Select
                 id="property-type"
                 label="Property Type"
@@ -808,7 +808,7 @@ export function PropertyFormModal({
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 text-xs">
+                    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                       <div>
                         <label className="text-[10px] font-semibold text-muted uppercase block mb-1">Unit Label</label>
                         <input
@@ -1040,7 +1040,7 @@ export function PropertyFormModal({
               disabled={isPending}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="relative" ref={autocompleteRef}>
                 <Input
                   id="property-city"
@@ -1085,7 +1085,7 @@ export function PropertyFormModal({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
                 id="property-postal"
                 label="Postal Code"

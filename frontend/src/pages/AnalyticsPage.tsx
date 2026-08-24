@@ -204,13 +204,13 @@ export function AnalyticsPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Top Header Section */}
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-text">Portfolio Analytics</h1>
           <p className="text-sm text-muted">Real-time calculations derived directly from MongoDB records.</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Select
             options={[
               { value: '3m', label: 'Last 3 Months' },
@@ -269,14 +269,14 @@ export function AnalyticsPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="relative flex h-64 w-full items-end justify-between border-b border-l border-border px-6 pt-4">
+                    <div className="relative flex h-64 w-full items-end justify-between border-b border-l border-border px-2 sm:px-6 pt-4 overflow-x-auto custom-scrollbar">
                       {financialTrends.map((item) => {
                         const revHeight = `${Math.max((item.revenue / maxTrendValue) * 100, 4)}%`
                         const expHeight = `${Math.max((item.expenses / maxTrendValue) * 100, 4)}%`
                         const profHeight = `${Math.max((Math.max(item.profit, 0) / maxTrendValue) * 100, 4)}%`
 
                         return (
-                          <div key={item.month} className="group flex h-full w-12 flex-col items-center justify-end gap-2">
+                          <div key={item.month} className="group flex h-full w-12 flex-col items-center justify-end gap-2 shrink-0">
                             <div className="flex h-full w-full items-end justify-center gap-1">
                               {/* Revenue Bar */}
                               <div
@@ -303,7 +303,7 @@ export function AnalyticsPage() {
                       })}
                     </div>
                     {/* Chart Legend */}
-                    <div className="mt-4 flex items-center justify-center gap-6 text-xs font-semibold">
+                    <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs font-semibold">
                       <span className="flex items-center gap-2">
                         <span className="h-3 w-3 rounded-full bg-primary" />
                         Gross Income

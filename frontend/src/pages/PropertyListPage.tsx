@@ -149,8 +149,8 @@ export function PropertyListPage() {
 
       {/* Main Title/Stats Card */}
       <GlassCard hover animated className="overflow-hidden">
-        <GlassCardHeader className="p-6">
-          <div className="flex items-end justify-between">
+        <GlassCardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="flex flex-col gap-1">
               <h1 className="text-2xl font-bold tracking-tight text-text">
                 {adminUser ? 'System Properties' : 'Find Your Next Home'}
@@ -163,7 +163,7 @@ export function PropertyListPage() {
             </div>
 
             {adminUser && (
-              <EnhancedButton onClick={handleAddProperty} glowIntensity="high" shimmer>
+              <EnhancedButton onClick={handleAddProperty} glowIntensity="high" shimmer className="w-full sm:w-auto">
                 <Plus className="h-4 w-4" /> Add Property
               </EnhancedButton>
             )}
@@ -171,7 +171,7 @@ export function PropertyListPage() {
         </GlassCardHeader>
 
         {adminUser && (
-          <GlassCardContent className="p-6">
+          <GlassCardContent className="p-4 sm:p-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard
                 title="Associated Properties"

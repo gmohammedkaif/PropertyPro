@@ -47,6 +47,8 @@ const TenantRequestsPage = lazyLoad(lazy(() => import('@/pages/TenantRequestsPag
 const TenantRentPage = lazyLoad(lazy(() => import('@/pages/TenantRentPage').then((m) => ({ default: m.TenantRentPage }))))
 const TenantReportIssuePage = lazyLoad(lazy(() => import('@/pages/TenantReportIssuePage').then((m) => ({ default: m.TenantReportIssuePage }))))
 const TenantLeasePage = lazyLoad(lazy(() => import('@/pages/TenantLeasePage').then((m) => ({ default: m.TenantLeasePage }))))
+const TermsPage = lazyLoad(lazy(() => import('@/pages/TermsPage').then((m) => ({ default: m.TermsPage }))))
+const PrivacyPage = lazyLoad(lazy(() => import('@/pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage }))))
 const PlaceholderPage = lazyLoad(lazy(() => import('@/pages/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage }))))
 
 // Smart dashboard: renders admin or tenant dashboard based on role
@@ -91,6 +93,8 @@ export const router = createBrowserRouter([
   },
   { path: '/browse', element: <BrowsePage /> },
   { path: '/browse/:id', element: <PropertyDetailPage /> },
+  { path: '/terms', element: <TermsPage /> },
+  { path: '/privacy', element: <PrivacyPage /> },
 
   // Role shortcut path redirects -> send to authenticated dashboard app
   { path: '/tenant', element: <Navigate to="/app" replace /> },

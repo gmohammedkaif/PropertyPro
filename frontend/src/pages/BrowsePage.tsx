@@ -1,31 +1,48 @@
-import { useState, useMemo, useEffect } from 'react'
-import { Search, Filter, MapPin, Key, Bath, Square, Heart } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
+import {
+  Search,
+  Filter,
+  X,
+  SlidersHorizontal,
+  RotateCcw,
+  Sparkles,
+  ArrowUpDown,
+  Building,
+  Check,
+} from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { GlassCard, GlassCardContent } from '@/components/ui/GlassCard'
-import { Input } from '@/components/ui/Input'
 import { Select, type SelectOption } from '@/components/ui/Select'
-import { useLocalPropertiesStore } from '@/stores/localPropertiesStore'
-import { useAuthStore } from '@/stores/authStore'
-import { useSavedPropertiesStore } from '@/stores/savedPropertiesStore'
-import { useToast } from '@/hooks/useToast'
+import { PropertyCard, type PropertyCardItem } from '@/components/property/PropertyCard'
+import { PropertyGridSkeleton } from '@/components/property/PropertyCardSkeleton'
+import { BrowseEmptyState } from '@/components/property/BrowseEmptyState'
+import { BrowseErrorState } from '@/components/property/BrowseErrorState'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
-function formatRupee(n: number) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n)
+import { useLocalPropertiesStore, type LocalProperty } from '@/stores/localPropertiesStore'
+import { useAuthStore } from '@/stores/authStore'
+
+function formatRupee(n: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(n)
 }
 
 const TYPE_OPTIONS: SelectOption[] = [
-  { value: '', label: 'All Types' },
+  { value: '', label: 'All Property Types' },
   { value: 'apartment', label: 'Apartment' },
-  { value: 'house', label: 'House/Villa' },
+  { value: 'house', label: 'House / Villa' },
   { value: 'resort', label: 'Resort' },
 ]
 
 const BEDROOM_OPTIONS: SelectOption[] = [
-  { value: '', label: 'Any BHK' },
+  { value: '', label: 'Any Bedrooms (BHK)' },
   { value: '1', label: '1 BHK' },
   { value: '2', label: '2 BHK' },
   { value: '3', label: '3 BHK' },
@@ -33,88 +50,120 @@ const BEDROOM_OPTIONS: SelectOption[] = [
 ]
 
 const SORT_OPTIONS: SelectOption[] = [
-  { value: 'newest', label: 'Newest First' },
+  { value: 'newest', label: 'Newest Listed' },
   { value: 'price-asc', label: 'Price: Low to High' },
   { value: 'price-desc', label: 'Price: High to Low' },
-  { value: 'area-desc', label: 'Largest First' },
+  { value: 'area-desc', label: 'Largest Area First' },
 ]
+
+const MAX_PRICE_SLIDER = 100000
 
 export function BrowsePage() {
   const navigate = useNavigate()
-  const toast = useToast()
-  const { items: properties, fetch: fetchProperties } = useLocalPropertiesStore()
-  const user = useAuthStore((state) => state.user)
+  const [searchParams] = useSearchParams()
+  const user = useAuthStore((state) => (state.status === 'authenticated' ? state.user : null))
 
+  const {
+    items: properties,
+    isLoading,
+    error,
+    fetch: fetchProperties,
+  } = useLocalPropertiesStore()
+
+  // Fetch properties on mount
   useEffect(() => {
     fetchProperties()
   }, [fetchProperties])
 
-  const [search, setSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
-  const [bedroomFilter, setBedroomFilter] = useState('')
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000])
-  const [sortBy, setSortBy] = useState('newest')
-  const [showFilters, setShowFilters] = useState(false)
+  // Filter state initialized from URL query params if present (e.g. from global search)
+  const [search, setSearch] = useState<string>(searchParams.get('q') || '')
+  const [typeFilter, setTypeFilter] = useState<string>('')
+  const [bedroomFilter, setBedroomFilter] = useState<string>('')
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, MAX_PRICE_SLIDER])
+  const [sortBy, setSortBy] = useState<string>('newest')
+  const [showFilters, setShowFilters] = useState<boolean>(false)
 
-  // Get active properties for marketplace from MongoDB
-  const allListings = useMemo(() => {
+  // Sync URL query if changed from navbar
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q !== null && q !== search) {
+      setSearch(q)
+    }
+  }, [searchParams])
+
+  // Count active filters
+  const activeFiltersCount = useMemo(() => {
+    let count = 0
+    if (search.trim()) count++
+    if (typeFilter) count++
+    if (bedroomFilter) count++
+    if (priceRange[0] > 0 || priceRange[1] < MAX_PRICE_SLIDER) count++
+    if (sortBy !== 'newest') count++
+    return count
+  }, [search, typeFilter, bedroomFilter, priceRange, sortBy])
+
+  // Map backend property records into standard marketplace items
+  const allListings = useMemo<PropertyCardItem[]>(() => {
     return properties
-      .filter(p => p.listingStatus === 'for-rent' || p.listingStatus === 'for-sale')
-      .map(p => ({
+      .filter((p) => p.listingStatus === 'for-rent' || p.listingStatus === 'for-sale')
+      .map((p) => ({
         id: p.id,
         name: p.name,
-        price: p.listingStatus === 'for-sale' ? (p.salePrice || 0) : (p.monthlyRent || 0),
+        price:
+          p.listingStatus === 'for-sale'
+            ? p.salePrice || 0
+            : p.monthlyRent || 0,
         bedrooms: p.bedrooms,
         bathrooms: p.bathrooms,
         areaSqFt: p.areaSqFt,
         description: p.description,
-        type: 'local' as const,
-        listingType: p.listingStatus === 'for-sale' ? ('sale' as const) : ('rent' as const),
-        status: 'available' as const,
-        city: p.address.city,
-        imageUrl: p.imageUrl,
+        type: 'local',
+        listingType: p.listingStatus === 'for-sale' ? 'sale' : 'rent',
+        status: p.listingStatus === 'occupied' ? 'occupied' : 'available',
+        city: p.address?.city || 'Location unavailable',
+        imageUrl: p.imageUrl || (p.images && p.images[0]) || undefined,
       }))
   }, [properties])
 
-  // Filter listings
+  // Filter & sort listings with fast memoized evaluation
   const filteredListings = useMemo(() => {
-    return allListings.filter(item => {
-      // Search filter
-      if (search) {
-        const searchLower = search.toLowerCase()
-        const matchesName = item.name.toLowerCase().includes(searchLower)
-        const matchesCity = item.city.toLowerCase().includes(searchLower)
-        const matchesDesc = item.description?.toLowerCase().includes(searchLower)
+    const query = search.trim().toLowerCase()
+    const isFiltered = allListings.filter((item) => {
+      // 1. Text Search Filter
+      if (query) {
+        const matchesName = item.name.toLowerCase().includes(query)
+        const matchesCity = item.city.toLowerCase().includes(query)
+        const matchesDesc = item.description?.toLowerCase().includes(query) || false
         if (!matchesName && !matchesCity && !matchesDesc) return false
       }
 
-      // Type filter
+      // 2. Property Type Filter
       if (typeFilter) {
-        // For local properties, map their type
-        if (item.type === 'local') {
-          const prop = properties.find(p => p.id === item.id)
-          if (prop?.type !== typeFilter) return false
-        }
+        const originalProp = properties.find((p) => p.id === item.id)
+        if (originalProp?.type !== typeFilter) return false
       }
 
-      // Bedroom filter
+      // 3. Bedroom Filter
       if (bedroomFilter) {
         if (item.bedrooms === undefined || item.bedrooms === null) return false
         if (bedroomFilter === '4') {
           if (item.bedrooms < 4) return false
-        } else if (item.bedrooms !== parseInt(bedroomFilter)) {
+        } else if (item.bedrooms !== parseInt(bedroomFilter, 10)) {
           return false
         }
       }
 
-      // Price filter
+      // 4. Price Range Filter
       if (item.price > 0) {
         if (item.price < priceRange[0]) return false
-        if (priceRange[1] < 100000 && item.price > priceRange[1]) return false
+        if (priceRange[1] < MAX_PRICE_SLIDER && item.price > priceRange[1]) return false
       }
 
       return true
-    }).sort((a, b) => {
+    })
+
+    // Sort evaluation
+    return isFiltered.sort((a, b) => {
       switch (sortBy) {
         case 'price-asc':
           return (a.price || 999999) - (b.price || 999999)
@@ -124,279 +173,337 @@ export function BrowsePage() {
           return (b.areaSqFt || 0) - (a.areaSqFt || 0)
         case 'newest':
         default:
-          return 0 // Keep original order
+          return 0
       }
     })
   }, [allListings, search, typeFilter, bedroomFilter, priceRange, sortBy, properties])
 
-  const handleViewDetail = (id: string) => {
-    navigate(user ? `/app/property/${id}` : `/browse/${id}`)
-  }
+  const handleClearFilters = useCallback(() => {
+    setSearch('')
+    setTypeFilter('')
+    setBedroomFilter('')
+    setPriceRange([0, MAX_PRICE_SLIDER])
+    setSortBy('newest')
+  }, [])
+
+  const handleViewDetail = useCallback(
+    (id: string) => {
+      navigate(user ? `/app/property/${id}` : `/browse/${id}`)
+    },
+    [navigate, user]
+  )
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-text">Browse Properties</h1>
-          <p className="text-sm text-muted mt-0.5">
-            Find your next home from {allListings.length} available propert{allListings.length === 1 ? 'y' : 'ies'}
+    <div className="flex flex-col gap-8 max-w-7xl mx-auto w-full pb-12 animate-in fade-in-50 duration-300">
+      {/* ─── 1. Header Section ─────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-border/60 pb-6">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-text">
+              Browse Properties
+            </h1>
+            {isLoading && properties.length === 0 && (
+              <LoadingSpinner size="sm" className="text-primary ml-1" />
+            )}
+          </div>
+          <p className="text-sm text-muted">
+            {isLoading && properties.length === 0 ? (
+              'Fetching current marketplace listings from server...'
+            ) : activeFiltersCount > 0 ? (
+              <span>
+                Showing <strong className="text-text font-semibold">{filteredListings.length}</strong> of{' '}
+                <strong className="text-text font-semibold">{allListings.length}</strong> properties matching your filters
+              </span>
+            ) : (
+              <span>
+                Find your next home from{' '}
+                <strong className="text-text font-semibold">{allListings.length}</strong> verified available propert
+                {allListings.length === 1 ? 'y' : 'ies'}
+              </span>
+            )}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={() => setShowFilters(!showFilters)}>
-            <Filter className="h-4 w-4" aria-hidden="true" />
-            Filters
+
+        {/* Filter Drawer Toggle & Quick Actions */}
+        <div className="flex items-center gap-3">
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearFilters}
+              className="text-xs text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1" />
+              Reset Filters
+            </Button>
+          )}
+
+          <Button
+            variant={showFilters ? 'primary' : 'secondary'}
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 shadow-xs transition-all duration-200"
+            aria-expanded={showFilters}
+          >
+            <SlidersHorizontal
+              className={cn(
+                'h-4 w-4 transition-transform duration-300',
+                showFilters ? 'rotate-90 text-white' : 'text-primary'
+              )}
+              aria-hidden="true"
+            />
+            <span>Filters</span>
+            {activeFiltersCount > 0 && (
+              <span
+                className={cn(
+                  'flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ml-0.5',
+                  showFilters
+                    ? 'bg-white text-primary'
+                    : 'bg-primary text-white shadow-xs'
+                )}
+              >
+                {activeFiltersCount}
+              </span>
+            )}
           </Button>
         </div>
       </div>
 
-      {/* Filters Sidebar */}
+      {/* ─── 2. Search & Filter Panel ──────────────────────────────────────── */}
       {showFilters && (
-        <GlassCard className="p-0 overflow-hidden">
-          <GlassCardContent className="p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between gap-4">
-              <Input
-                placeholder="Search by name, location..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                leftIcon={<Search className="h-4 w-4" />}
-                className="flex-1 max-w-xs"
-              />
-              <Select
-                placeholder="Property Type"
-                options={TYPE_OPTIONS}
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="w-full sm:w-48"
-              />
-              <Select
-                placeholder="Bedrooms"
-                options={BEDROOM_OPTIONS}
-                value={bedroomFilter}
-                onChange={(e) => setBedroomFilter(e.target.value)}
-                className="w-full sm:w-40"
-              />
-              <Select
-                placeholder="Sort By"
-                options={SORT_OPTIONS}
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full sm:w-44"
-              />
-              <Button variant="secondary" onClick={() => {
-                setSearch('')
-                setTypeFilter('')
-                setBedroomFilter('')
-                setPriceRange([0, 100000])
-                setSortBy('newest')
-              }}>
-                Clear All
-              </Button>
+        <GlassCard className="p-0 overflow-hidden border-border/80 shadow-md animate-in fade-in-50 slide-in-from-top-3 duration-250">
+          <GlassCardContent className="p-5 sm:p-6 space-y-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 items-end">
+              {/* Text Search Input */}
+              <div className="relative flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
+                <label className="text-xs font-semibold text-text/80 tracking-wide">
+                  Keyword / Location
+                </label>
+                <div className="relative flex items-center">
+                  <Search className="absolute left-3 h-4 w-4 text-muted pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="City, locality, or property..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full rounded-xl border border-border bg-surface px-9 py-2 text-sm text-text placeholder:text-muted/60 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => setSearch('')}
+                      className="absolute right-3 text-muted hover:text-text p-0.5 rounded transition-colors"
+                      aria-label="Clear search"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Property Type Select */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-text/80 tracking-wide">
+                  Property Type
+                </label>
+                <Select
+                  placeholder="All Types"
+                  options={TYPE_OPTIONS}
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Bedrooms Select */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-text/80 tracking-wide">
+                  Bedrooms
+                </label>
+                <Select
+                  placeholder="Any BHK"
+                  options={BEDROOM_OPTIONS}
+                  value={bedroomFilter}
+                  onChange={(e) => setBedroomFilter(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Sort By Select */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-text/80 tracking-wide">
+                  Sort Order
+                </label>
+                <Select
+                  placeholder="Sort by"
+                  options={SORT_OPTIONS}
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full"
+                />
+              </div>
             </div>
-            
+
             {/* Price Range Slider */}
-            <div className="pt-4 border-t border-border/50">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-muted">Price Range</span>
-                <span className="font-medium text-text">
-                  {priceRange[0] === 0 ? 'No Min' : formatRupee(priceRange[0])} - 
-                  {priceRange[1] >= 100000 ? 'No Max' : formatRupee(priceRange[1])}
+            <div className="pt-4 border-t border-border/50 space-y-2.5">
+              <div className="flex items-center justify-between text-xs sm:text-sm">
+                <span className="font-semibold text-text flex items-center gap-1.5">
+                  Monthly Budget / Price Range
+                </span>
+                <span className="font-bold text-primary font-mono bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
+                  {priceRange[0] === 0 ? 'No Min' : formatRupee(priceRange[0])} —{' '}
+                  {priceRange[1] >= MAX_PRICE_SLIDER ? 'No Max' : formatRupee(priceRange[1])}
                 </span>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 pt-1">
                 <input
                   type="range"
                   min="0"
-                  max="100000"
+                  max={MAX_PRICE_SLIDER}
                   step="5000"
                   value={priceRange[0]}
-                  onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-                  className="flex-1 accent-primary"
+                  onChange={(e) => {
+                    const nextVal = parseInt(e.target.value, 10)
+                    setPriceRange([Math.min(nextVal, priceRange[1]), priceRange[1]])
+                  }}
+                  className="flex-1 accent-primary h-1.5 bg-surface2 rounded-lg cursor-pointer"
+                  aria-label="Minimum price filter"
                 />
                 <input
                   type="range"
                   min="0"
-                  max="100000"
+                  max={MAX_PRICE_SLIDER}
                   step="5000"
                   value={priceRange[1]}
-                  onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                  className="flex-1 accent-primary"
+                  onChange={(e) => {
+                    const nextVal = parseInt(e.target.value, 10)
+                    setPriceRange([priceRange[0], Math.max(nextVal, priceRange[0])])
+                  }}
+                  className="flex-1 accent-primary h-1.5 bg-surface2 rounded-lg cursor-pointer"
+                  aria-label="Maximum price filter"
                 />
               </div>
             </div>
+
+            {/* Active Filters Pill Bar */}
+            {activeFiltersCount > 0 && (
+              <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border/40 text-xs">
+                <span className="text-muted font-medium">Active:</span>
+                {search && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-surface2 px-2.5 py-1 text-text border border-border/60">
+                    Query: &quot;{search}&quot;
+                    <button
+                      type="button"
+                      onClick={() => setSearch('')}
+                      className="text-muted hover:text-text ml-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+                {typeFilter && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-surface2 px-2.5 py-1 text-text border border-border/60 capitalize">
+                    {typeFilter}
+                    <button
+                      type="button"
+                      onClick={() => setTypeFilter('')}
+                      className="text-muted hover:text-text ml-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+                {bedroomFilter && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-surface2 px-2.5 py-1 text-text border border-border/60">
+                    {bedroomFilter === '4' ? '4+ BHK' : `${bedroomFilter} BHK`}
+                    <button
+                      type="button"
+                      onClick={() => setBedroomFilter('')}
+                      className="text-muted hover:text-text ml-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+                {(priceRange[0] > 0 || priceRange[1] < MAX_PRICE_SLIDER) && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-surface2 px-2.5 py-1 text-text border border-border/60">
+                    Price: {priceRange[0] > 0 ? formatRupee(priceRange[0]) : '0'} -{' '}
+                    {priceRange[1] < MAX_PRICE_SLIDER ? formatRupee(priceRange[1]) : 'Max'}
+                    <button
+                      type="button"
+                      onClick={() => setPriceRange([0, MAX_PRICE_SLIDER])}
+                      className="text-muted hover:text-text ml-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+              </div>
+            )}
           </GlassCardContent>
         </GlassCard>
       )}
 
-      {/* Results */}
-      <GlassCard className="p-0">
-        <GlassCardContent className="p-0">
-          {filteredListings.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 mb-4">
-                <Search className="h-8 w-8 text-primary" aria-hidden="true" />
-              </div>
-              <h3 className="text-lg font-semibold text-text">No properties found</h3>
-              <p className="text-sm text-muted mt-1">Try adjusting your filters or search terms</p>
-              <Button variant="secondary" className="mt-4" onClick={() => {
-                setSearch('')
-                setTypeFilter('')
-                setBedroomFilter('')
-                setPriceRange([0, 100000])
-                setSortBy('newest')
-              }}>
-                Clear Filters
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-0 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredListings.map((item) => (
-                <ListingCard
-                  key={item.id}
-                  item={item}
-                  onClick={handleViewDetail}
-                />
-              ))}
-            </div>
-          )}
-        </GlassCardContent>
-      </GlassCard>
+      {/* ─── 3. Main Content: Skeletons / Error / Empty / Grid ──────────────── */}
+      {error && properties.length === 0 ? (
+        <BrowseErrorState
+          error={error}
+          onRetry={fetchProperties}
+          isRetrying={isLoading}
+        />
+      ) : isLoading && properties.length === 0 ? (
+        <PropertyGridSkeleton count={6} />
+      ) : filteredListings.length === 0 ? (
+        <BrowseEmptyState
+          onClearFilters={handleClearFilters}
+          hasActiveFilters={activeFiltersCount > 0}
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredListings.map((item, index) => (
+            <PropertyCard
+              key={item.id}
+              item={item}
+              onClick={handleViewDetail}
+              priority={index < 3}
+            />
+          ))}
+        </div>
+      )}
 
-      {/* CTA for non-logged in users */}
+      {/* ─── 4. Onboarding Banner for Guests ───────────────────────────────── */}
       {!user && (
-        <GlassCard variant="primary" className="text-center py-10">
-          <div className="max-w-md mx-auto">
-            <h3 className="text-lg font-semibold text-text">Looking to list your property?</h3>
-            <p className="text-sm text-muted mt-2">Sign up as a property owner to list your properties and find tenants.</p>
-            <div className="mt-4 flex gap-3 justify-center">
-              <Button variant="primary" onClick={() => navigate('/register')}>
+        <div className="relative overflow-hidden rounded-3xl border border-primary/25 bg-gradient-to-r from-primary/10 via-surface/80 to-surface/40 p-8 sm:p-10 text-center shadow-lg backdrop-blur-md mt-6">
+          <div className="max-w-xl mx-auto space-y-3">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 border border-primary/30 px-3 py-1 text-xs font-bold text-primary">
+              <Building className="h-3.5 w-3.5" />
+              <span>For Property Owners & Landlords</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-text">
+              Looking to list and manage your properties?
+            </h2>
+            <p className="text-sm text-muted leading-relaxed">
+              Join PropertyPro to publish listings, manage multi-unit occupancies, receive verified rental applications, and automate lease payments.
+            </p>
+            <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => navigate('/register')}
+                className="shadow-md hover:shadow-lg"
+              >
                 Register as Owner
               </Button>
-              <Button variant="secondary" onClick={() => navigate('/login')}>
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => navigate('/login')}
+              >
                 Sign In
               </Button>
             </div>
           </div>
-        </GlassCard>
+        </div>
       )}
-    </div>
-  )
-}
-
-interface ListingCardProps {
-  item: {
-    id: string
-    name: string
-    price: number
-    bedrooms?: number
-    bathrooms?: number
-    areaSqFt?: number
-    description?: string
-    type: 'listing' | 'local'
-    city: string
-    imageUrl?: string
-    listingType?: 'rent' | 'sale'
-  }
-  onClick: (id: string) => void
-}
-
-function ListingCard({ item, onClick }: ListingCardProps) {
-  const toast = useToast()
-  return (
-    <div
-      className="group flex flex-col h-full overflow-hidden border-r border-b border-border/50 last:border-r-0 sm:last:border-r border-r transition-all duration-300 hover:bg-surface/50 cursor-pointer"
-      onClick={() => onClick(item.id)}
-    >
-      {/* Image Header */}
-      <div className="relative h-48 w-full bg-surface2 overflow-hidden">
-        {item.imageUrl ? (
-          <img
-            src={item.imageUrl}
-            alt={item.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-muted/50">
-              <div className="text-5xl mb-1">🏠</div>
-              <p className="text-sm font-medium">{item.name}</p>
-            </div>
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent group-hover:from-black/60 transition-colors" />
-        
-        <div className="absolute left-3 top-3 flex gap-1.5">
-          <Badge intent="success" size="sm">Available</Badge>
-          <Badge intent="neutral" size="sm">{item.listingType === 'sale' ? 'For Sale' : 'For Rent'}</Badge>
-        </div>
-        
-        <div className="absolute right-3 top-3">
-          <button
-            type="button"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-black/40 backdrop-blur text-white hover:bg-black/60 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation()
-              const saved = useSavedPropertiesStore.getState().toggleSave(item.id)
-              if (saved) {
-                toast.success('Property saved to your favorites!')
-              } else {
-                toast.info('Property removed from favorites.')
-              }
-            }}
-            aria-label="Save property"
-          >
-            <Heart
-              className={cn(
-                'h-4 w-4 transition-colors',
-                useSavedPropertiesStore.getState().isSaved(item.id)
-                  ? 'fill-rose-500 text-rose-500'
-                  : 'text-white'
-              )}
-              aria-hidden="true"
-            />
-          </button>
-        </div>
-
-        <div className="absolute bottom-3 left-3 right-3 text-white">
-          <p className="text-xl font-bold font-display">
-            {item.price > 0 ? formatRupee(item.price) : 'Not specified'} 
-            {item.price > 0 && item.listingType !== 'sale' && <span className="text-base font-normal opacity-80">/month</span>}
-          </p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex flex-1 flex-col p-4">
-        <h3 className="font-display text-lg font-bold text-text group-hover:text-primary transition-colors line-clamp-1">
-          {item.name}
-        </h3>
-        <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
-          <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
-          <span>{item.city}</span>
-        </p>
-        {item.description && (
-          <p className="mt-2 text-sm text-text2 line-clamp-2 flex-1">
-            {item.description}
-          </p>
-        )}
-        
-        {/* Features */}
-        <div className="mt-4 flex flex-wrap items-center gap-3 pt-3 border-t border-border/50">
-          <span className="flex items-center gap-1 text-xs text-muted">
-            <Key className="h-3 w-3" aria-hidden="true" />
-            {item.bedrooms !== undefined && item.bedrooms !== null ? `${item.bedrooms} BHK` : 'Not specified'}
-          </span>
-          <span className="flex items-center gap-1 text-xs text-muted">
-            <Bath className="h-3 w-3" aria-hidden="true" />
-            {item.bathrooms !== undefined && item.bathrooms !== null ? `${item.bathrooms} Bath` : 'Not specified'}
-          </span>
-          <span className="flex items-center gap-1 text-xs text-muted">
-            <Square className="h-3 w-3" aria-hidden="true" />
-            {item.areaSqFt !== undefined && item.areaSqFt !== null ? `${item.areaSqFt.toLocaleString()} sq ft` : 'Not specified'}
-          </span>
-        </div>
-      </div>
     </div>
   )
 }

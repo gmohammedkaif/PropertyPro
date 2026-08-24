@@ -90,19 +90,77 @@ type RequestFormErrors = Partial<Record<keyof RequestFormData, string>>
 
 function PageSkeleton() {
   return (
-    <div className="flex flex-col gap-6 max-w-6xl mx-auto">
+    <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full animate-in fade-in-50 duration-200" aria-label="Loading property details">
+      {/* Top Bar Skeleton */}
       <div className="flex items-center justify-between">
-        <Skeleton className="h-9 w-32" />
-        <Skeleton className="h-6 w-24" />
-      </div>
-      <Skeleton className="h-96 w-full rounded-2xl" />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <Skeleton className="h-36 w-full rounded-2xl" />
-          <Skeleton className="h-48 w-full rounded-2xl" />
+        <Skeleton className="h-9 w-36 rounded-xl" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-7 w-20 rounded-full" />
+          <Skeleton className="h-7 w-24 rounded-full" />
         </div>
+      </div>
+
+      {/* Hero Image Gallery Skeleton */}
+      <div className="space-y-3 rounded-2xl border border-border/60 bg-surface/50 p-4">
+        <Skeleton className="h-80 sm:h-96 w-full rounded-2xl" />
+        <div className="grid grid-cols-4 gap-3">
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+        </div>
+      </div>
+
+      {/* 2-Column Details Skeleton */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left Column */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          {/* Specifications Box Skeleton */}
+          <div className="space-y-4 rounded-2xl border border-border/60 bg-surface/50 p-6">
+            <Skeleton className="h-5 w-44 rounded-md" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-xl" />
+              ))}
+            </div>
+          </div>
+
+          {/* Description Skeleton */}
+          <div className="space-y-3 rounded-2xl border border-border/60 bg-surface/50 p-6">
+            <Skeleton className="h-5 w-32 rounded-md" />
+            <Skeleton className="h-4 w-full rounded" />
+            <Skeleton className="h-4 w-5/6 rounded" />
+            <Skeleton className="h-4 w-3/4 rounded" />
+          </div>
+
+          {/* Units Skeleton */}
+          <div className="space-y-3 rounded-2xl border border-border/60 bg-surface/50 p-6">
+            <Skeleton className="h-5 w-40 rounded-md" />
+            <Skeleton className="h-20 w-full rounded-xl" />
+          </div>
+        </div>
+
+        {/* Right Column */}
         <div className="flex flex-col gap-6">
-          <Skeleton className="h-64 w-full rounded-2xl" />
+          {/* Pricing & Request Action Skeleton */}
+          <div className="space-y-4 rounded-2xl border border-border/60 bg-surface/50 p-6">
+            <Skeleton className="h-4 w-28 rounded" />
+            <Skeleton className="h-9 w-44 rounded-lg" />
+            <Skeleton className="h-12 w-full rounded-xl" />
+          </div>
+
+          {/* Owner Card Skeleton */}
+          <div className="space-y-4 rounded-2xl border border-border/60 bg-surface/50 p-6">
+            <Skeleton className="h-5 w-36 rounded-md" />
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="space-y-1.5 flex-1">
+                <Skeleton className="h-4 w-32 rounded" />
+                <Skeleton className="h-3 w-24 rounded" />
+              </div>
+            </div>
+            <Skeleton className="h-10 w-full rounded-lg" />
+          </div>
         </div>
       </div>
     </div>
@@ -128,9 +186,6 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
         <Button variant="ghost" onClick={() => navigate('/app/properties')}>
           <ArrowLeft className="h-4 w-4" /> Back to Properties
         </Button>
-        <Button variant="secondary" onClick={onRetry}>
-          <RefreshCw className="h-4 w-4" aria-hidden="true" /> Try again
-        </Button>
       </div>
     </div>
   )
@@ -142,7 +197,7 @@ export function PropertyDetailPage() {
   const { id = '' } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const toast = useToast()
-  const user = useAuthStore((state) => state.user)
+  const user = useAuthStore((state) => state.status === 'authenticated' ? state.user : null)
 
   // API Query Hooks
   const { data: apiProperty, isLoading: queryLoading, error: queryError, refetch } = useProperty(id, !!id)
@@ -200,7 +255,7 @@ export function PropertyDetailPage() {
   const existingRequest = rentalRequests.find(
     (r) =>
       (r.propertyId === property.id || r.propertyName?.toLowerCase() === property.name?.toLowerCase()) &&
-      (r.tenantEmail?.toLowerCase() === (user?.email ?? '').toLowerCase() || r.tenantId === user?.id)
+      (r.tenantEmail.toLowerCase() === (user?.email ?? '').toLowerCase() || r.tenantId === user?.id)
   )
 
   // Financial calculation
@@ -215,8 +270,11 @@ export function PropertyDetailPage() {
 
   // Handle Rental Request Modal Open
   const handleOpenRequestModal = () => {
-    if (!user) {
-      toast.error('Please login first')
+    const authState = useAuthStore.getState()
+    const currentUser = authState.status === 'authenticated' ? authState.user : null
+
+    if (!currentUser) {
+      toast.info('Please log in to submit a rental application.')
       navigate('/login')
       return
     }
@@ -224,7 +282,7 @@ export function PropertyDetailPage() {
 
     setSelectedUnitNumber(avail[0]?.unitNumber ?? 'Main')
     setRequestForm({
-      fullName: user.name ?? '',
+      fullName: currentUser.name ?? '',
       mobileNumber: '',
       city: property.address?.city ?? '',
     })
@@ -340,39 +398,41 @@ export function PropertyDetailPage() {
 
       {/* ─── Hero Image Gallery ───────────────────────────────────────────── */}
       {propertyImages.length > 0 ? (
-        <GlassCard className="p-4 overflow-hidden">
+        <GlassCard className="p-3 sm:p-4 overflow-hidden">
           <div className="flex flex-col gap-3">
-            <div className="relative h-96 w-full rounded-2xl overflow-hidden bg-surface2 border border-border/40">
+            <div className="relative h-72 sm:h-96 w-full rounded-2xl overflow-hidden bg-surface2 border border-border/40">
               <img
                 src={propertyImages[selectedImage] || propertyImages[0]}
                 alt={property.name}
                 className="h-full w-full object-cover transition-all duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
-              <div className="absolute bottom-4 left-6 text-white">
-                <h1 className="text-3xl font-bold font-display drop-shadow-md">{property.name}</h1>
-                <p className="text-sm font-medium opacity-90 flex items-center gap-1 mt-1">
-                  <MapPin className="h-4 w-4 text-primary" /> {property.address.line1}, {property.address.city},{' '}
-                  {property.address.state} {property.address.postalCode}
-                </p>
-              </div>
-              <div className="absolute bottom-4 right-6 text-white text-right">
-                <p className="text-3xl font-bold font-display text-emerald-400">
-                  {displayPrice > 0 ? formatRupee(displayPrice) : 'Contact Owner'}
-                  {!isSale && displayPrice > 0 && <span className="text-sm font-normal text-white/80">/month</span>}
-                </p>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 text-white flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold font-display drop-shadow-md">{property.name}</h1>
+                  <p className="text-xs sm:text-sm font-medium opacity-90 flex items-center gap-1 mt-1">
+                    <MapPin className="h-3.5 w-3.5 text-primary shrink-0" /> {property.address.line1}, {property.address.city},{' '}
+                    {property.address.state} {property.address.postalCode}
+                  </p>
+                </div>
+                <div className="text-left sm:text-right shrink-0">
+                  <p className="text-2xl sm:text-3xl font-bold font-display text-emerald-400">
+                    {displayPrice > 0 ? formatRupee(displayPrice) : 'Contact Owner'}
+                    {!isSale && displayPrice > 0 && <span className="text-xs sm:text-sm font-normal text-white/80">/month</span>}
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* Thumbnails */}
             {propertyImages.length > 1 && (
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-4 gap-2 sm:gap-3">
                 {propertyImages.map((img: string, idx: number) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => setSelectedImage(idx)}
-                    className={`relative h-20 rounded-xl overflow-hidden border-2 transition-all ${
+                    className={`relative h-16 sm:h-20 rounded-xl overflow-hidden border-2 transition-all ${
                       selectedImage === idx
                         ? 'border-primary scale-[1.02] shadow-lg'
                         : 'border-transparent opacity-70 hover:opacity-100'
@@ -386,7 +446,7 @@ export function PropertyDetailPage() {
           </div>
         </GlassCard>
       ) : (
-        <div className="flex flex-col gap-2 p-8 text-center bg-surface2/30 rounded-2xl border border-border/40">
+        <div className="flex flex-col gap-2 p-6 sm:p-8 text-center bg-surface2/30 rounded-2xl border border-border/40">
           <Building2 className="h-12 w-12 text-muted mx-auto" />
           <h1 className="text-2xl font-bold text-text font-display">{property.name}</h1>
           <p className="text-sm text-muted">
@@ -430,7 +490,7 @@ export function PropertyDetailPage() {
                   : property.areaSqFt ? `${property.areaSqFt} sq ft` : 'Not specified'
 
                 return (
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                     <SpecBox
                       icon={<Key className="h-5 w-5 text-primary" />}
                       label="Bedrooms"
@@ -724,9 +784,9 @@ export function PropertyDetailPage() {
                 type="submit"
                 variant="primary"
                 loading={requestSubmitting}
-                disabled={availableUnitsList.length === 0 || !selectedUnitNumber}
+                disabled={availableUnitsList.length === 0 || !selectedUnitNumber || requestSubmitting}
               >
-                Submit Request
+                {requestSubmitting ? 'Submitting Request...' : 'Submit Request'}
               </Button>
             </div>
           </form>

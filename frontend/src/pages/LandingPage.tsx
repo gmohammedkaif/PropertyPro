@@ -221,7 +221,7 @@ export function LandingPage() {
 
         {/* Stats band */}
         <section className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="glass grid grid-cols-2 gap-6 rounded-2xl px-6 py-8 sm:grid-cols-4">
+          <div className="glass grid grid-cols-2 gap-4 sm:gap-6 rounded-2xl px-4 sm:px-6 py-6 sm:py-8 sm:grid-cols-4">
             {[
               { value: '5+', label: 'Roles unified' },
               { value: '99.9%', label: 'Uptime target' },
@@ -288,7 +288,13 @@ export function LandingPage() {
           <p className="text-sm text-muted">
             © {new Date().getFullYear()} PropertyPro. All rights reserved.
           </p>
-          <div className="flex items-center gap-4 text-sm text-muted">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-sm text-muted">
+            <Link to="/terms" className="transition-colors hover:text-text">
+              Terms of Service
+            </Link>
+            <Link to="/privacy" className="transition-colors hover:text-text">
+              Privacy Policy
+            </Link>
             <Link to="/login" className="transition-colors hover:text-text">
               Sign in
             </Link>

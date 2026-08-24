@@ -44,7 +44,7 @@ const GALLERY_IMAGES = [
 export function TenantPropertyDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const user = useAuthStore((state) => state.user)
+  const user = useAuthStore((state) => state.status === 'authenticated' ? state.user : null)
   const toast = useToast()
 
   const { items: listings } = useListingsStore()
@@ -113,7 +113,10 @@ export function TenantPropertyDetailPage() {
   const addressLine = localProperty?.address.line1 ?? 'Prime Location, Main Road'
 
   const handleOpenRequestModal = () => {
-    if (!user) {
+    const authState = useAuthStore.getState()
+    const currentUser = authState.status === 'authenticated' ? authState.user : null
+
+    if (!currentUser) {
       toast.info('Please log in to submit a rental application.')
       navigate('/login')
       return
@@ -138,12 +141,17 @@ export function TenantPropertyDetailPage() {
     }
 
     setSelectedUnitNumber(avail[0]?.unitNumber ?? 'Main')
-    setFullName(user.name)
+    setFullName(currentUser.name)
     setRequestModalOpen(true)
   }
 
   const handleSubmitRentalRequest = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!user) {
+      toast.error('Please log in to submit a rental application.')
+      navigate('/login')
+      return
+    }
     if (!fullName.trim() || !mobileNumber.trim() || !city.trim()) {
       toast.error('Please fill in all required fields.')
       return
@@ -181,6 +189,11 @@ export function TenantPropertyDetailPage() {
   }
 
   const handleInquirePurchase = async () => {
+    if (!user) {
+      toast.info('Please log in to inquire about purchasing this property.')
+      navigate('/login')
+      return
+    }
     const ownerEmail = (localProperty as any)?.ownerEmail
     if (ownerEmail) {
       await addNotification({
@@ -458,9 +471,9 @@ export function TenantPropertyDetailPage() {
                 type="submit"
                 variant="primary"
                 loading={submitting}
-                disabled={availableUnitsList.length === 0 || !selectedUnitNumber}
+                disabled={availableUnitsList.length === 0 || !selectedUnitNumber || submitting}
               >
-                Submit Request
+                {submitting ? 'Submitting Request...' : 'Submit Request'}
               </Button>
             </div>
           </form>

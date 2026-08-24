@@ -180,9 +180,9 @@ export function TenantDashboardPage() {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Current Rental Summary Card */}
             <GlassCard variant="primary" hover={true} className="lg:col-span-2 p-0 overflow-hidden relative group">
-              <div className="p-6 flex flex-col sm:flex-row gap-6">
+              <div className="p-4 sm:p-6 flex flex-col md:flex-row gap-4 sm:gap-6">
                 {/* Property Image / Badge */}
-                <div className="relative h-44 sm:h-44 sm:w-48 rounded-xl overflow-hidden bg-surface-2 shrink-0 border border-border/60">
+                <div className="relative h-44 w-full md:w-48 rounded-xl overflow-hidden bg-surface-2 shrink-0 border border-border/60">
                   {myProperty?.imageUrl ? (
                     <img
                       src={myProperty.imageUrl}
@@ -667,7 +667,7 @@ function PropertyDisplayCard({
         )}
 
         <div className="mt-3 py-2 border-t border-border/40 flex items-center justify-between text-xs text-muted">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="flex items-center gap-1">
               <Key className="h-3 w-3 text-primary" /> {bedrooms !== undefined && bedrooms !== null ? `${bedrooms} BHK` : 'Not specified'}
             </span>
@@ -676,7 +676,7 @@ function PropertyDisplayCard({
           </div>
         </div>
 
-        <div className="mt-2 flex items-center justify-between pt-2">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 pt-2">
           <span className="text-[11px] text-muted">Owner: <strong className="text-text font-medium">{ownerName ?? 'Owner information unavailable'}</strong></span>
           <Button variant="ghost" size="sm" className="text-xs font-semibold text-primary group-hover:bg-primary/10">
             View Details

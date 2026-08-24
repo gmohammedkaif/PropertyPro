@@ -66,6 +66,8 @@ const SEED: LocalProperty[] = []
 interface LocalPropertiesState {
   items: LocalProperty[]
   loadedFromApi: boolean
+  isLoading: boolean
+  error: string | null
   fetch: () => Promise<void>
   add: (item: Omit<LocalProperty, 'createdAt'>) => void
   update: (id: string, patch: Partial<LocalProperty>) => void
@@ -77,11 +79,18 @@ interface LocalPropertiesState {
   setListingStatus: (propertyId: string, status: LocalPropertyListingStatus) => void
 }
 
+let isFetching = false
+
 export const useLocalPropertiesStore = create<LocalPropertiesState>()((set) => ({
   items: SEED,
   loadedFromApi: false,
+  isLoading: false,
+  error: null,
 
   fetch: async () => {
+    if (isFetching) return
+    isFetching = true
+    set({ isLoading: true, error: null })
     try {
       let res
       try {
@@ -98,42 +107,45 @@ export const useLocalPropertiesStore = create<LocalPropertiesState>()((set) => (
         }
       }
       const records = res.data?.data?.items ?? []
-      if (records.length > 0) {
-        const mapped: LocalProperty[] = records.map((r) => ({
-          id: r.id,
-          name: r.name,
-          type: r.type as LocalPropertyType,
-          description: r.description ?? undefined,
-          totalUnits: r.totalUnits ?? r.units?.length ?? 1,
-          occupiedUnits: r.occupiedUnits ?? 0,
-          listingStatus: (r.listingStatus as LocalPropertyListingStatus) || 'for-rent',
-          bedrooms: r.bedrooms,
-          bathrooms: r.bathrooms,
-          parking: r.parking,
-          areaSqFt: r.areaSqFt,
-          monthlyRent: r.monthlyRent,
-          securityDeposit: (r as any).securityDeposit,
-          salePrice: r.salePrice,
-          amenities: r.amenities,
-          imageUrl: r.imageUrl,
-          images: r.images,
-          units: r.units ?? [],
-          ownerEmail: r.ownerEmail,
-          ownerId: r.ownerId,
-          address: {
-            line1: r.address.line1,
-            line2: r.address.line2 ?? undefined,
-            city: r.address.city,
-            state: r.address.state,
-            postalCode: r.address.postalCode,
-            country: r.address.country,
-          },
-          createdAt: r.createdAt,
-        }))
-        set({ items: mapped, loadedFromApi: true })
-      }
-    } catch {
-      // Keep existing local state on network error
+      const mapped: LocalProperty[] = records.map((r) => ({
+        id: r.id,
+        name: r.name,
+        type: r.type as LocalPropertyType,
+        description: r.description ?? undefined,
+        totalUnits: r.totalUnits ?? r.units?.length ?? 1,
+        occupiedUnits: r.occupiedUnits ?? 0,
+        listingStatus: (r.listingStatus as LocalPropertyListingStatus) || 'for-rent',
+        bedrooms: r.bedrooms,
+        bathrooms: r.bathrooms,
+        parking: r.parking,
+        areaSqFt: r.areaSqFt,
+        monthlyRent: r.monthlyRent,
+        securityDeposit: (r as any).securityDeposit,
+        salePrice: r.salePrice,
+        amenities: r.amenities,
+        imageUrl: r.imageUrl,
+        images: r.images,
+        units: r.units ?? [],
+        ownerEmail: r.ownerEmail,
+        ownerId: r.ownerId,
+        address: {
+          line1: r.address.line1,
+          line2: r.address.line2 ?? undefined,
+          city: r.address.city,
+          state: r.address.state,
+          postalCode: r.address.postalCode,
+          country: r.address.country,
+        },
+        createdAt: r.createdAt,
+      }))
+      set({ items: mapped, loadedFromApi: true, isLoading: false, error: null })
+    } catch (err: any) {
+      set({
+        isLoading: false,
+        error: err?.message || 'Unable to load properties. Please check your network connection.',
+      })
+    } finally {
+      isFetching = false
     }
   },
 

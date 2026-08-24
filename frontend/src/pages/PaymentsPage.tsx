@@ -411,7 +411,7 @@ export function PaymentsPage() {
             placeholder="e.g. Hassan Villa"
             required
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label="Payment Type"
               options={[
@@ -434,7 +434,7 @@ export function PaymentsPage() {
               onChange={(e) => setStatus(e.target.value as PaymentStatus)}
             />
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Input
               label="Amount"
               type="number"

@@ -8,7 +8,7 @@ import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const modalVariants = cva(
-  'fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[calc(100vw-2rem)] max-h-[90vh] flex flex-col bg-surface border border-border',
+  'fixed left-1/2 top-1/2 z-[var(--z-modal)] w-[calc(100vw-1.5rem)] sm:w-[calc(100vw-2rem)] max-h-[90vh] flex flex-col bg-surface border border-border',
   {
     variants: {
       size: {
@@ -97,7 +97,7 @@ export function EnhancedModal({
                 onClick={(e) => e.stopPropagation()}
               >
                 {(title || description) && (
-                  <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-border shrink-0">
+                  <div className="flex items-start justify-between gap-4 px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border shrink-0">
                     <div className="flex-1">
                       {title && (
                         <DialogPrimitive.Title className="text-base font-semibold tracking-tight text-text">
@@ -105,7 +105,7 @@ export function EnhancedModal({
                         </DialogPrimitive.Title>
                       )}
                       {description && (
-                        <DialogPrimitive.Description className="mt-0.5 text-sm text-muted">
+                        <DialogPrimitive.Description className="mt-0.5 text-xs sm:text-sm text-muted">
                           {description}
                         </DialogPrimitive.Description>
                       )}
@@ -124,12 +124,12 @@ export function EnhancedModal({
                   </div>
                 )}
 
-                <div className="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 custom-scrollbar">
                   {children}
                 </div>
 
                 {footer && (
-                  <div className="shrink-0 px-6 py-4 border-t border-border flex items-center justify-end gap-2">
+                  <div className="shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-t border-border flex flex-wrap items-center justify-end gap-2">
                     {footer}
                   </div>
                 )}

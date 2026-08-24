@@ -189,7 +189,7 @@ export function DashboardPage() {
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       {/* ── Header ─────────────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-text">
             {greeting()}, {firstName} 👋
@@ -203,7 +203,7 @@ export function DashboardPage() {
           variant="primary"
           leftIcon={<Plus className="h-4 w-4" />}
           onClick={() => navigate('/app/properties')}
-          className="hidden sm:flex"
+          className="w-full sm:w-auto"
         >
           Add Property
         </Button>
@@ -211,21 +211,21 @@ export function DashboardPage() {
 
       {/* ── Stats Grid ─────────────────────────────────────────────────────────── */}
       {isSuperAdmin ? (
-        <div className="flex flex-col gap-5 w-full">
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex flex-col gap-4 sm:gap-5 w-full">
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             <StatCard title="Total Properties" value={String(adminStats?.totalProperties ?? 0)} icon={Building2} variant="primary" />
             <StatCard title="Rented Properties" value={String(adminStats?.rentedProperties ?? 0)} icon={UserCheck} variant="success" />
             <StatCard title="Available Properties" value={String(adminStats?.availableProperties ?? 0)} icon={Home} variant="secondary" />
             <StatCard title="Properties for Sale" value={String(adminStats?.propertiesForSale ?? 0)} icon={ShoppingBag} variant="warning" />
           </div>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:max-w-[75%]">
-            <StatCard title="Total Owners" value={String(adminStats?.totalOwners ?? 0)} icon={Users} variant="primary" />
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
+            <StatCard title="Total Owners" value={String(adminStats?.totalOwners ?? 0)} icon={Building2} variant="primary" />
             <StatCard title="Total Tenants" value={String(adminStats?.totalTenants ?? 0)} icon={Users} variant="secondary" />
             <StatCard title="Active Leases" value={String(adminStats?.activeTenants ?? 0)} icon={UserCheck} variant="success" />
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
           <StatCard title="Total Properties" value={String(totalProperties)} icon={Building2} variant="primary" />
           <StatCard title="For Rent" value={String(forRentCount)} icon={Home} variant="secondary" />
           <StatCard title="For Sale" value={String(forSaleCount)} icon={ShoppingBag} variant="warning" />

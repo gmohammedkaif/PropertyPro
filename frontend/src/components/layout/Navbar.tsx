@@ -99,8 +99,8 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
         )}
       </button>
 
-      <div className="hidden min-w-0 md:block">
-        <h1 className="truncate text-sm font-bold text-text tracking-tight">{title}</h1>
+      <div className="min-w-0 flex-1 md:flex-none">
+        <h1 className="truncate text-xs sm:text-sm font-bold text-text tracking-tight">{title}</h1>
       </div>
 
       <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
@@ -160,7 +160,7 @@ export function Navbar({ onMenuClick, onCollapseToggle }: NavbarProps) {
             <DropdownMenu.Content
               align="end"
               sideOffset={8}
-              className="glass z-[var(--z-dropdown)] w-80 rounded-xl p-1.5 shadow-lg max-h-96 overflow-y-auto"
+              className="glass z-[var(--z-dropdown)] w-[calc(100vw-2rem)] sm:w-80 max-w-sm rounded-xl p-1.5 shadow-lg max-h-96 overflow-y-auto"
             >
               <div className="flex items-center justify-between px-2.5 py-2">
                 <p className="text-sm font-semibold text-text">Notifications</p>

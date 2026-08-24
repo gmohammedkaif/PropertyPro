@@ -76,6 +76,7 @@ export const useAuthStore = create<AuthState>()(
       signOut: () => {
         try {
           localStorage.removeItem(INACTIVITY_STORAGE_KEY)
+          localStorage.removeItem(AUTH_STORAGE_KEY)
         } catch {
           /* ignore storage errors */
         }

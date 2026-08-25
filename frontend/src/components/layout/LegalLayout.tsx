@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, ArrowLeft, Printer, Shield, FileText, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react'
+import {
+  Home,
+  ArrowLeft,
+  Printer,
+  Shield,
+  FileText,
+  ChevronRight,
+  CheckCircle2,
+  AlertCircle,
+} from 'lucide-react'
+import { Brand } from '@/components/auth/Brand'
 import { Button } from '@/components/ui/Button'
 import { buttonVariants } from '@/components/ui/buttonVariants'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -79,15 +89,10 @@ export function LegalLayout({
 
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-40 border-b border-border/80 bg-surface/80 backdrop-blur-md transition-colors">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2.5 group" aria-label="PropertyPro home">
-              <span className="bg-brand-gradient flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-md transition-transform group-hover:scale-105">
-                <Home className="h-[18px] w-[18px]" aria-hidden="true" />
-              </span>
-              <span className="text-[17px] font-bold tracking-tight text-text">
-                Property<span className="text-primary">Pro</span>
-              </span>
+              <Brand size="lg" />
             </Link>
 
             <nav className="hidden md:flex items-center gap-1 text-sm font-medium" aria-label="Secondary">

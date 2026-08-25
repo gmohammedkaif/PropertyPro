@@ -5,6 +5,7 @@ import { ArrowRight, Building2, ShieldCheck } from 'lucide-react'
 
 import { Brand } from './Brand'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { useOwnerShowcase } from '@/hooks/useOwnerShowcase'
 
 interface AuthLayoutProps {
   variant?: 'split' | 'centered'
@@ -19,6 +20,8 @@ export function AuthLayout({
   description,
   children,
 }: PropsWithChildren<AuthLayoutProps>) {
+  const showcase = useOwnerShowcase()
+
   if (variant === 'centered') {
     return (
       <div className="relative flex min-h-screen flex-col items-center justify-center bg-bg px-4 py-12 sm:px-6">
@@ -27,9 +30,9 @@ export function AuthLayout({
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }} className="relative z-10 mb-8 flex items-center gap-2.5">
           <Brand />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.08, ease: [0.22, 1, 0.36, 1] }} className="relative z-10 glass w-full max-w-[520px] rounded-2xl p-8 sm:p-10 border border-border/40">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.08, ease: [0.22, 1, 0.36, 1] }} className="relative z-10 glass w-full max-w-[520px] rounded-2xl p-8 sm:p-10 border border-border/40 shadow-sm">
           <div className="mb-8 flex flex-col gap-1.5">
-            <h1 className="text-2xl font-bold tracking-tight text-text">{title}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-text font-display">{title}</h1>
             <p className="text-sm text-muted">{description}</p>
           </div>
           {children}
@@ -50,7 +53,7 @@ export function AuthLayout({
         
         {/* Floating Brand Section */}
         <div className="relative z-10 flex items-center gap-2.5">
-          <Brand />
+          <Brand inverted size="lg" />
         </div>
  
         {/* Testimonial Glass Card */}
@@ -60,16 +63,16 @@ export function AuthLayout({
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} 
           className="relative z-10 max-w-lg border border-white/10 rounded-2xl p-8 backdrop-blur-xl bg-black/40 shadow-2xl hover:border-white/20 transition-all duration-300"
         >
-          <p className="text-xl font-bold font-display leading-relaxed tracking-tight text-white">
-            “Running six units used to mean spreadsheets and missed calls. PropertyPro put the whole portfolio on one screen.”
+          <p className="text-lg font-medium font-display leading-relaxed tracking-tight text-white/95">
+            "{showcase.quote}"
           </p>
           <footer className="mt-6 flex items-center gap-3">
-            <span className="bg-primary/20 border border-primary/30 flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white">
-              PS
+            <span className="bg-primary/30 border border-primary/40 flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white">
+              {showcase.initials}
             </span>
             <div>
-              <p className="text-sm font-bold text-white">Priya Sharma</p>
-              <p className="text-xs text-white/60">Property owner · 6 units</p>
+              <p className="text-sm font-bold text-white">{showcase.name}</p>
+              <p className="text-xs text-white/70">{showcase.roleTitle}</p>
             </div>
           </footer>
         </motion.div>

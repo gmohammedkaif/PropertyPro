@@ -1,5 +1,4 @@
 import { forwardRef, type ReactNode } from 'react'
-
 import { type VariantProps } from 'class-variance-authority'
 import { motion, type HTMLMotionProps } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
@@ -8,60 +7,43 @@ import { buttonVariants } from '@/components/ui/buttonVariants'
 import { cn } from '@/lib/utils'
 
 export interface EnhancedButtonProps
-  extends Omit<HTMLMotionProps<'button'>, 'children'>, VariantProps<typeof buttonVariants> {
+  extends Omit<HTMLMotionProps<'button'>, 'children'>,
+    VariantProps<typeof buttonVariants> {
   loading?: boolean
   children?: ReactNode
-  glowIntensity?: 'low' | 'medium' | 'high'
   leftIcon?: ReactNode
   rightIcon?: ReactNode
+  glowIntensity?: 'low' | 'medium' | 'high' | string
   shimmer?: boolean
 }
 
 export const EnhancedButton = forwardRef<HTMLButtonElement, EnhancedButtonProps>(
-  (
-    { className, variant, size, loading, disabled, children, glowIntensity = 'medium', leftIcon, rightIcon, shimmer = false, ...props },
-    ref,
-  ) => {
-    const variantClasses = {
-      primary:   'gradient-btn',
-      secondary: 'bg-surface border border-border text-text2 hover:bg-surface3 hover:border-borderStrong hover:text-text shadow-sm',
-      outline:   'bg-transparent border border-border text-text2 hover:bg-surface3 hover:text-text hover:border-borderStrong',
-      ghost:     'text-text2 hover:bg-surface3 hover:text-text',
-      danger:    'bg-danger text-white hover:bg-danger/90 border border-transparent shadow-sm',
-      glass:     'bg-surface border border-border text-text hover:bg-surface3 shadow-sm',
-    }
-    
+  ({ className, variant, size, loading, disabled, children, leftIcon, rightIcon, glowIntensity, shimmer, ...props }, ref) => {
     const baseClasses = cn(
       buttonVariants({ variant, size }),
-      'group/btn',
       className,
     )
 
-    
     return (
       <motion.button
         ref={ref}
-        whileTap={disabled || loading ? undefined : { scale: 0.97 }}
-        transition={{ duration: 0.12, ease: 'easeOut' }}
+        whileTap={disabled || loading ? undefined : { scale: 0.98 }}
+        transition={{ duration: 0.15, ease: 'easeOut' }}
         className={baseClasses}
         disabled={disabled || loading}
         aria-busy={loading || undefined}
         {...props}
       >
-        {shimmer && (
-          <div className="absolute inset-0 -translate-x-[150%] bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 group-hover/btn:animate-btn-shimmer" />
-        )}
-        
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
-        
-        {leftIcon && !loading && <span className="shrink-0">{leftIcon}</span>}
-        
-        <span className="relative z-10 inline-flex items-center gap-2">{children}</span>
-        
-        {rightIcon && !loading && <span className="shrink-0">{rightIcon}</span>}
-        
-        {(variant === 'primary' || variant === 'glass') && (
-          <div className="absolute inset-0 rounded-md bg-gradient-to-br from-white/10 to-transparent opacity-0 transition-opacity group-hover/btn:opacity-100" />
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden="true" />
+        ) : leftIcon ? (
+          <span className="shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5">{leftIcon}</span>
+        ) : null}
+
+        <span className="relative z-10 inline-flex items-center gap-1.5">{children}</span>
+
+        {rightIcon && !loading && (
+          <span className="shrink-0 transition-transform duration-200 group-hover:translate-x-1">{rightIcon}</span>
         )}
       </motion.button>
     )
